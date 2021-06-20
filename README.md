@@ -1,6 +1,7 @@
 <h1 align="center"> ReVi </h1>
 <p align="center">
   <a><img alt="MAINTAINED" src="https://img.shields.io/badge/Maintained%3F-yes-green.svg"></a>
+  <a><img alt="Downloads" src="https://img.shields.io/crates/d/revi"></a>
   <a href="https://crates.io/crates/revi"><img alt="crates.io" src="https://img.shields.io/crates/v/revi.svg"></a>
   <a><img alt="lastupdated" src="https://img.shields.io/github/last-commit/revi-editor/revi"></a>
   <a><img alt="release" src="https://badgen.net/github/release/revi-editor/revi"></a>
