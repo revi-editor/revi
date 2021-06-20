@@ -8,7 +8,7 @@ readme = "README.md"
 repository = "https://github.com/revi-editor/revi"
 license-file = "LICENSE"
 keywords = ["text-editor", "command-line", "termainl", "vim", "editor"]
-categories = ["text-editor", "text-processing", "command-line-utilities", "command-line-interface", "configuration"]
+categories = ["text-editors", "text-processing", "command-line-utilities", "command-line-interface", "configuration"]
 
 
 
