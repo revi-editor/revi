@@ -6,7 +6,7 @@ use crate::mode::Mode;
 use crate::position::Position;
 use ropey::Rope;
 use std::fmt;
-use std::fs::{metadata, OpenOptions};
+use std::fs::OpenOptions;
 use std::io::BufWriter;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
