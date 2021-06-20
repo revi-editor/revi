@@ -4,7 +4,6 @@
   <a><img alt="Downloads" src="https://img.shields.io/crates/d/revi"></a>
   <a href="https://crates.io/crates/revi"><img alt="crates.io" src="https://img.shields.io/crates/v/revi.svg"></a>
   <a><img alt="lastupdated" src="https://img.shields.io/github/last-commit/revi-editor/revi"></a>
-  <a><img alt="release" src="https://badgen.net/github/release/revi-editor/revi"></a>
   <a><img alt="GitHub repo size" src="https://img.shields.io/github/repo-size/revi-editor/revi"></a>
   <a><img alt="issuse" src="https://img.shields.io/github/issues/revi-editor/revi"></a>
   <a><img alt="Lines of Code" src="https://img.shields.io/tokei/lines/github/revi-editor/revi"></a>
@@ -34,7 +33,8 @@ cargo run --release -- <filename>
 
 # Road Map
 
-- [ ] **Plugin API**
+- [ ] **Plugin API**:
+  - [ ] **Custom KeyBindings**
 - [ ] **WebSite**
 - [ ] **Package Manager**
 - [ ] **LSP**
