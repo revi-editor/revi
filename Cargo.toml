@@ -1,0 +1,14 @@
+[package]
+name = "revi"
+version = "0.0.0-beta-0.1"
+authors = ["cowboy8625 <cowboy8625@protonmail.com>"]
+edition = "2018"
+
+[dependencies]
+mlua = { version = "0.6.0-beta.3", features = ["lua53", "vendored"] }
+clap = "2.33.3"
+ropey = "1.2.0"
+enum_dispatch = "0.3.7"
+crossterm = "0.20.0"
+itertools = "0.10.0"
+
