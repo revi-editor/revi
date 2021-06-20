@@ -1,7 +1,7 @@
 use crate::{Rope, AUTHOR};
+use clap::{crate_description, crate_name, crate_version, App, Arg};
 use std::fs::{metadata, OpenOptions};
 use std::io::BufReader;
-use clap::{crate_description, crate_name, crate_version, App, Arg};
 
 pub fn argparser() -> Option<String> {
     let matches = App::new(crate_name!())

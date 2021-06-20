@@ -1,11 +1,11 @@
+mod api;
+mod commandline;
+mod keymapper;
 mod mode;
 mod position;
 mod revi;
-mod window;
-mod api;
-mod keymapper;
 mod ui;
-mod commandline;
+mod window;
 use commandline::{argparser, from_path};
 mod key;
 use key::Key;
@@ -13,8 +13,8 @@ mod revi_command;
 use mode::Mode;
 use revi_command::ReViCommand;
 
-use ropey::Rope;
 use mlua::prelude::*;
+use ropey::Rope;
 use std::{cell::RefCell, rc::Rc};
 
 const AUTHOR: &str = "
@@ -24,7 +24,6 @@ const AUTHOR: &str = "
 ▝▀ ▝▀  ▘▘ ▀▀ ▝▀ ▗▄▘▝▀ ▝▀ ▀▀▘▝▀
 Email: cowboy8625@protonmail.com
 ";
-
 
 #[allow(dead_code)]
 fn main() -> LuaResult<()> {
@@ -39,29 +38,35 @@ fn main() -> LuaResult<()> {
     let mut input = Input::default();
 
     lua.globals().set("revi", editor.clone())?;
-    lua.load(&std::fs::read_to_string("init.lua").expect("Failed to load init.lua")).exec()?;
+    lua.load(&std::fs::read_to_string("init.lua").expect("Failed to load init.lua"))
+        .exec()?;
 
-    let (_, render_commands) = editor.borrow_mut().execute(input.number_usize(), &[ReViCommand::StartUp]);
+    let (_, render_commands) = editor
+        .borrow_mut()
+        .execute(input.number_usize(), &[ReViCommand::StartUp]);
     tui.update(&render_commands);
 
     while editor.borrow().is_running {
         if tui.poll_read(std::time::Duration::from_millis(50)) {
-
             let mode = editor.borrow().mode().clone();
             let keys = tui.get_key_press();
             input.input(&mode, keys);
 
             if let Some(commands) = keymapper.get_mapping(&mode, &input.keys()) {
-                let (input_state, render_commands) = editor.borrow_mut().execute(input.number_usize(), commands);
+                let (input_state, render_commands) =
+                    editor.borrow_mut().execute(input.number_usize(), commands);
                 input.update(&input_state);
                 tui.update(&render_commands);
             } else if &mode == &Mode::Insert {
-                let input_chars = input.as_chars()
+                let input_chars = input
+                    .as_chars()
                     .iter()
                     .filter(|c| **c != '\0')
                     .map(|c| ReViCommand::InsertChar(*c))
                     .collect::<Vec<ReViCommand>>();
-                let (input_state, render_commands) = editor.borrow_mut().execute(input.number_usize(), &input_chars);
+                let (input_state, render_commands) = editor
+                    .borrow_mut()
+                    .execute(input.number_usize(), &input_chars);
                 input.update(&input_state);
                 tui.update(&render_commands);
             }
@@ -72,7 +77,7 @@ fn main() -> LuaResult<()> {
 
 #[derive(Debug, Clone, Default)]
 struct Number {
-    inner: Vec<u16>
+    inner: Vec<u16>,
 }
 
 impl Number {
@@ -101,8 +106,6 @@ impl Number {
     }
 }
 
-
-
 #[derive(Debug, Clone, Default)]
 pub struct Input {
     number: Number,
@@ -124,25 +127,32 @@ impl Input {
             }
         }
 
-
         match k1 {
             Key::Esc | Key::LH | Key::LJ | Key::LK | Key::LL if mode == &mode::Mode::Normal => {
                 self.input_keys.clear();
                 self.input_keys.push(k1);
-                if k2 != Key::Null { self.input_keys.push(k2); }
-            },
+                if k2 != Key::Null {
+                    self.input_keys.push(k2);
+                }
+            }
             _ if mode == &mode::Mode::Insert || mode == &mode::Mode::Command => {
                 let c = k1.as_char();
-                if c != '\0' {self.chars.push(c);} else {
+                if c != '\0' {
+                    self.chars.push(c);
+                } else {
                     self.input_keys.clear();
                     self.input_keys.push(k1);
-                    if k2 != Key::Null { self.input_keys.push(k2); }
+                    if k2 != Key::Null {
+                        self.input_keys.push(k2);
+                    }
                 }
-            },
+            }
             _ => {
                 self.input_keys.push(k1);
-                if k2 != Key::Null { self.input_keys.push(k2); }
-            },
+                if k2 != Key::Null {
+                    self.input_keys.push(k2);
+                }
+            }
         }
     }
 
@@ -179,4 +189,3 @@ pub enum InputState {
     _Waiting,
     Clear,
 }
-

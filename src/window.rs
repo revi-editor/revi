@@ -2,13 +2,12 @@
  *
  */
 
-use crate::position::Position;
 use crate::mode::Mode;
+use crate::position::Position;
 use ropey::Rope;
 use std::fmt;
-use std::io::BufWriter;
 use std::fs::{metadata, OpenOptions};
-
+use std::io::BufWriter;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Window {
@@ -28,7 +27,6 @@ pub struct Window {
     pub buffer: Rope,
     /// Name of Text File
     pub name: Option<String>,
-
 
     pub debug: String,
 }
@@ -70,7 +68,9 @@ impl Window {
 
     pub fn move_cursor_up(&mut self, lines: usize) -> bool {
         let mut scroll = false;
-        let target = if lines > self.cursor.as_usize_y() { 0 } else {
+        let target = if lines > self.cursor.as_usize_y() {
+            0
+        } else {
             self.cursor.as_usize_y() - lines
         };
         // let target = self.cursor.as_usize_y().saturating_sub(lines);
@@ -78,7 +78,9 @@ impl Window {
         let min = self.window_offset.as_usize_y();
         // FIXME: scrolls on second line instead of first.
         if target == min && self.cursor_screen().as_usize_y() == 0 {
-            let scroll_offset = self.scroll_offset.as_usize_y()
+            let scroll_offset = self
+                .scroll_offset
+                .as_usize_y()
                 .saturating_sub(target)
                 .saturating_sub(1);
             self.scroll_offset.set_y(scroll_offset);
@@ -92,7 +94,9 @@ impl Window {
 
     fn adjust_cursor_x(&mut self) {
         use std::cmp::min;
-        let line = self.buffer.line(self.cursor.as_usize_y() + self.scroll_offset.as_usize_y());
+        let line = self
+            .buffer
+            .line(self.cursor.as_usize_y() + self.scroll_offset.as_usize_y());
         let line_len = line.len_chars();
         // if line_len > 0 {
         //     line_len -= 1;
@@ -101,9 +105,11 @@ impl Window {
     }
 
     pub fn move_cursor_left(&mut self, cols: usize) {
-        self.cursor.set_x(if cols > self.cursor.as_usize_x() { 0 }
-                          else { self.cursor.as_usize_x() - cols 
-                          });
+        self.cursor.set_x(if cols > self.cursor.as_usize_x() {
+            0
+        } else {
+            self.cursor.as_usize_x() - cols
+        });
         self.max_cursor.set_x(self.cursor.as_usize_x());
     }
 
@@ -132,15 +138,13 @@ impl Window {
         if new_line != self.cursor_file().as_usize_y() {
             self.move_cursor_up(1);
         }
-        self.cursor.set_x(index - self.buffer.line_to_char(new_line));
+        self.cursor
+            .set_x(index - self.buffer.line_to_char(new_line));
     }
 
     pub fn delete(&mut self) {
-        let index = self
-            .buffer
-            .line_to_char(
-                self.cursor_file().as_usize_y()
-                ) + self.cursor_file().as_usize_x();
+        let index = self.buffer.line_to_char(self.cursor_file().as_usize_y())
+            + self.cursor_file().as_usize_x();
         if index < self.buffer.len_chars() {
             self.buffer.remove(index..index + 1);
         }
@@ -168,13 +172,17 @@ impl Window {
             .expect("Problem opening the file for saving");
 
         let buff = BufWriter::new(file);
-        self.buffer.write_to(buff).expect("Failed to write to File buffer to file");
+        self.buffer
+            .write_to(buff)
+            .expect("Failed to write to File buffer to file");
     }
 
     pub fn status_bar(&self) -> String {
         let left = format!(" {} | {} ", self.mode, self.buffer_name());
         let right = format!(" {} | {} ", self.cursor_screen(), self.cursor_file());
-        let middle = (0..left.len()+right.len()).map(|_| " ").collect::<String>();
+        let middle = (0..left.len() + right.len())
+            .map(|_| " ")
+            .collect::<String>();
         format!("{}{}{}", left, right, middle)
     }
 
@@ -222,7 +230,7 @@ impl fmt::Display for Window {
 }
 
 fn format_window_buffer(text: &str, width: usize, height: usize) -> String {
-    let filler = ' ';// std::char::from_u32(9608).unwrap_or('&');
+    let filler = ' '; // std::char::from_u32(9608).unwrap_or('&');
     let mut new = String::new();
     for (y, line) in text.lines().enumerate() {
         if y == height {
@@ -230,7 +238,10 @@ fn format_window_buffer(text: &str, width: usize, height: usize) -> String {
         }
         let l = line.get(..line.len().min(width)).unwrap_or("");
         let w = width.saturating_sub(count_char(l, '\t') * 3);
-        let line = line.get(..line.len().min(w)).unwrap_or("").replace("\t", "    ");
+        let line = line
+            .get(..line.len().min(w))
+            .unwrap_or("")
+            .replace("\t", "    ");
         new.push_str(&line);
         let spaces = width.saturating_sub(line.len());
         let blanks = vec![filler; spaces].iter().collect::<String>();

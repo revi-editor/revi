@@ -1,4 +1,4 @@
-use crate::{mode::Mode, revi_command::ReViCommand, key::Key};
+use crate::{key::Key, mode::Mode, revi_command::ReViCommand};
 use std::collections::HashMap;
 
 type KeyMap = HashMap<Vec<Key>, Vec<ReViCommand>>;
@@ -9,7 +9,8 @@ pub struct Mapper {
     cmaps: KeyMap,
 }
 
-impl Mapper { fn new() -> Self {
+impl Mapper {
+    fn new() -> Self {
         Self {
             nmaps: KeyMap::new(),
             imaps: KeyMap::new(),
@@ -39,7 +40,12 @@ impl Mapper { fn new() -> Self {
         Some(self.get_map(mode).get(event)?)
     }
 
-    pub fn insert_mapping(mut self, mode: &Mode, keys: Vec<Key>, commands: Vec<ReViCommand>) -> Self {
+    pub fn insert_mapping(
+        mut self,
+        mode: &Mode,
+        keys: Vec<Key>,
+        commands: Vec<ReViCommand>,
+    ) -> Self {
         self.get_map_mut(mode).insert(keys, commands);
         self
     }
@@ -47,8 +53,16 @@ impl Mapper { fn new() -> Self {
     fn build_normal(self) -> Self {
         use Mode::*;
         self.insert_mapping(&Normal, vec![Key::Esc], vec![ReViCommand::Mode(Normal)])
-            .insert_mapping(&Normal, vec![Key::UZ, Key::Shift, Key::UZ, Key::Shift], vec![ReViCommand::Quit, ReViCommand::Save]) // Save Command would be called too.
-            .insert_mapping(&Normal, vec![Key::UZ, Key::Shift, Key::UQ, Key::Shift], vec![ReViCommand::Quit]) // Save Command would be called too.
+            .insert_mapping(
+                &Normal,
+                vec![Key::UZ, Key::Shift, Key::UZ, Key::Shift],
+                vec![ReViCommand::Quit, ReViCommand::Save],
+            ) // Save Command would be called too.
+            .insert_mapping(
+                &Normal,
+                vec![Key::UZ, Key::Shift, Key::UQ, Key::Shift],
+                vec![ReViCommand::Quit],
+            ) // Save Command would be called too.
             .insert_mapping(&Normal, vec![Key::LJ], vec![ReViCommand::CursorDown])
             .insert_mapping(&Normal, vec![Key::LK], vec![ReViCommand::CursorUp])
             .insert_mapping(&Normal, vec![Key::LH], vec![ReViCommand::CursorLeft])
@@ -73,8 +87,5 @@ impl Mapper { fn new() -> Self {
 }
 
 pub fn key_builder() -> Mapper {
-    Mapper::new()
-        .build_normal()
-        .build_insert()
-        .build_command()
+    Mapper::new().build_normal().build_insert().build_command()
 }

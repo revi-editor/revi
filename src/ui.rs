@@ -1,8 +1,8 @@
+use crate::key::Key;
+use crate::position::Position;
 use std::fmt::{self, Debug};
 use std::io::{stdout, Stdout, Write};
 use std::time::Duration;
-use crate::key::Key;
-use crate::position::Position;
 
 pub fn screen_size() -> (u16, u16) {
     crossterm::terminal::size().expect("Failed to find screen size")
@@ -11,7 +11,7 @@ pub fn screen_size() -> (u16, u16) {
 #[derive(Clone)]
 pub enum Render {
     Window { pos: Position, text: String },
-    StatusBar {pos: Position, text: String},
+    StatusBar { pos: Position, text: String },
     Cursor(Position),
     CursorShapeBlock,
     CursorShapeLine,
@@ -21,8 +21,8 @@ impl fmt::Debug for Render {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let output;
         match self {
-            Self::Window{..} => output = "Window",
-            Self::StatusBar{..} => output = "StatusBar",
+            Self::Window { .. } => output = "Window",
+            Self::StatusBar { .. } => output = "StatusBar",
             Self::Cursor(_) => output = "Cursor",
             Self::CursorShapeBlock => output = "CursorShapeBlock",
             Self::CursorShapeLine => output = "CursorShapeLine",
@@ -57,16 +57,22 @@ impl Tui {
     }
 
     pub fn update(&mut self, render: &[Render]) {
-        if render.len() == 0 {return;}
+        if render.len() == 0 {
+            return;
+        }
         self.save_cursor();
         self.hide_cursor();
         for revent in render.iter() {
             match revent {
                 Render::Cursor(pos) => self.update_cursor(pos),
-                Render::StatusBar{pos, text} => self.update_status_bar(pos, text),
-                Render::Window{pos, text} => self.update_window(pos, text),
-                Render::CursorShapeBlock => self.set_cursor_shape(crossterm::cursor::CursorShape::Block),
-                Render::CursorShapeLine => self.set_cursor_shape(crossterm::cursor::CursorShape::Line),
+                Render::StatusBar { pos, text } => self.update_status_bar(pos, text),
+                Render::Window { pos, text } => self.update_window(pos, text),
+                Render::CursorShapeBlock => {
+                    self.set_cursor_shape(crossterm::cursor::CursorShape::Block)
+                }
+                Render::CursorShapeLine => {
+                    self.set_cursor_shape(crossterm::cursor::CursorShape::Line)
+                }
             }
         }
         self.restore_cursor();
@@ -74,13 +80,16 @@ impl Tui {
         self.flush();
     }
 
-    pub fn _debug<T>(&mut self, t: T) where T: Debug {
-            crossterm::queue!(
-                self.writer,
-                crossterm::cursor::MoveTo(0, 10000),
-                crossterm::style::Print(format!("{:?}                    ", t)),
-            )
-            .expect("Printing Debug Failed.");
+    pub fn _debug<T>(&mut self, t: T)
+    where
+        T: Debug,
+    {
+        crossterm::queue!(
+            self.writer,
+            crossterm::cursor::MoveTo(0, 10000),
+            crossterm::style::Print(format!("{:?}                    ", t)),
+        )
+        .expect("Printing Debug Failed.");
     }
 
     fn update_window(&mut self, pos: &Position, text: &str) {
@@ -96,7 +105,6 @@ impl Tui {
         }
     }
 
-
     pub fn update_status_bar(&mut self, pos: &Position, text: &str) {
         crossterm::queue!(
             self.writer,
@@ -106,18 +114,17 @@ impl Tui {
         .expect("Drawing StatusBar Failed.");
     }
 
-    pub fn _update_command_bar(&mut self) {
-    }
+    pub fn _update_command_bar(&mut self) {}
 
     pub fn update_cursor(&mut self, pos: &Position) {
-        crossterm::queue!(self.writer,
-                            crossterm::cursor::RestorePosition,
-                            crossterm::cursor::MoveTo(pos.as_u16_x(), pos.as_u16_y()),
-                            crossterm::cursor::SavePosition
-                            )
-            .expect("Failure to update cursor position.");
+        crossterm::queue!(
+            self.writer,
+            crossterm::cursor::RestorePosition,
+            crossterm::cursor::MoveTo(pos.as_u16_x(), pos.as_u16_y()),
+            crossterm::cursor::SavePosition
+        )
+        .expect("Failure to update cursor position.");
     }
-
 
     pub fn _update_windows<T>(&mut self, windows: &[T], positions: &[(u16, u16)])
     where
