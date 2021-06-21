@@ -131,7 +131,9 @@ impl Window {
             .buffer
             .line(self.cursor.as_usize_y() + self.scroll_offset.as_usize_y());
         let mut line_len = line.len_chars();
-        line_len = line_len.saturating_sub(2);
+        if line.as_str().unwrap_or_else(|| "").ends_with("\n") {
+            line_len = line_len.saturating_sub(2);
+        }
         self.cursor.set_x(min(line_len, self.cursor.as_usize_x()));
     }
 
