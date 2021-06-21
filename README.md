@@ -20,7 +20,7 @@
 
   - [**About**](#about)
   - [**Usage**](#usage)
-    - [**Install**](#crates.io)
+    - [**Install**](#cratesio)
     - [**Clone && Installing**](#github)
     - [**Development**](#development-use)
   - [**KeyBindings**](#keybindings)
