@@ -64,9 +64,13 @@ impl Mapper {
                 vec![ReViCommand::Quit],
             )
             .insert_mapping(&Normal, vec![Key::LJ], vec![ReViCommand::CursorDown])
+            .insert_mapping(&Normal, vec![Key::Down], vec![ReViCommand::CursorDown])
             .insert_mapping(&Normal, vec![Key::LK], vec![ReViCommand::CursorUp])
+            .insert_mapping(&Normal, vec![Key::Up], vec![ReViCommand::CursorUp])
             .insert_mapping(&Normal, vec![Key::LH], vec![ReViCommand::CursorLeft])
+            .insert_mapping(&Normal, vec![Key::Left], vec![ReViCommand::CursorLeft])
             .insert_mapping(&Normal, vec![Key::LL], vec![ReViCommand::CursorRight])
+            .insert_mapping(&Normal, vec![Key::Right], vec![ReViCommand::CursorRight])
             .insert_mapping(&Normal, vec![Key::Colon], vec![ReViCommand::Mode(Command)])
             .insert_mapping(&Normal, vec![Key::LI], vec![ReViCommand::Mode(Insert)])
             .insert_mapping(&Normal, vec![Key::LX], vec![ReViCommand::DeleteChar])
@@ -88,6 +92,10 @@ impl Mapper {
             .insert_mapping(&Insert, vec![Key::Enter], vec![ReViCommand::NewLine])
             .insert_mapping(&Insert, vec![Key::Home], vec![ReViCommand::Home])
             .insert_mapping(&Insert, vec![Key::End], vec![ReViCommand::End])
+            .insert_mapping(&Insert, vec![Key::Down], vec![ReViCommand::CursorDown])
+            .insert_mapping(&Insert, vec![Key::Up], vec![ReViCommand::CursorUp])
+            .insert_mapping(&Insert, vec![Key::Left], vec![ReViCommand::CursorLeft])
+            .insert_mapping(&Insert, vec![Key::Right], vec![ReViCommand::CursorRight])
     }
 
     fn build_command(self) -> Self {
