@@ -1,12 +1,10 @@
 /* windows.rs
- *
  */
 
 use crate::mode::Mode;
 use crate::position::Position;
 use ropey::Rope;
 use std::fmt;
-use std::fs::OpenOptions;
 use std::io::BufWriter;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -54,13 +52,16 @@ impl Window {
         let target = min(self.cursor.as_usize_y() + lines, limit);
         let diff = target - self.cursor.as_usize_y();
 
-        let max = self.window_offset.as_usize_y() + self.dimensions.as_usize_y();
-        if target >= max {
-            self.scroll_offset.add_to_y(target - max + 1);
+        let max = self.window_offset.as_usize_y() + self.dimensions.as_usize_y() - 1;
+        if target > max {
+            self.scroll_offset.set_y(
+                (self.scroll_offset.as_usize_y() + target - max)
+                    .min(limit - self.cursor.as_usize_y()),
+            );
             scroll = true;
-        } else {
-            self.cursor.add_to_y(diff);
         }
+        self.cursor
+            .set_y((self.cursor.as_usize_y() + diff).min(max));
         self.cursor.set_x(self.max_cursor.as_usize_x());
         self.adjust_cursor_x();
         scroll
@@ -68,15 +69,9 @@ impl Window {
 
     pub fn move_cursor_up(&mut self, lines: usize) -> bool {
         let mut scroll = false;
-        let target = if lines > self.cursor.as_usize_y() {
-            0
-        } else {
-            self.cursor.as_usize_y() - lines
-        };
-        // let target = self.cursor.as_usize_y().saturating_sub(lines);
+        let target = self.cursor.as_usize_y().saturating_sub(lines);
 
         let min = self.window_offset.as_usize_y();
-        // FIXME: scrolls on second line instead of first.
         if target == min && self.cursor_screen().as_usize_y() == 0 {
             let scroll_offset = self
                 .scroll_offset
@@ -97,10 +92,10 @@ impl Window {
         let line = self
             .buffer
             .line(self.cursor.as_usize_y() + self.scroll_offset.as_usize_y());
-        let line_len = line.len_chars();
-        // if line_len > 0 {
-        //     line_len -= 1;
-        // }
+        let mut line_len = line.len_chars();
+        if line_len > 0 {
+            line_len -= 2;
+        }
         self.cursor.set_x(min(line_len, self.cursor.as_usize_x()));
     }
 
@@ -151,8 +146,37 @@ impl Window {
         self.adjust_cursor_x();
     }
 
+    pub fn insert_char(&mut self, c: char) {
+        let (x, y) = self.cursor_file().as_usize();
+        let line_index = self.buffer.line_to_char(y);
+        self.buffer.insert_char(line_index + x, c);
+        self.move_cursor_right(1);
+    }
+
+    pub fn delete_line(&mut self) {
+        let y = self.cursor_file().as_usize_y();
+        let start_idx = self.buffer.line_to_char(y);
+        let end_idx = self.buffer.line_to_char(y + 1);
+
+        // Remove the line...
+        self.buffer.remove(start_idx..end_idx);
+        self.adjust_cursor_x();
+    }
+
+    pub fn home(&mut self) {
+        self.cursor.set_x(0);
+        self.max_cursor.set_x(0);
+    }
+
+    pub fn end(&mut self) {
+        let y = self.cursor_file().as_usize_y();
+        self.cursor.set_x(self.buffer.line(y).len_chars());
+        self.max_cursor.set_x(self.cursor.as_usize_x());
+        self.adjust_cursor_x();
+    }
+
     pub fn buffer_name(&self) -> String {
-        self.name.clone().unwrap_or("UNNAMED".to_string())
+        self.name.clone().unwrap_or_else(|| "UNNAMED".to_string())
     }
 
     pub fn cursor_file(&self) -> Position {
@@ -164,12 +188,8 @@ impl Window {
     }
 
     pub fn save(&self) {
-        let file = OpenOptions::new()
-            .read(false)
-            .write(true)
-            .create(true)
-            .open(self.buffer_name())
-            .expect("Problem opening the file for saving");
+        let file =
+            std::fs::File::create(self.buffer_name()).expect("Problem opening the file for saving");
 
         let buff = BufWriter::new(file);
         self.buffer
@@ -189,13 +209,6 @@ impl Window {
     pub fn status_bar_pos(&self) -> Position {
         let y = (self.window_offset + self.dimensions).as_u16_y();
         Position::new_u16(self.window_offset.as_u16_x(), y)
-    }
-
-    pub fn insert_char(&mut self, c: char) {
-        let (x, y) = self.cursor_file().as_usize();
-        let line_index = self.buffer.line_to_char(y);
-        self.buffer.insert_char(line_index + x, c);
-        self.move_cursor_right(1);
     }
 }
 

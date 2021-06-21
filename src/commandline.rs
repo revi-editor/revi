@@ -15,10 +15,7 @@ pub fn argparser() -> Option<String> {
         )
         .get_matches();
 
-    match matches.value_of("in_file") {
-        Some(v) => Some(v.to_string()),
-        None => None,
-    }
+    matches.value_of("in_file").map(|v| v.to_string())
 }
 
 // wrapper around Rope for a drity flag.

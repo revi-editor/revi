@@ -37,7 +37,7 @@ impl Mapper {
     }
 
     pub fn get_mapping(&self, mode: &Mode, event: &[Key]) -> Option<&Vec<ReViCommand>> {
-        Some(self.get_map(mode).get(event)?)
+        self.get_map(mode).get(event)
     }
 
     pub fn insert_mapping(
@@ -56,13 +56,13 @@ impl Mapper {
             .insert_mapping(
                 &Normal,
                 vec![Key::UZ, Key::Shift, Key::UZ, Key::Shift],
-                vec![ReViCommand::Quit, ReViCommand::Save],
-            ) // Save Command would be called too.
+                vec![ReViCommand::Save, ReViCommand::Quit],
+            )
             .insert_mapping(
                 &Normal,
                 vec![Key::UZ, Key::Shift, Key::UQ, Key::Shift],
                 vec![ReViCommand::Quit],
-            ) // Save Command would be called too.
+            )
             .insert_mapping(&Normal, vec![Key::LJ], vec![ReViCommand::CursorDown])
             .insert_mapping(&Normal, vec![Key::LK], vec![ReViCommand::CursorUp])
             .insert_mapping(&Normal, vec![Key::LH], vec![ReViCommand::CursorLeft])
@@ -71,6 +71,13 @@ impl Mapper {
             .insert_mapping(&Normal, vec![Key::LI], vec![ReViCommand::Mode(Insert)])
             .insert_mapping(&Normal, vec![Key::LX], vec![ReViCommand::DeleteChar])
             .insert_mapping(&Normal, vec![Key::Delete], vec![ReViCommand::DeleteChar])
+            .insert_mapping(
+                &Normal,
+                vec![Key::LD, Key::LD],
+                vec![ReViCommand::DeleteLine],
+            )
+            .insert_mapping(&Normal, vec![Key::Home], vec![ReViCommand::Home])
+            .insert_mapping(&Normal, vec![Key::End], vec![ReViCommand::End])
     }
 
     fn build_insert(self) -> Self {
@@ -78,6 +85,8 @@ impl Mapper {
         self.insert_mapping(&Insert, vec![Key::Esc], vec![ReViCommand::Mode(Normal)])
             .insert_mapping(&Insert, vec![Key::Backspace], vec![ReViCommand::Backspace])
             .insert_mapping(&Insert, vec![Key::Enter], vec![ReViCommand::NewLine])
+            .insert_mapping(&Insert, vec![Key::Home], vec![ReViCommand::Home])
+            .insert_mapping(&Insert, vec![Key::End], vec![ReViCommand::End])
     }
 
     fn build_command(self) -> Self {

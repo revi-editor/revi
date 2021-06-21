@@ -57,7 +57,7 @@ impl Tui {
     }
 
     pub fn update(&mut self, render: &[Render]) {
-        if render.len() == 0 {
+        if render.is_empty() {
             return;
         }
         self.save_cursor();

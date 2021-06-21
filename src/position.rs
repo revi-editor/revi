@@ -30,7 +30,7 @@ impl Position {
         self.x = self.x.saturating_add(x);
     }
 
-    pub fn add_to_y(&mut self, y: usize) {
+    pub fn _add_to_y(&mut self, y: usize) {
         self.y = self.y.saturating_add(y);
     }
 

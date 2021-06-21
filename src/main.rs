@@ -48,7 +48,7 @@ fn main() -> LuaResult<()> {
 
     while editor.borrow().is_running {
         if tui.poll_read(std::time::Duration::from_millis(50)) {
-            let mode = editor.borrow().mode().clone();
+            let mode = *editor.borrow().mode();
             let keys = tui.get_key_press();
             input.input(&mode, keys);
 
@@ -57,7 +57,7 @@ fn main() -> LuaResult<()> {
                     editor.borrow_mut().execute(input.number_usize(), commands);
                 input.update(&input_state);
                 tui.update(&render_commands);
-            } else if &mode == &Mode::Insert {
+            } else if mode == Mode::Insert {
                 let input_chars = input
                     .as_chars()
                     .iter()
@@ -119,7 +119,7 @@ impl Input {
             return;
         }
 
-        if self.input_keys.len() == 0 {
+        if self.input_keys.is_empty() {
             if let Some(num) = k1.try_digit() {
                 self.chars.push(k1.as_char());
                 self.number.push(num);

@@ -132,8 +132,47 @@ impl ReVi {
                     });
                     render_commands.push(ui::Render::Cursor(window.cursor_screen()));
                 }
+                ReViCommand::Home => {
+                    self.focused_window_mut().home();
+                    let window = self.focused_window();
+                    render_commands.push(ui::Render::Window {
+                        pos: window.window_offset,
+                        text: window.to_string(),
+                    });
+                    render_commands.push(ui::Render::StatusBar {
+                        pos: window.status_bar_pos(),
+                        text: window.status_bar(),
+                    });
+                    render_commands.push(ui::Render::Cursor(window.cursor_screen()));
+                }
+                ReViCommand::End => {
+                    self.focused_window_mut().end();
+                    let window = self.focused_window();
+                    render_commands.push(ui::Render::Window {
+                        pos: window.window_offset,
+                        text: window.to_string(),
+                    });
+                    render_commands.push(ui::Render::StatusBar {
+                        pos: window.status_bar_pos(),
+                        text: window.status_bar(),
+                    });
+                    render_commands.push(ui::Render::Cursor(window.cursor_screen()));
+                }
                 ReViCommand::DeleteChar => {
                     self.focused_window_mut().delete();
+                    let window = self.focused_window();
+                    render_commands.push(ui::Render::Window {
+                        pos: window.window_offset,
+                        text: window.to_string(),
+                    });
+                    render_commands.push(ui::Render::StatusBar {
+                        pos: window.status_bar_pos(),
+                        text: window.status_bar(),
+                    });
+                    render_commands.push(ui::Render::Cursor(window.cursor_screen()));
+                }
+                ReViCommand::DeleteLine => {
+                    self.focused_window_mut().delete_line();
                     let window = self.focused_window();
                     render_commands.push(ui::Render::Window {
                         pos: window.window_offset,
@@ -148,9 +187,9 @@ impl ReVi {
                 ReViCommand::NewLine => {
                     self.focused_window_mut().insert_enter();
                     let window = self.focused_window();
-                    render_commands.push(ui::Render::Window {
-                        pos: window.window_offset,
-                        text: window.to_string(),
+                    render_commands.push(ui::Render::StatusBar {
+                        pos: window.status_bar_pos(),
+                        text: window.status_bar(),
                     });
                     render_commands.push(ui::Render::StatusBar {
                         pos: window.status_bar_pos(),
