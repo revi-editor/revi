@@ -20,9 +20,9 @@
 
   - [**About**](#about)
   - [**Usage**](#usage)
-    - [**Install**](###crates.io)
-    - [**Clone && Installing**](###github)
-    - [**Development**](###development-use)
+    - [**Install**](#crates.io)
+    - [**Clone && Installing**](#github)
+    - [**Development**](#development-use)
   - [**KeyBindings**](#keybindings)
   - [**Road Map**](#road-map)
 
