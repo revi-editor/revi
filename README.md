@@ -21,8 +21,8 @@
   - [**About**](#about)
   - [**Usage**](#usage)
     - [**Install**](###crates.io)
-    - [**Usage**](###github)
-    - [**Usage**](###development-use)
+    - [**Clone && Installing**](###github)
+    - [**Development**](###development-use)
   - [**KeyBindings**](#keybindings)
   - [**Road Map**](#road-map)
 
