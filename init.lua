@@ -1,1 +1,1 @@
-print("First Line Saved with ReVi")
+revi:cursor(0,0)

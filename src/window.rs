@@ -48,7 +48,7 @@ impl Window {
     pub fn move_cursor_down(&mut self, lines: usize) -> bool {
         use std::cmp::min;
         let mut scroll = false;
-        let limit = self.buffer.len_lines() - 1;
+        let limit = self.buffer.len_lines().saturating_sub(2);
         let target = min(self.cursor.as_usize_y() + lines, limit);
         let diff = target - self.cursor.as_usize_y();
 
@@ -60,8 +60,9 @@ impl Window {
             );
             scroll = true;
         }
+        self.debug = format!("{}", min(max, limit));
         self.cursor
-            .set_y((self.cursor.as_usize_y() + diff).min(max));
+            .set_y((self.cursor.as_usize_y() + diff).min(min(max, limit)));
         self.cursor.set_x(self.max_cursor.as_usize_x());
         self.adjust_cursor_x();
         scroll
@@ -93,9 +94,7 @@ impl Window {
             .buffer
             .line(self.cursor.as_usize_y() + self.scroll_offset.as_usize_y());
         let mut line_len = line.len_chars();
-        if line_len > 0 {
-            line_len -= 2;
-        }
+        line_len = line_len.saturating_sub(2);
         self.cursor.set_x(min(line_len, self.cursor.as_usize_x()));
     }
 
@@ -198,12 +197,12 @@ impl Window {
     }
 
     pub fn status_bar(&self) -> String {
-        let left = format!(" {} | {} ", self.mode, self.buffer_name());
+        let left = format!(" {} | {} | {}", self.mode, self.buffer_name(), self.debug);
         let right = format!(" {} | {} ", self.cursor_screen(), self.cursor_file());
-        let middle = (0..left.len() + right.len())
+        let middle = (0..(self.dimensions.as_usize_x().saturating_sub(left.len() + right.len())))
             .map(|_| " ")
             .collect::<String>();
-        format!("{}{}{}", left, right, middle)
+        format!("{}{}{}", left, middle, right)
     }
 
     pub fn status_bar_pos(&self) -> Position {

@@ -97,6 +97,14 @@ impl Number {
         }
     }
 
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
     pub fn as_usize(&self) -> usize {
         self.as_u16() as usize
     }
@@ -114,19 +122,13 @@ pub struct Input {
 }
 
 impl Input {
-    pub fn input(&mut self, mode: &mode::Mode, (k1, k2): (Key, Key)) {
-        if k1 == Key::Null {
-            return;
+    fn insert_number(&mut self, (k1, _): (Key, Key)) {
+        if self.input_keys.is_empty() && k1.try_digit().is_some() {
+            self.number.push(k1.try_digit().unwrap());
         }
+    }
 
-        if self.input_keys.is_empty() {
-            if let Some(num) = k1.try_digit() {
-                self.chars.push(k1.as_char());
-                self.number.push(num);
-                return;
-            }
-        }
-
+    fn insert_key(&mut self, mode: &mode::Mode, (k1,k2): (Key, Key)) {
         match k1 {
             Key::Esc | Key::LH | Key::LJ | Key::LK | Key::LL if mode == &mode::Mode::Normal => {
                 self.input_keys.clear();
@@ -147,17 +149,32 @@ impl Input {
                     }
                 }
             }
-            _ => {
+            _ if mode == &mode::Mode::Normal && k1.try_digit().filter(|c| *c!=0).is_none() => {
+                if k1.try_digit().is_some() && self.number.is_empty() {
+                    self.input_keys.push(k1);
+                    return;
+                }
                 self.input_keys.push(k1);
                 if k2 != Key::Null {
                     self.input_keys.push(k2);
                 }
             }
+            _ => {},
         }
     }
 
-    pub fn keys(&self) -> &[Key] {
+    pub fn input(&mut self, mode: &mode::Mode, (k1, k2): (Key, Key)) {
+        if k1 == Key::Null {
+            return;
+        }
+        self.insert_number((k1,k2));
+        self.insert_key(mode, (k1,k2));
+    }
+
+    pub fn keys(&mut self) -> &[Key] {
+        // self.chars.clear();
         &self.input_keys
+
     }
 
     pub fn number_u16(&mut self) -> u16 {

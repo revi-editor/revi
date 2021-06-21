@@ -39,6 +39,7 @@ cargo run --release -- <filename>
 
 - [ ] **Plugin API** `0.1%`:
   - [ ] **Custom KeyBindings**
+- [ ] **Help Docs** `0%`
 - [ ] **WebSite** `0%`
 - [ ] **Package Manager** `0%`
 - [ ] **LSP** `0%`

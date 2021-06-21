@@ -1,3 +1,4 @@
+use crate::keymapper::Mapper;
 use crate::revi::ReVi;
 use mlua::prelude::*;
 
@@ -8,5 +9,11 @@ impl LuaUserData for ReVi {
             revi.set_cursor_position(x, y);
             Ok(())
         });
+    }
+}
+
+impl LuaUserData for Mapper {
+    fn add_methods<'lua, M: LuaUserDataMethods<'lua, Self>>(methods: &mut M) {
+        methods.add_method_mut("nmap", |_, _mapper, (_, _): (String, u16)| Ok(()));
     }
 }
