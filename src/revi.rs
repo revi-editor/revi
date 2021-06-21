@@ -187,9 +187,9 @@ impl ReVi {
                 ReViCommand::NewLine => {
                     self.focused_window_mut().insert_enter();
                     let window = self.focused_window();
-                    render_commands.push(ui::Render::StatusBar {
-                        pos: window.status_bar_pos(),
-                        text: window.status_bar(),
+                    render_commands.push(ui::Render::Window {
+                        pos: window.window_offset,
+                        text: window.to_string(),
                     });
                     render_commands.push(ui::Render::StatusBar {
                         pos: window.status_bar_pos(),
