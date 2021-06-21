@@ -3,9 +3,13 @@
 
 use crate::mode::Mode;
 use crate::position::Position;
+use crate::line_number::LineNumbers;
 use ropey::Rope;
+use std::cmp::min;
 use std::fmt;
 use std::io::BufWriter;
+
+
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Window {
@@ -14,24 +18,28 @@ pub struct Window {
     /// Size Of Window
     pub dimensions: Position,
     /// Location of window in Terminal
-    pub window_offset: Position,
+    window_offset: Position,
     /// Location of window in file
-    pub scroll_offset: Position,
+    scroll_offset: Position,
     /// Cursor Location in File/Window
-    pub cursor: Position,
+    cursor: Position,
     /// Furthest from 0 the cursor has been.
-    pub max_cursor: Position,
+    max_cursor: Position,
     /// Text File Data
-    pub buffer: Rope,
+    buffer: Rope,
     /// Name of Text File
-    pub name: Option<String>,
+    name: Option<String>,
 
+    line_number_state: LineNumbers,
+
+    /// This will get deleted
     pub debug: String,
 }
 
 impl Window {
     pub fn new(width: u16, height: u16, buffer: Rope, name: Option<String>) -> Self {
         // TODO: Fix the Starting position of the window.
+        let line_number_width = (buffer.len_lines().to_string().len() + 2) as u16;
         Self {
             mode: Mode::Normal,
             dimensions: Position::new_u16(width, height),
@@ -39,20 +47,50 @@ impl Window {
             scroll_offset: Position::default(),
             cursor: Position::default(),
             max_cursor: Position::default(),
-            name,
             buffer,
-            debug: "No Info".to_string(),
+            name,
+
+            line_number_state: LineNumbers::AbsoluteNumber(line_number_width),
+
+            debug: String::new(),
         }
     }
 
+    pub fn position(&self) -> Position {
+        self.window_offset
+    }
+
+    pub fn offset(&self) -> Position {
+        self.window_offset + Position::new(self.line_number_state.width(), 0)
+    }
+
+    pub fn set_cursor(&mut self, pos: Position) {
+        self.cursor = pos;
+    }
+
+    pub fn height(&self) -> usize {
+        self.dimensions.as_usize_y()
+    }
+
+    pub fn width(&self) -> usize {
+        self.dimensions.as_usize_x().saturating_sub(self.line_number_state.width())
+    }
+
+    pub fn cursor_file(&self) -> Position {
+        self.cursor + self.scroll_offset
+    }
+
+    pub fn cursor_screen(&self) -> Position {
+        self.cursor + self.offset()
+    }
+
     pub fn move_cursor_down(&mut self, lines: usize) -> bool {
-        use std::cmp::min;
         let mut scroll = false;
         let limit = self.buffer.len_lines().saturating_sub(2);
         let target = min(self.cursor.as_usize_y() + lines, limit);
         let diff = target - self.cursor.as_usize_y();
 
-        let max = self.window_offset.as_usize_y() + self.dimensions.as_usize_y() - 1;
+        let max = self.offset().as_usize_y() + self.dimensions.as_usize_y() - 1;
         if target > max {
             self.scroll_offset.set_y(
                 (self.scroll_offset.as_usize_y() + target - max)
@@ -72,7 +110,7 @@ impl Window {
         let mut scroll = false;
         let target = self.cursor.as_usize_y().saturating_sub(lines);
 
-        let min = self.window_offset.as_usize_y();
+        let min = self.offset().as_usize_y();
         if target == min && self.cursor_screen().as_usize_y() == 0 {
             let scroll_offset = self
                 .scroll_offset
@@ -89,7 +127,6 @@ impl Window {
     }
 
     fn adjust_cursor_x(&mut self) {
-        use std::cmp::min;
         let line = self
             .buffer
             .line(self.cursor.as_usize_y() + self.scroll_offset.as_usize_y());
@@ -178,14 +215,6 @@ impl Window {
         self.name.clone().unwrap_or_else(|| "UNNAMED".to_string())
     }
 
-    pub fn cursor_file(&self) -> Position {
-        self.cursor + self.scroll_offset
-    }
-
-    pub fn cursor_screen(&self) -> Position {
-        self.cursor + self.window_offset
-    }
-
     pub fn save(&self) {
         let file =
             std::fs::File::create(self.buffer_name()).expect("Problem opening the file for saving");
@@ -206,8 +235,32 @@ impl Window {
     }
 
     pub fn status_bar_pos(&self) -> Position {
-        let y = (self.window_offset + self.dimensions).as_u16_y();
-        Position::new_u16(self.window_offset.as_u16_x(), y)
+        let y = self.position().as_u16_y() + self.height() as u16;
+        Position::new_u16(self.position().as_u16_x(), y)
+    }
+
+    pub fn line_number(&self) -> String {
+        match self.line_number_state {
+            LineNumbers::RelativeNumber(_) => "".to_string(),
+            LineNumbers::AbsoluteNumber(w) => {
+                let file_len = self.buffer.len_lines();
+                let top = self.scroll_offset.as_usize_y();
+                let bottom = min(file_len, top+self.height());
+                (top..bottom).map(|n| {
+                        let padding =
+                            (0..(bottom.to_string().len()-n.to_string().len()))
+                            .map(|_| " ")
+                            .collect::<String>();
+                        let line_number = format!("{}{} \n", padding, n);
+                        let width =
+                            (0..line_number.len().saturating_sub(w as usize))
+                            .map(|_| " ")
+                            .collect::<String>();
+                        format!(" {}{}", line_number, width)
+                    }).collect::<String>()
+            },
+            LineNumbers::None => "".to_string(),
+        }
     }
 }
 
@@ -234,8 +287,7 @@ impl fmt::Display for Window {
             .filter(|(i, _)| *i < bottom_line)
             .map(|(_, s)| s.to_string())
             .collect::<String>();
-        let (w, h) = self.dimensions.as_usize();
-        let formated_window = format_window_buffer(&window, w, h);
+        let formated_window = format_window_buffer(&window, self.width(), self.height());
 
         write!(f, "{}", formated_window)
     }

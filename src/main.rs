@@ -1,3 +1,4 @@
+mod line_number;
 mod api;
 mod commandline;
 mod keymapper;
@@ -80,6 +81,7 @@ struct Number {
     inner: Vec<u16>,
 }
 
+#[allow(dead_code)]
 impl Number {
     pub fn push(&mut self, num: usize) {
         self.inner.push(num as u16);
@@ -115,6 +117,7 @@ impl Number {
 }
 
 #[derive(Debug, Clone, Default)]
+#[allow(dead_code)]
 pub struct Input {
     number: Number,
     input_keys: Vec<Key>,
@@ -202,7 +205,8 @@ impl Input {
     }
 }
 
+#[allow(dead_code)]
 pub enum InputState {
-    _Waiting,
+    Waiting,
     Clear,
 }
