@@ -14,9 +14,17 @@
 </p>
 
 ReVi is a cross-platform terminal based Vim inspired text editor.
+Currently ReVi is in heavy development and is not really at a point for
+every day usage.  If you find a bug please feel free to open a issues for it.
 
 # Useage
 
+**Crates.io**
+```sh
+cargo install revi --version="0.0.0-beta-0.2"
+revi <filename>
+```
+**GitHub**
 ```sh
 git clone https://github.com/revi-editor/revi
 cd revi
@@ -33,8 +41,8 @@ cargo run --release -- <filename>
 
 # Road Map
 
-- [ ] **Plugin API**:
+- [ ] **Plugin API** `0.1%`:
   - [ ] **Custom KeyBindings**
-- [ ] **WebSite**
-- [ ] **Package Manager**
-- [ ] **LSP**
+- [ ] **WebSite** `0%`
+- [ ] **Package Manager** `0%`
+- [ ] **LSP** `0%`
