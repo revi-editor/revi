@@ -7,7 +7,7 @@ description = "A Terminal Based Vim Inspired Text Editor"
 readme = "README.md"
 repository = "https://github.com/revi-editor/revi"
 license-file = "LICENSE"
-keywords = ["text-editor", "command-line", "termainl", "vim", "editor", "configuration"]
+keywords = ["text-editor", "command-line", "termainl", "vim", "configuration"]
 categories = ["text-editors", "text-processing", "command-line-utilities", "command-line-interface"]
 
 
