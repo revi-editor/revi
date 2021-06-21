@@ -1,14 +1,14 @@
 [package]
 name = "revi"
-version = "0.0.0-beta-0.2"
+version = "0.0.0-beta-0.3"
 authors = ["cowboy8625 <cowboy8625@protonmail.com>"]
 edition = "2018"
 description = "A Terminal Based Vim Inspired Text Editor"
 readme = "README.md"
 repository = "https://github.com/revi-editor/revi"
 license-file = "LICENSE"
-keywords = ["text-editor", "command-line", "termainl", "vim", "editor"]
-categories = ["text-editors", "text-processing", "command-line-utilities", "command-line-interface", "configuration"]
+keywords = ["text-editor", "command-line", "termainl", "vim", "editor", "configuration"]
+categories = ["text-editors", "text-processing", "command-line-utilities", "command-line-interface"]
 
 
 
