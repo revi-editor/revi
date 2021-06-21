@@ -12,7 +12,7 @@ pub fn screen_size() -> (u16, u16) {
 pub enum Render {
     Window { pos: Position, text: String },
     StatusBar { pos: Position, text: String },
-    LineNumbers{ pos: Position, text: String },
+    LineNumbers { pos: Position, text: String },
     Cursor(Position),
     CursorShapeBlock,
     CursorShapeLine,
@@ -22,9 +22,15 @@ impl fmt::Debug for Render {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let output;
         match self {
-            Self::Window { pos, .. } => output = format!("Window({}, {})", pos.as_u16_x(), pos.as_u16_y()),
-            Self::StatusBar { pos, .. } => output = format!("StatusBar({}, {})", pos.as_u16_x(), pos.as_u16_y()),
-            Self::LineNumbers { pos, .. } => output = format!("LineNumbers({}, {})", pos.as_u16_x(), pos.as_u16_y()),
+            Self::Window { pos, .. } => {
+                output = format!("Window({}, {})", pos.as_u16_x(), pos.as_u16_y())
+            }
+            Self::StatusBar { pos, .. } => {
+                output = format!("StatusBar({}, {})", pos.as_u16_x(), pos.as_u16_y())
+            }
+            Self::LineNumbers { pos, .. } => {
+                output = format!("LineNumbers({}, {})", pos.as_u16_x(), pos.as_u16_y())
+            }
             Self::Cursor(pos) => output = format!("Cursor({}, {})", pos.as_u16_x(), pos.as_u16_y()),
             Self::CursorShapeBlock => output = "CursorShapeBlock".to_string(),
             Self::CursorShapeLine => output = "CursorShapeLine".to_string(),
@@ -64,14 +70,14 @@ impl Tui {
         }
         self.save_cursor();
         self.hide_cursor();
-        if cfg!(feature="debug_bar") {
+        if cfg!(feature = "debug_bar") {
             self.debug(render);
         }
         for revent in render.iter() {
             match revent {
                 Render::Cursor(pos) => self.update_cursor(pos),
                 Render::StatusBar { pos, text } => self.update_status_bar(pos, text),
-                Render::Window { pos, text } => self.update_window(pos, text),// Possible rename to redaw_area
+                Render::Window { pos, text } => self.update_window(pos, text), // Possible rename to redaw_area
                 Render::LineNumbers { pos, text } => self.update_window(pos, text),
                 Render::CursorShapeBlock => {
                     self.set_cursor_shape(crossterm::cursor::CursorShape::Block)

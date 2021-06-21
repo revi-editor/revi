@@ -1,15 +1,13 @@
 /* windows.rs
  */
 
+use crate::line_number::LineNumbers;
 use crate::mode::Mode;
 use crate::position::Position;
-use crate::line_number::LineNumbers;
 use ropey::Rope;
 use std::cmp::min;
 use std::fmt;
 use std::io::BufWriter;
-
-
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Window {
@@ -73,7 +71,9 @@ impl Window {
     }
 
     pub fn width(&self) -> usize {
-        self.dimensions.as_usize_x().saturating_sub(self.line_number_state.width())
+        self.dimensions
+            .as_usize_x()
+            .saturating_sub(self.line_number_state.width())
     }
 
     pub fn cursor_file(&self) -> Position {
@@ -131,7 +131,7 @@ impl Window {
             .buffer
             .line(self.cursor.as_usize_y() + self.scroll_offset.as_usize_y());
         let mut line_len = line.len_chars();
-        if line.as_str().unwrap_or_else(|| "").ends_with("\n") {
+        if line.as_str().unwrap_or("").ends_with('\n') {
             line_len = line_len.saturating_sub(2);
         }
         self.cursor.set_x(min(line_len, self.cursor.as_usize_x()));
@@ -230,7 +230,10 @@ impl Window {
     pub fn status_bar(&self) -> String {
         let left = format!(" {} | {} | {}", self.mode, self.buffer_name(), self.debug);
         let right = format!(" {} | {} ", self.cursor_screen(), self.cursor_file());
-        let middle = (0..(self.dimensions.as_usize_x().saturating_sub(left.len() + right.len())))
+        let middle = (0..(self
+            .dimensions
+            .as_usize_x()
+            .saturating_sub(left.len() + right.len())))
             .map(|_| " ")
             .collect::<String>();
         format!("{}{}{}", left, middle, right)
@@ -247,20 +250,20 @@ impl Window {
             LineNumbers::AbsoluteNumber(w) => {
                 let file_len = self.buffer.len_lines();
                 let top = self.scroll_offset.as_usize_y();
-                let bottom = min(file_len, top+self.height());
-                (top..bottom).map(|n| {
-                        let padding =
-                            (0..(bottom.to_string().len()-n.to_string().len()))
+                let bottom = min(file_len, top + self.height());
+                (top..bottom)
+                    .map(|n| {
+                        let padding = (0..(bottom.to_string().len() - n.to_string().len()))
                             .map(|_| " ")
                             .collect::<String>();
                         let line_number = format!("{}{} \n", padding, n);
-                        let width =
-                            (0..line_number.len().saturating_sub(w as usize))
+                        let width = (0..line_number.len().saturating_sub(w as usize))
                             .map(|_| " ")
                             .collect::<String>();
                         format!(" {}{}", line_number, width)
-                    }).collect::<String>()
-            },
+                    })
+                    .collect::<String>()
+            }
             LineNumbers::None => "".to_string(),
         }
     }

@@ -1,7 +1,7 @@
-mod line_number;
 mod api;
 mod commandline;
 mod keymapper;
+mod line_number;
 mod mode;
 mod position;
 mod revi;
@@ -131,7 +131,7 @@ impl Input {
         }
     }
 
-    fn insert_key(&mut self, mode: &mode::Mode, (k1,k2): (Key, Key)) {
+    fn insert_key(&mut self, mode: &mode::Mode, (k1, k2): (Key, Key)) {
         match k1 {
             Key::Esc | Key::LH | Key::LJ | Key::LK | Key::LL if mode == &mode::Mode::Normal => {
                 self.input_keys.clear();
@@ -152,7 +152,7 @@ impl Input {
                     }
                 }
             }
-            _ if mode == &mode::Mode::Normal && k1.try_digit().filter(|c| *c!=0).is_none() => {
+            _ if mode == &mode::Mode::Normal && k1.try_digit().filter(|c| *c != 0).is_none() => {
                 if k1.try_digit().is_some() && self.number.is_empty() {
                     self.input_keys.push(k1);
                     return;
@@ -162,7 +162,7 @@ impl Input {
                     self.input_keys.push(k2);
                 }
             }
-            _ => {},
+            _ => {}
         }
     }
 
@@ -170,14 +170,13 @@ impl Input {
         if k1 == Key::Null {
             return;
         }
-        self.insert_number((k1,k2));
-        self.insert_key(mode, (k1,k2));
+        self.insert_number((k1, k2));
+        self.insert_key(mode, (k1, k2));
     }
 
     pub fn keys(&mut self) -> &[Key] {
         // self.chars.clear();
         &self.input_keys
-
     }
 
     pub fn number_u16(&mut self) -> u16 {
