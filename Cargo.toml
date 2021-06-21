@@ -19,3 +19,6 @@ ropey = "1.2.0"
 crossterm = "0.20.0"
 itertools = "0.10.0"
 
+[features]
+
+debug_bar = []

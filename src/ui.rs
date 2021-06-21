@@ -64,7 +64,9 @@ impl Tui {
         }
         self.save_cursor();
         self.hide_cursor();
-        self.debug(render);
+        if cfg!(feature="debug_bar") {
+            self.debug(render);
+        }
         for revent in render.iter() {
             match revent {
                 Render::Cursor(pos) => self.update_cursor(pos),
