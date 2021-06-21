@@ -16,18 +16,35 @@
   <a><img alt="LUA" src="https://img.shields.io/badge/Lua-2C2D72?style=for-the-badge&logo=lua&logoColor=white"></a>
 </p>
 
+# Table Of Contents:
+
+  - [**About**](#about)
+  - [**Usage**](#usage)
+    - [**Install**](###crates.io)
+    - [**Usage**](###github)
+    - [**Usage**](###development-use)
+  - [**KeyBindings**](#keybindings)
+  - [**Road Map**](#road-map)
+
+# About
+
 ReVi is a cross-platform terminal based Vim inspired text editor.
 Currently ReVi is in heavy development and is not really at a point for
 every day usage.  If you find a bug please feel free to open a issues for it.
 
+<p align="center">
+  <a><img alt="Image" src="./snapshots/line_numbers.png"></a>
+</p>
+
+
 # Usage
 
-**Crates.io**
+### **Crates.io**
 ```sh
 cargo install revi --version="0.0.0-beta-0.4"
 revi <filename>
 ```
-**GitHub**
+### **GitHub**
 ```sh
 git clone https://github.com/revi-editor/revi
 cd revi
@@ -35,15 +52,50 @@ cargo install --path .
 revi <filename>
 ```
 
-# Development Use
+### **Development Use**
 ```sh
 git clone https://github.com/revi-editor/revi
 cd revi
 cargo run --release -- <filename>
 ```
 
+# KeyBindings
+
+Mode|Key|Command
+Normal|Esc|Normal
+Normal|`ZZ`|Save Quit
+Normal|`ZQ`|Quit
+Normal|`j`|CursorDown
+Normal|`Down`|CursorDown
+Normal|`k`|CursorUp
+Normal|`Up`|CursorUp
+Normal|`h`|CursorLeft
+Normal|`Left`|CursorLeft
+Normal|`l`|CursorRight
+Normal|`Right`|CursorRight
+Normal|`:`|Command
+Normal|`i`|Insert
+Normal|`x`|DeleteChar
+Normal|`Delete`|DeleteChar
+Normal|`d`|DeleteLine
+Normal|`Home`|Home
+Normal|`End`|End
+Normal|`0`|Home
+Insert|`Esc`|Normal
+Insert|`Backspace`|Backspace
+Insert|`Enter`|NewLine
+Insert|`Home`|Home
+Insert|`End`|End
+Insert|`Down`|CursorDown
+Insert|`Up`|CursorUp
+Insert|`Left`|CursorLeft
+Insert|`Right`|CursorRight
+
+
+
 # Road Map
 
+- [X] **Basic KeyBindings**
 - [ ] **Plugin API** `0.1%`:
   - [ ] **Custom KeyBindings**
 - [ ] **Help Docs** `0%`
