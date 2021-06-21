@@ -28,7 +28,7 @@
 
 # About
 
-ReVi is a cross-platform terminal based Vim inspired text editor.
+> ReVi is a cross-platform terminal based Vim inspired text editor.
 Currently ReVi is in heavy development and is not really at a point for
 every day usage.  If you find a bug please feel free to open a issues for it.
 
@@ -61,35 +61,36 @@ cargo run --release -- <filename>
 
 # KeyBindings
 
-Mode|Key|Command
-Normal|Esc|Normal
-Normal|`ZZ`|Save Quit
-Normal|`ZQ`|Quit
-Normal|`j`|CursorDown
-Normal|`Down`|CursorDown
-Normal|`k`|CursorUp
-Normal|`Up`|CursorUp
-Normal|`h`|CursorLeft
-Normal|`Left`|CursorLeft
-Normal|`l`|CursorRight
-Normal|`Right`|CursorRight
-Normal|`:`|Command
-Normal|`i`|Insert
-Normal|`x`|DeleteChar
-Normal|`Delete`|DeleteChar
-Normal|`d`|DeleteLine
-Normal|`Home`|Home
-Normal|`End`|End
-Normal|`0`|Home
-Insert|`Esc`|Normal
-Insert|`Backspace`|Backspace
-Insert|`Enter`|NewLine
-Insert|`Home`|Home
-Insert|`End`|End
-Insert|`Down`|CursorDown
-Insert|`Up`|CursorUp
-Insert|`Left`|CursorLeft
-Insert|`Right`|CursorRight
+**Mode**|**Key**|**Command**
+:---|:---:|---:
+<Normal>|`Esc`|*Normal*
+<Normal>|`ZZ`|*Save Quit*
+<Normal>|`ZQ`|*Quit*
+<Normal>|`j`|*CursorDown*
+<Normal>|`Down`|*CursorDown*
+<Normal>|`k`|*CursorUp*
+<Normal>|`Up`|*CursorUp*
+<Normal>|`h`|*CursorLeft*
+<Normal>|`Left`|*CursorLeft*
+<Normal>|`l`|*CursorRight*
+<Normal>|`Right`|*CursorRight*
+<Normal>|`:`|*Command*
+<Normal>|`i`|*Insert*
+<Normal>|`x`|*DeleteChar*
+<Normal>|`Delete`|*DeleteChar*
+<Normal>|`d`|*DeleteLine*
+<Normal>|`Home`|*Home*
+<Normal>|`End`|*End*
+<Normal>|`0`|*Home*
+<Insert>|`Esc`|*Normal*
+<Insert>|`Backspace`|*Backspace*
+<Insert>|`Enter`|*NewLine*
+<Insert>|`Home`|*Home*
+<Insert>|`End`|*End*
+<Insert>|`Down`|*CursorDown*
+<Insert>|`Up`|*CursorUp*
+<Insert>|`Left`|*CursorLeft*
+<Insert>|`Right`|*CursorRight*
 
 
 
