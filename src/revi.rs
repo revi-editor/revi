@@ -197,7 +197,7 @@ impl ReVi {
                     render_commands.push(ui::Render::Cursor(window.cursor_screen()));
                 }
                 ReViCommand::NewLine => {
-                    self.focused_window_mut().insert_enter();
+                    self.focused_window_mut().insert_newline();
                     let window = self.focused_window();
                     render_commands.push(ui::Render::Window {
                         pos: window.offset(),

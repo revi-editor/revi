@@ -86,7 +86,7 @@ impl Window {
 
     pub fn move_cursor_down(&mut self, lines: usize) -> bool {
         let mut scroll = false;
-        let limit = self.buffer.len_lines().saturating_sub(2);
+        let limit = self.buffer.len_lines().saturating_sub(1);
         let target = min(self.cursor.as_usize_y() + lines, limit);
         let diff = target - self.cursor.as_usize_y();
 
@@ -94,7 +94,7 @@ impl Window {
         if target > max {
             self.scroll_offset.set_y(
                 (self.scroll_offset.as_usize_y() + target - max)
-                    .min(limit - self.cursor.as_usize_y()),
+                    .min(limit - self.cursor.as_usize_y() - 1),
             );
             scroll = true;
         }
@@ -152,7 +152,7 @@ impl Window {
         self.max_cursor.set_x(self.cursor.as_usize_x());
     }
 
-    pub fn insert_enter(&mut self) {
+    pub fn insert_newline(&mut self) {
         self.insert_char('\n');
         self.move_cursor_down(1);
         self.cursor.set_x(0);
