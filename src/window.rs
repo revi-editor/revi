@@ -256,7 +256,10 @@ impl Window {
                 let file_len = self.buffer.len_lines();
                 let top = self.scroll_offset.as_usize_y();
                 let bottom = self.height();
-                let blank = (0..w).map(|_| ' ').collect::<String>();
+                let blank = (0..w)
+                    .enumerate()
+                    .map(|(i, _)| if i==1 {'~'} else {' '})
+                    .collect::<String>();
                 (top..bottom)
                     .enumerate()
                     .map(|(i, n)| {
