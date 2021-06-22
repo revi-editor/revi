@@ -28,7 +28,7 @@
 
 # About
 
-> ReVi is a cross-platform terminal based Vim inspired text editor.
+ReVi is a cross-platform terminal based Vim inspired text editor.
 Currently ReVi is in heavy development and is not really at a point for
 every day usage.  If you find a bug please feel free to open a issues for it.
 
@@ -97,6 +97,7 @@ cargo run --release -- <filename>
 # Road Map
 
 - [X] **Basic KeyBindings**
+- [ ] **Basic Unicode Support**
 - [ ] **Plugin API** `0.1%`:
   - [ ] **Custom KeyBindings**
 - [ ] **Help Docs** `0%`
