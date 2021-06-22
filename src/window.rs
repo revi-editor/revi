@@ -256,7 +256,7 @@ impl Window {
                 let file_len = self.buffer.len_lines();
                 let top = self.scroll_offset.as_usize_y();
                 let bottom = min(file_len, top + self.height());
-                (top..bottom)
+                let mut line_numbers = (top..bottom)
                     .map(|n| {
                         let padding = (0..(file_len.to_string().len() - n.to_string().len()))
                             .map(|_| " ")
@@ -267,7 +267,11 @@ impl Window {
                             .collect::<String>();
                         format!("{}{}\r\n", line_number, width)
                     })
-                    .collect::<String>()
+                    .collect::<String>();
+                if line_numbers.len() < self.height() {
+                    line_numbers.push_str(&(0..w).map(|_| ' ').collect::<String>());
+                }
+                line_numbers
             }
             LineNumbers::None => "".to_string(),
         }
