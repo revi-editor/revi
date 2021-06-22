@@ -256,9 +256,9 @@ impl Window {
                 let file_len = self.buffer.len_lines();
                 let top = self.scroll_offset.as_usize_y();
                 let bottom = self.height();
-                let blank = (0..w)
+                let blank = (0..w+1)
                     .enumerate()
-                    .map(|(i, _)| if i==1 {'~'} else {' '})
+                    .map(|(i, _)| if i==1 {"~"} else if i as u16 == w{"\r\n"}else {" "})
                     .collect::<String>();
                 (top..bottom)
                     .enumerate()
