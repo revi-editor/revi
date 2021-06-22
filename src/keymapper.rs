@@ -83,6 +83,7 @@ impl Mapper {
             .insert_mapping(&Normal, vec![Key::Home], vec![ReViCommand::Home])
             .insert_mapping(&Normal, vec![Key::End], vec![ReViCommand::End])
             .insert_mapping(&Normal, vec![Key::N0], vec![ReViCommand::Home])
+            .insert_mapping(&Normal, vec![Key::Char('$')], vec![ReViCommand::End])
     }
 
     fn build_insert(self) -> Self {
