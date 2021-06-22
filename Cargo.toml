@@ -22,3 +22,4 @@ itertools = "0.10.0"
 [features]
 
 debug_bar = []
+debug_line = []
