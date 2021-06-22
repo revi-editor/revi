@@ -99,7 +99,10 @@ impl Tui {
         crossterm::queue!(
             self.writer,
             crossterm::cursor::MoveTo(0, 10000),
-            crossterm::style::Print(format!("{:?}                                                ", t)),
+            crossterm::style::Print(format!(
+                "{:?}                                                ",
+                t
+            )),
         )
         .expect("Printing Debug Failed.");
     }

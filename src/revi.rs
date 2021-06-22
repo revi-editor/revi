@@ -250,7 +250,7 @@ impl ReVi {
                 ReViCommand::Mode(m) => {
                     match m {
                         Mode::Normal => render_commands.push(ui::Render::CursorShapeBlock),
-                        Mode::Command => {},
+                        Mode::Command => {}
                         Mode::Insert => render_commands.push(ui::Render::CursorShapeLine),
                     }
                     *self.mode_mut() = *m;

@@ -121,14 +121,17 @@ impl Window {
     }
 
     pub fn adjust_cursor_x(&mut self) {
-        let line = self.buffer
+        let line = self
+            .buffer
             .line(self.cursor_file().as_usize_y())
             .chars()
             .collect::<String>();
         let mut line_len = line.len();
         if self.mode == Mode::Normal && line.ends_with('\n') {
             line_len = line_len.saturating_sub(2);
-        } else if self.mode == Mode::Normal && self.buffer.len_lines() - 1 == self.cursor_file().as_usize_y() {
+        } else if self.mode == Mode::Normal
+            && self.buffer.len_lines() - 1 == self.cursor_file().as_usize_y()
+        {
             line_len = line_len.saturating_sub(1);
         }
         self.cursor.set_x(min(line_len, self.cursor.as_usize_x()));
@@ -225,16 +228,23 @@ impl Window {
     }
 
     pub fn status_bar(&self) -> String {
-        let debug_line = if cfg!(feature="debug_line") {
-            format!(" | {:?}", self.buffer
-                .line(self.cursor_file().as_usize_y())
-                .chars()
-                .collect::<String>())
+        let debug_line = if cfg!(feature = "debug_line") {
+            format!(
+                " | {:?}",
+                self.buffer
+                    .line(self.cursor_file().as_usize_y())
+                    .chars()
+                    .collect::<String>()
+            )
         } else {
             "".to_string()
         };
         let left = format!(" {} | {}{}", self.mode, self.buffer_name(), debug_line);
-        let right = format!(" file: {} | window: {} ", self.cursor_screen(), self.cursor_file());
+        let right = format!(
+            " file: {} | window: {} ",
+            self.cursor_screen(),
+            self.cursor_file()
+        );
         let middle = (0..(self
             .dimensions
             .as_usize_x()
@@ -256,9 +266,17 @@ impl Window {
                 let file_len = self.buffer.len_lines();
                 let top = self.scroll_offset.as_usize_y();
                 let bottom = self.height();
-                let blank = (0..w+1)
+                let blank = (0..w + 1)
                     .enumerate()
-                    .map(|(i, _)| if i==1 {"~"} else if i as u16 == w{"\r\n"}else {" "})
+                    .map(|(i, _)| {
+                        if i == 1 {
+                            "~"
+                        } else if i as u16 == w {
+                            "\r\n"
+                        } else {
+                            " "
+                        }
+                    })
                     .collect::<String>();
                 (top..bottom)
                     .enumerate()
