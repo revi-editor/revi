@@ -255,23 +255,25 @@ impl Window {
             LineNumbers::AbsoluteNumber(w) => {
                 let file_len = self.buffer.len_lines();
                 let top = self.scroll_offset.as_usize_y();
-                let bottom = min(file_len, top + self.height());
-                let mut line_numbers = (top..bottom)
-                    .map(|n| {
-                        let padding = (0..(file_len.to_string().len() - n.to_string().len()))
-                            .map(|_| " ")
-                            .collect::<String>();
-                        let line_number = format!(" {}{}", padding, n);
-                        let width = (0..w.saturating_sub(line_number.len() as u16))
-                            .map(|_| " ")
-                            .collect::<String>();
-                        format!("{}{}\r\n", line_number, width)
+                let bottom = self.height();
+                let blank = (0..w).map(|_| ' ').collect::<String>();
+                (top..bottom)
+                    .enumerate()
+                    .map(|(i, n)| {
+                        if i >= file_len {
+                            blank.clone()
+                        } else {
+                            let padding = (0..(file_len.to_string().len() - n.to_string().len()))
+                                .map(|_| " ")
+                                .collect::<String>();
+                            let line_number = format!(" {}{}", padding, n);
+                            let width = (0..w.saturating_sub(line_number.len() as u16))
+                                .map(|_| " ")
+                                .collect::<String>();
+                            format!("{}{}\r\n", line_number, width)
+                        }
                     })
-                    .collect::<String>();
-                if line_numbers.len() < self.height() {
-                    line_numbers.push_str(&(0..w).map(|_| ' ').collect::<String>());
-                }
-                line_numbers
+                    .collect::<String>()
             }
             LineNumbers::None => "".to_string(),
         }
