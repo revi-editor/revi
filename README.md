@@ -69,7 +69,7 @@ cargo run --release -- <filename>
 
 **Mode**|'Key'|*Command*
 :---|:---:|---:
-**Normal**|`Esc`|*Normal*
+**Normal**|`Esc`|*NormalMode*
 **Normal**|`ZZ`|*Save Quit*
 **Normal**|`ZQ`|*Quit*
 **Normal**|`j`|*CursorDown*
@@ -80,14 +80,16 @@ cargo run --release -- <filename>
 **Normal**|`Left`|*CursorLeft*
 **Normal**|`l`|*CursorRight*
 **Normal**|`Right`|*CursorRight*
-**Normal**|`:`|*Command*
-**Normal**|`i`|*Insert*
+**Normal**|`:`|*CommandMode*
+**Normal**|`i`|*InsertMode*
 **Normal**|`x`|*DeleteChar*
 **Normal**|`Delete`|*DeleteChar*
 **Normal**|`d`|*DeleteLine*
 **Normal**|`Home`|*Home*
 **Normal**|`End`|*End*
 **Normal**|`0`|*Home*
+**Normal**|`$`|*End*
+**Normal**|`A`|*End InsertMode CursorLeft*
 **Insert**|`Esc`|*Normal*
 **Insert**|`Backspace`|*Backspace*
 **Insert**|`Enter`|*NewLine*
