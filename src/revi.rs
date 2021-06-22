@@ -77,7 +77,7 @@ impl ReVi {
             match command {
                 ReViCommand::StartUp => {
                     // ReLoadPlugins
-                    let window = self.focused_window();
+                    let window = self.focused_window_mut();
                     render_commands.push(ui::Render::Window {
                         pos: window.offset(),
                         text: window.to_string(),
@@ -105,7 +105,7 @@ impl ReVi {
                     }
                     render_commands.push(ui::Render::StatusBar {
                         pos: self.focused_window().status_bar_pos(),
-                        text: self.focused_window().status_bar(),
+                        text: self.focused_window_mut().status_bar(),
                     });
                     render_commands.push(ui::Render::Cursor(self.focused_window().cursor_screen()));
                 }
@@ -122,13 +122,13 @@ impl ReVi {
                     }
                     render_commands.push(ui::Render::StatusBar {
                         pos: self.focused_window().status_bar_pos(),
-                        text: self.focused_window().status_bar(),
+                        text: self.focused_window_mut().status_bar(),
                     });
                     render_commands.push(ui::Render::Cursor(self.focused_window().cursor_screen()));
                 }
                 ReViCommand::CursorLeft => {
                     self.focused_window_mut().move_cursor_left(count);
-                    let window = self.focused_window();
+                    let window = self.focused_window_mut();
                     render_commands.push(ui::Render::StatusBar {
                         pos: window.status_bar_pos(),
                         text: window.status_bar(),
@@ -137,7 +137,7 @@ impl ReVi {
                 }
                 ReViCommand::CursorRight => {
                     self.focused_window_mut().move_cursor_right(count);
-                    let window = self.focused_window().clone();
+                    let window = self.focused_window();
                     render_commands.push(ui::Render::StatusBar {
                         pos: window.status_bar_pos(),
                         text: window.status_bar(),
@@ -231,8 +231,7 @@ impl ReVi {
                     });
                 }
                 ReViCommand::InsertChar(c) => {
-                    let window = self.focused_window_mut();
-                    window.insert_char(*c);
+                    self.focused_window_mut().insert_char(*c);
                     let window = self.focused_window();
                     render_commands.push(ui::Render::Window {
                         pos: window.offset(),
@@ -251,11 +250,13 @@ impl ReVi {
                 ReViCommand::Mode(m) => {
                     match m {
                         Mode::Normal => render_commands.push(ui::Render::CursorShapeBlock),
-                        Mode::Command => {}
+                        Mode::Command => {},
                         Mode::Insert => render_commands.push(ui::Render::CursorShapeLine),
                     }
                     *self.mode_mut() = *m;
-                    let window = self.focused_window().clone();
+                    self.focused_window_mut().adjust_cursor_x();
+                    let window = self.focused_window();
+                    render_commands.push(ui::Render::Cursor(window.cursor_screen()));
                     render_commands.push(ui::Render::StatusBar {
                         pos: window.status_bar_pos(),
                         text: window.status_bar(),

@@ -99,7 +99,7 @@ impl Tui {
         crossterm::queue!(
             self.writer,
             crossterm::cursor::MoveTo(0, 10000),
-            crossterm::style::Print(format!("{:?}                    ", t)),
+            crossterm::style::Print(format!("{:?}                                                ", t)),
         )
         .expect("Printing Debug Failed.");
     }
@@ -111,7 +111,7 @@ impl Tui {
             crossterm::queue!(
                 self.writer,
                 crossterm::cursor::MoveTo(pos.as_u16_x(), y),
-                crossterm::style::Print(line),
+                crossterm::style::Print(line.strip_suffix("\r\n").unwrap_or(line)),
             )
             .expect("Drawing Window Failed.");
         }

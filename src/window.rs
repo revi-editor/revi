@@ -4,6 +4,7 @@
 use crate::line_number::LineNumbers;
 use crate::mode::Mode;
 use crate::position::Position;
+use itertools::Itertools;
 use ropey::Rope;
 use std::cmp::min;
 use std::fmt;
@@ -27,11 +28,8 @@ pub struct Window {
     buffer: Rope,
     /// Name of Text File
     name: Option<String>,
-
+    /// Line Number Type.
     line_number_state: LineNumbers,
-
-    /// This will get deleted
-    pub debug: String,
 }
 
 impl Window {
@@ -47,10 +45,7 @@ impl Window {
             max_cursor: Position::default(),
             buffer,
             name,
-
             line_number_state: LineNumbers::AbsoluteNumber(line_number_width),
-
-            debug: String::new(),
         }
     }
 
@@ -98,7 +93,6 @@ impl Window {
             );
             scroll = true;
         }
-        self.debug = format!("{}", min(max, limit));
         self.cursor
             .set_y((self.cursor.as_usize_y() + diff).min(min(max, limit)));
         self.cursor.set_x(self.max_cursor.as_usize_x());
@@ -126,13 +120,16 @@ impl Window {
         scroll
     }
 
-    fn adjust_cursor_x(&mut self) {
-        let line = self
-            .buffer
-            .line(self.cursor.as_usize_y() + self.scroll_offset.as_usize_y());
-        let mut line_len = line.len_chars();
-        if line.as_str().unwrap_or("").ends_with('\n') {
+    pub fn adjust_cursor_x(&mut self) {
+        let line = self.buffer
+            .line(self.cursor_file().as_usize_y())
+            .chars()
+            .collect::<String>();
+        let mut line_len = line.len();
+        if self.mode == Mode::Normal && line.ends_with('\n') {
             line_len = line_len.saturating_sub(2);
+        } else if self.mode == Mode::Normal && self.buffer.len_lines() - 1 == self.cursor_file().as_usize_y() {
+            line_len = line_len.saturating_sub(1);
         }
         self.cursor.set_x(min(line_len, self.cursor.as_usize_x()));
     }
@@ -228,8 +225,16 @@ impl Window {
     }
 
     pub fn status_bar(&self) -> String {
-        let left = format!(" {} | {} | {}", self.mode, self.buffer_name(), self.debug);
-        let right = format!(" {} | {} ", self.cursor_screen(), self.cursor_file());
+        let debug_line = if cfg!(feature="debug_line") {
+            format!(" | {:?}", self.buffer
+                .line(self.cursor_file().as_usize_y())
+                .chars()
+                .collect::<String>())
+        } else {
+            "".to_string()
+        };
+        let left = format!(" {} | {}{}", self.mode, self.buffer_name(), debug_line);
+        let right = format!(" file: {} | window: {} ", self.cursor_screen(), self.cursor_file());
         let middle = (0..(self
             .dimensions
             .as_usize_x()
@@ -253,14 +258,14 @@ impl Window {
                 let bottom = min(file_len, top + self.height());
                 (top..bottom)
                     .map(|n| {
-                        let padding = (0..(bottom.to_string().len() - n.to_string().len()))
+                        let padding = (0..(file_len.to_string().len() - n.to_string().len()))
                             .map(|_| " ")
                             .collect::<String>();
-                        let line_number = format!("{}{} \n", padding, n);
-                        let width = (0..line_number.len().saturating_sub(w as usize))
+                        let line_number = format!(" {}{}", padding, n);
+                        let width = (0..w.saturating_sub(line_number.len() as u16))
                             .map(|_| " ")
                             .collect::<String>();
-                        format!(" {}{}", line_number, width)
+                        format!("{}{}\r\n", line_number, width)
                     })
                     .collect::<String>()
             }
