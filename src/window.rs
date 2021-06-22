@@ -4,7 +4,6 @@
 use crate::line_number::LineNumbers;
 use crate::mode::Mode;
 use crate::position::Position;
-use itertools::Itertools;
 use ropey::Rope;
 use std::cmp::min;
 use std::fmt;
@@ -35,7 +34,7 @@ pub struct Window {
 impl Window {
     pub fn new(width: u16, height: u16, buffer: Rope, name: Option<String>) -> Self {
         // TODO: Fix the Starting position of the window.
-        let line_number_width = (buffer.len_lines().to_string().len() + 2) as u16;
+        let line_number_width = (buffer.len_lines().to_string().len().max(3) + 2) as u16;
         Self {
             mode: Mode::Normal,
             dimensions: Position::new_u16(width, height),
