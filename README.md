@@ -6,6 +6,12 @@
   <a><img alt="License" src="https://img.shields.io/badge/License-MIT-blue.svg"></a>
 </p>
 <p align="center">
+  <a><img alt="Stars" src="https://img.shields.io/github/stars/revi-editor/revi?style=social"></a>
+  <a><img alt="Forks" src="https://img.shields.io/github/forks/revi-editor/revi?style=social"></a>
+  <a><img alt="watchers" src="https://img.shields.io/github/watchers/revi-editor/revi?style=social"></a>
+  <a><img alt="contributors" src="https://img.shields.io/github/contributors/revi-editor/revi"></a>
+</p>
+<p align="center">
   <a><img alt="issues" src="https://img.shields.io/github/issues/revi-editor/revi"></a>
   <a><img alt="last commit" src="https://img.shields.io/github/last-commit/revi-editor/revi"></a>
   <a><img alt="repo size" src="https://img.shields.io/github/repo-size/revi-editor/revi"></a>
