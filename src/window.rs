@@ -5,7 +5,7 @@ use crate::line_number::LineNumbers;
 use crate::mode::Mode;
 use crate::position::Position;
 use ropey::Rope;
-use std::cmp::min;
+use std::cmp::{max, min};
 use std::fmt;
 use std::io::BufWriter;
 
@@ -263,8 +263,9 @@ impl Window {
             LineNumbers::RelativeNumber(_) => "".to_string(),
             LineNumbers::AbsoluteNumber(w) => {
                 let file_len = self.buffer.len_lines();
+                let max_number_len = file_len.to_string().len();
                 let top = self.scroll_offset.as_usize_y();
-                let bottom = self.height();
+                let bottom = top + self.height();
                 let blank = (0..w + 1)
                     .enumerate()
                     .map(|(i, _)| {
@@ -281,17 +282,16 @@ impl Window {
                     .enumerate()
                     .map(|(i, n)| {
                         if i >= file_len {
-                            blank.clone()
-                        } else {
-                            let padding = (0..(file_len.to_string().len() - n.to_string().len()))
-                                .map(|_| " ")
-                                .collect::<String>();
-                            let line_number = format!(" {}{}", padding, n);
-                            let width = (0..w.saturating_sub(line_number.len() as u16))
-                                .map(|_| " ")
-                                .collect::<String>();
-                            format!("{}{}\r\n", line_number, width)
+                            return blank.clone();
                         }
+                        let padding = (0..(max(max_number_len, w as usize - 2) - n.to_string().len()))
+                            .map(|_| " ")
+                            .collect::<String>();
+                        let line_number = format!(" {}{}", padding, n);
+                        let width = (0..w.saturating_sub(line_number.len() as u16))
+                            .map(|_| " ")
+                            .collect::<String>();
+                        format!("{}{}\r\n", line_number, width)
                     })
                     .collect::<String>()
             }
