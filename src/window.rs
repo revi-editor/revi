@@ -122,8 +122,7 @@ impl Window {
         if let Mode::Normal = self.mode {
             if line.ends_with('\n') {
                 line_len = line_len.saturating_sub(2);
-            } else if self.buffer.len_lines() - 1 == self.cursor_file().as_usize_y()
-            {
+            } else if self.buffer.len_lines() - 1 == self.cursor_file().as_usize_y() {
                 line_len = line_len.saturating_sub(1);
             }
         } else if let Mode::Insert = self.mode {

@@ -93,10 +93,26 @@ impl Mapper {
                     ReViCommand::CursorRight,
                 ],
             )
-            .insert_mapping(&Normal, vec![Key::LY, Key::Ctrl], vec![ReViCommand::ScrollUp, ReViCommand::CursorDown])
-            .insert_mapping(&Normal, vec![Key::LE, Key::Ctrl], vec![ReViCommand::ScrollDown, ReViCommand::CursorUp])
-            .insert_mapping(&Normal, vec![Key::LU, Key::Ctrl], vec![ReViCommand::ScrollUp])
-            .insert_mapping(&Normal, vec![Key::LD, Key::Ctrl], vec![ReViCommand::ScrollDown])
+            .insert_mapping(
+                &Normal,
+                vec![Key::LY, Key::Ctrl],
+                vec![ReViCommand::ScrollUp, ReViCommand::CursorDown],
+            )
+            .insert_mapping(
+                &Normal,
+                vec![Key::LE, Key::Ctrl],
+                vec![ReViCommand::ScrollDown, ReViCommand::CursorUp],
+            )
+            .insert_mapping(
+                &Normal,
+                vec![Key::LU, Key::Ctrl],
+                vec![ReViCommand::ScrollUp],
+            )
+            .insert_mapping(
+                &Normal,
+                vec![Key::LD, Key::Ctrl],
+                vec![ReViCommand::ScrollDown],
+            )
     }
 
     fn build_insert(self) -> Self {
