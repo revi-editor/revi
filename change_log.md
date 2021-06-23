@@ -13,4 +13,7 @@
 
 - `#22` Some times cursor would go out of text bounds
 - `#23` Backspace up a line would not remove line number
+- `#24` Something I did with Fix #23 made it possible to go to far right letting you back space just the new line.
+- `#30` When at bottom of screen pressing enter in insert mode does not scroll or move cursor down after inserting '\n'
+- `#31` Line number does not update correctly when scrolling off screen then backspacing back up.
 - General Code Clean up
