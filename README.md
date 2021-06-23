@@ -71,7 +71,7 @@ cargo run --release -- <filename>
 # KeyBindings
 
 **Mode**|'Key'|*Command*|Note
-:---|:---:|:---:|---:
+:---|:---:|:---:|:---:
 **Normal**|`Esc`|*NormalMode*|
 **Normal**|`ZZ`|*Save Quit*|
 **Normal**|`ZQ`|*Quit*|
