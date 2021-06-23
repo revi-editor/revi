@@ -75,178 +75,18 @@ impl ReVi {
         let mut render_commands = Vec::new();
         for command in commands {
             match command {
-                ReViCommand::StartUp => {
-                    // ReLoadPlugins
-                    let window = self.focused_window_mut();
-                    render_commands.push(ui::Render::Window {
-                        pos: window.offset(),
-                        text: window.to_string(),
-                    });
-                    render_commands.push(ui::Render::StatusBar {
-                        pos: window.status_bar_pos(),
-                        text: window.status_bar(),
-                    });
-                    render_commands.push(ui::Render::Cursor(window.cursor_screen()));
-                    render_commands.push(ui::Render::LineNumbers {
-                        pos: window.position(),
-                        text: window.line_number(),
-                    });
-                }
-                ReViCommand::CursorUp => {
-                    if self.focused_window_mut().move_cursor_up(count) {
-                        render_commands.push(ui::Render::Window {
-                            pos: self.focused_window().offset(),
-                            text: self.focused_window().to_string(),
-                        });
-                        render_commands.push(ui::Render::LineNumbers {
-                            pos: self.focused_window().position(),
-                            text: self.focused_window().line_number(),
-                        });
-                    }
-                    render_commands.push(ui::Render::StatusBar {
-                        pos: self.focused_window().status_bar_pos(),
-                        text: self.focused_window_mut().status_bar(),
-                    });
-                    render_commands.push(ui::Render::Cursor(self.focused_window().cursor_screen()));
-                }
-                ReViCommand::CursorDown => {
-                    if self.focused_window_mut().move_cursor_down(count) {
-                        render_commands.push(ui::Render::Window {
-                            pos: self.focused_window().offset(),
-                            text: self.focused_window().to_string(),
-                        });
-                        render_commands.push(ui::Render::LineNumbers {
-                            pos: self.focused_window().position(),
-                            text: self.focused_window().line_number(),
-                        });
-                    }
-                    render_commands.push(ui::Render::StatusBar {
-                        pos: self.focused_window().status_bar_pos(),
-                        text: self.focused_window_mut().status_bar(),
-                    });
-                    render_commands.push(ui::Render::Cursor(self.focused_window().cursor_screen()));
-                }
-                ReViCommand::CursorLeft => {
-                    self.focused_window_mut().move_cursor_left(count);
-                    let window = self.focused_window_mut();
-                    render_commands.push(ui::Render::StatusBar {
-                        pos: window.status_bar_pos(),
-                        text: window.status_bar(),
-                    });
-                    render_commands.push(ui::Render::Cursor(window.cursor_screen()));
-                }
-                ReViCommand::CursorRight => {
-                    self.focused_window_mut().move_cursor_right(count);
-                    let window = self.focused_window();
-                    render_commands.push(ui::Render::StatusBar {
-                        pos: window.status_bar_pos(),
-                        text: window.status_bar(),
-                    });
-                    render_commands.push(ui::Render::Cursor(window.cursor_screen()));
-                }
-                ReViCommand::Home => {
-                    self.focused_window_mut().home();
-                    let window = self.focused_window();
-                    render_commands.push(ui::Render::Window {
-                        pos: window.offset(),
-                        text: window.to_string(),
-                    });
-                    render_commands.push(ui::Render::StatusBar {
-                        pos: window.status_bar_pos(),
-                        text: window.status_bar(),
-                    });
-                    render_commands.push(ui::Render::Cursor(window.cursor_screen()));
-                }
-                ReViCommand::End => {
-                    self.focused_window_mut().end();
-                    let window = self.focused_window();
-                    render_commands.push(ui::Render::Window {
-                        pos: window.offset(),
-                        text: window.to_string(),
-                    });
-                    render_commands.push(ui::Render::StatusBar {
-                        pos: window.status_bar_pos(),
-                        text: window.status_bar(),
-                    });
-                    render_commands.push(ui::Render::Cursor(window.cursor_screen()));
-                }
-                ReViCommand::DeleteChar => {
-                    self.focused_window_mut().delete();
-                    let window = self.focused_window();
-                    render_commands.push(ui::Render::Window {
-                        pos: window.offset(),
-                        text: window.to_string(),
-                    });
-                    render_commands.push(ui::Render::StatusBar {
-                        pos: window.status_bar_pos(),
-                        text: window.status_bar(),
-                    });
-                    render_commands.push(ui::Render::Cursor(window.cursor_screen()));
-                }
-                ReViCommand::DeleteLine => {
-                    self.focused_window_mut().delete_line();
-                    let window = self.focused_window();
-                    render_commands.push(ui::Render::Window {
-                        pos: window.offset(),
-                        text: window.to_string(),
-                    });
-                    render_commands.push(ui::Render::StatusBar {
-                        pos: window.status_bar_pos(),
-                        text: window.status_bar(),
-                    });
-                    render_commands.push(ui::Render::Cursor(window.cursor_screen()));
-                }
-                ReViCommand::NewLine => {
-                    self.focused_window_mut().insert_newline();
-                    let window = self.focused_window();
-                    render_commands.push(ui::Render::Window {
-                        pos: window.offset(),
-                        text: window.to_string(),
-                    });
-                    render_commands.push(ui::Render::StatusBar {
-                        pos: window.status_bar_pos(),
-                        text: window.status_bar(),
-                    });
-                    render_commands.push(ui::Render::Cursor(window.cursor_screen()));
-                    render_commands.push(ui::Render::LineNumbers {
-                        pos: window.position(),
-                        text: window.line_number(),
-                    });
-                }
-                ReViCommand::Backspace => {
-                    self.focused_window_mut().backspace();
-                    let window = self.focused_window();
-                    render_commands.push(ui::Render::Window {
-                        pos: window.offset(),
-                        text: window.to_string(),
-                    });
-                    render_commands.push(ui::Render::StatusBar {
-                        pos: window.status_bar_pos(),
-                        text: window.status_bar(),
-                    });
-                    render_commands.push(ui::Render::Cursor(window.cursor_screen()));
-                    render_commands.push(ui::Render::LineNumbers {
-                        pos: window.position(),
-                        text: window.line_number(),
-                    });
-                }
-                ReViCommand::InsertChar(c) => {
-                    self.focused_window_mut().insert_char(*c);
-                    let window = self.focused_window();
-                    render_commands.push(ui::Render::Window {
-                        pos: window.offset(),
-                        text: window.to_string(),
-                    });
-                    render_commands.push(ui::Render::StatusBar {
-                        pos: window.status_bar_pos(),
-                        text: window.status_bar(),
-                    });
-                    render_commands.push(ui::Render::Cursor(window.cursor_screen()));
-                    render_commands.push(ui::Render::LineNumbers {
-                        pos: window.position(),
-                        text: window.line_number(),
-                    });
-                }
+                ReViCommand::StartUp => {}
+                ReViCommand::CursorUp => self.focused_window_mut().move_cursor_up(count),
+                ReViCommand::CursorDown => self.focused_window_mut().move_cursor_down(count),
+                ReViCommand::CursorLeft => self.focused_window_mut().move_cursor_left(count),
+                ReViCommand::CursorRight => self.focused_window_mut().move_cursor_right(count),
+                ReViCommand::Home => self.focused_window_mut().home(),
+                ReViCommand::End => self.focused_window_mut().end(),
+                ReViCommand::DeleteChar => self.focused_window_mut().delete(),
+                ReViCommand::DeleteLine => self.focused_window_mut().delete_line(),
+                ReViCommand::NewLine => self.focused_window_mut().insert_newline(),
+                ReViCommand::Backspace => self.focused_window_mut().backspace(),
+                ReViCommand::InsertChar(c) => self.focused_window_mut().insert_char(*c),
                 ReViCommand::Mode(m) => {
                     match m {
                         Mode::Normal => render_commands.push(ui::Render::CursorShapeBlock),
@@ -255,17 +95,25 @@ impl ReVi {
                     }
                     *self.mode_mut() = *m;
                     self.focused_window_mut().adjust_cursor_x();
-                    let window = self.focused_window();
-                    render_commands.push(ui::Render::Cursor(window.cursor_screen()));
-                    render_commands.push(ui::Render::StatusBar {
-                        pos: window.status_bar_pos(),
-                        text: window.status_bar(),
-                    });
                 }
                 ReViCommand::Save => self.focused_window().save(),
                 ReViCommand::Quit => self.is_running = false,
             }
         }
+        let window = self.focused_window();
+        render_commands.push(ui::Render::StatusBar {
+            pos: window.status_bar_pos(),
+            text: window.status_bar(),
+        });
+        render_commands.push(ui::Render::Window {
+            pos: window.offset(),
+            text: window.to_string(),
+        });
+        render_commands.push(ui::Render::LineNumbers {
+            pos: window.position(),
+            text: window.line_number(),
+        });
+        render_commands.push(ui::Render::Cursor(window.cursor_screen()));
         (state, render_commands)
     }
 }

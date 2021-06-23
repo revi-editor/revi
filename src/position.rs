@@ -6,6 +6,7 @@ pub struct Position {
     y: usize,
 }
 
+#[allow(dead_code)]
 impl Position {
     pub fn new(x: usize, y: usize) -> Self {
         Self { x, y }
@@ -30,8 +31,16 @@ impl Position {
         self.x = self.x.saturating_add(x);
     }
 
-    pub fn _add_to_y(&mut self, y: usize) {
+    pub fn sub_to_x(&mut self, x: usize) {
+        self.x = self.x.saturating_sub(x);
+    }
+
+    pub fn add_to_y(&mut self, y: usize) {
         self.y = self.y.saturating_add(y);
+    }
+
+    pub fn sub_to_y(&mut self, y: usize) {
+        self.y = self.y.saturating_sub(y);
     }
 
     pub fn as_usize(&self) -> (usize, usize) {
@@ -66,6 +75,17 @@ impl std::ops::Add for Position {
         Self {
             x: self.x + other.x,
             y: self.y + other.y,
+        }
+    }
+}
+
+impl std::ops::Sub for Position {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self {
+            x: self.x.saturating_sub(other.x),
+            y: self.y.saturating_sub(other.y),
         }
     }
 }

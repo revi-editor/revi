@@ -78,45 +78,38 @@ impl Window {
         self.cursor + self.offset()
     }
 
-    pub fn move_cursor_down(&mut self, lines: usize) -> bool {
-        let mut scroll = false;
-        let limit = self.buffer.len_lines().saturating_sub(1);
-        let target = min(self.cursor.as_usize_y() + lines, limit);
-        let diff = target - self.cursor.as_usize_y();
-
-        let max = self.offset().as_usize_y() + self.dimensions.as_usize_y() - 1;
-        if target > max {
-            self.scroll_offset.set_y(
-                (self.scroll_offset.as_usize_y() + target - max)
-                    .min(limit - self.cursor.as_usize_y() - 1),
-            );
-            scroll = true;
+    pub fn scroll_down(&mut self, lines: usize) {
+        if lines + self.scroll_offset.as_usize_y() + self.cursor.as_usize_y()
+            < self.buffer.len_lines()
+        {
+            self.scroll_offset.add_to_y(lines);
+            self.adjust_cursor_x()
         }
-        self.cursor
-            .set_y((self.cursor.as_usize_y() + diff).min(min(max, limit)));
-        self.cursor.set_x(self.max_cursor.as_usize_x());
-        self.adjust_cursor_x();
-        scroll
     }
 
-    pub fn move_cursor_up(&mut self, lines: usize) -> bool {
-        let mut scroll = false;
-        let target = self.cursor.as_usize_y().saturating_sub(lines);
+    pub fn scroll_up(&mut self, lines: usize) {
+        self.scroll_offset.sub_to_y(lines);
+        self.adjust_cursor_x()
+    }
 
-        let min = self.offset().as_usize_y();
-        if target == min && self.cursor_screen().as_usize_y() == 0 {
-            let scroll_offset = self
-                .scroll_offset
-                .as_usize_y()
-                .saturating_sub(target)
-                .saturating_sub(1);
-            self.scroll_offset.set_y(scroll_offset);
-            scroll = true;
+    pub fn move_cursor_down(&mut self, lines: usize) {
+        if self.cursor.as_usize_y() >= self.height() - 1 {
+            self.scroll_down(lines);
+        } else if self.cursor_file().as_usize_y() < self.buffer.len_lines() - 1 {
+            self.cursor.add_to_y(lines);
+            self.cursor.set_x(self.max_cursor.as_usize_x());
+            self.adjust_cursor_x()
         }
+    }
 
-        self.cursor = Position::new(self.max_cursor.as_usize_x(), target);
-        self.adjust_cursor_x();
-        scroll
+    pub fn move_cursor_up(&mut self, lines: usize) {
+        if self.cursor.as_usize_y() == 0 {
+            self.scroll_up(lines);
+        } else {
+            self.cursor.sub_to_y(lines);
+            self.cursor.set_x(self.max_cursor.as_usize_x());
+            self.adjust_cursor_x()
+        }
     }
 
     pub fn adjust_cursor_x(&mut self) {
@@ -126,13 +119,19 @@ impl Window {
             .chars()
             .collect::<String>();
         let mut line_len = line.len();
-        if self.mode == Mode::Normal && line.ends_with('\n') {
-            line_len = line_len.saturating_sub(2);
-        } else if self.mode == Mode::Normal
-            && self.buffer.len_lines() - 1 == self.cursor_file().as_usize_y()
-        {
-            line_len = line_len.saturating_sub(1);
+        if let Mode::Normal = self.mode {
+            if line.ends_with('\n') {
+                line_len = line_len.saturating_sub(2);
+            } else if self.buffer.len_lines() - 1 == self.cursor_file().as_usize_y()
+            {
+                line_len = line_len.saturating_sub(1);
+            }
+        } else if let Mode::Insert = self.mode {
+            if line.ends_with('\n') {
+                line_len = line_len.saturating_sub(1);
+            }
         }
+
         self.cursor.set_x(min(line_len, self.cursor.as_usize_x()));
     }
 
@@ -236,19 +235,17 @@ impl Window {
                     .collect::<String>()
             )
         } else {
-            "".to_string()
+            String::new()
         };
         let left = format!(" {} | {}{}", self.mode, self.buffer_name(), debug_line);
         let right = format!(
-            " file: {} | window: {} ",
-            self.cursor_screen(),
-            self.cursor_file()
+            "offsets: {} | file: {} | window: {} ",
+            self.scroll_offset,
+            self.scroll_offset + self.cursor,
+            self.window_offset + self.cursor
         );
-        let middle = (0..(self
-            .dimensions
-            .as_usize_x()
-            .saturating_sub(left.len() + right.len())))
-            .map(|_| " ")
+        let middle = (0..(self.width().saturating_sub(left.len() + right.len())))
+            .map(|_| ' ')
             .collect::<String>();
         format!("{}{}{}", left, middle, right)
     }
@@ -269,7 +266,7 @@ impl Window {
                 let blank = (0..w + 1)
                     .enumerate()
                     .map(|(i, _)| {
-                        if i == 1 {
+                        if i == 0 {
                             "~"
                         } else if i as u16 == w {
                             "\r\n"
@@ -279,12 +276,12 @@ impl Window {
                     })
                     .collect::<String>();
                 (top..bottom)
-                    .enumerate()
-                    .map(|(i, n)| {
-                        if i >= file_len {
+                    .map(|n| {
+                        if n > file_len.saturating_sub(1) {
                             return blank.clone();
                         }
-                        let padding = (0..(max(max_number_len, w as usize - 2) - n.to_string().len()))
+                        let padding = (0..(max(max_number_len, w as usize - 2)
+                            - n.to_string().len()))
                             .map(|_| " ")
                             .collect::<String>();
                         let line_number = format!(" {}{}", padding, n);
