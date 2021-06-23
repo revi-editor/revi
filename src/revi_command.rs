@@ -7,6 +7,8 @@ pub enum ReViCommand {
     CursorDown,
     CursorLeft,
     CursorRight,
+    ScrollUp,
+    ScrollDown,
     Home,
     End,
     Backspace,

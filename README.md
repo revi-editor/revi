@@ -67,38 +67,42 @@ cargo run --release -- <filename>
 
 # KeyBindings
 
-**Mode**|'Key'|*Command*
+**Mode**|'Key'|*Command*|Note
 :---|:---:|---:
-**Normal**|`Esc`|*NormalMode*
-**Normal**|`ZZ`|*Save Quit*
-**Normal**|`ZQ`|*Quit*
-**Normal**|`j`|*CursorDown*
-**Normal**|`Down`|*CursorDown*
-**Normal**|`k`|*CursorUp*
-**Normal**|`Up`|*CursorUp*
-**Normal**|`h`|*CursorLeft*
-**Normal**|`Left`|*CursorLeft*
-**Normal**|`l`|*CursorRight*
-**Normal**|`Right`|*CursorRight*
-**Normal**|`:`|*CommandMode*
-**Normal**|`i`|*InsertMode*
-**Normal**|`x`|*DeleteChar*
-**Normal**|`Delete`|*DeleteChar*
-**Normal**|`d`|*DeleteLine*
-**Normal**|`Home`|*Home*
-**Normal**|`End`|*End*
-**Normal**|`0`|*Home*
-**Normal**|`$`|*End*
-**Normal**|`A`|*End InsertMode CursorLeft*
-**Insert**|`Esc`|*Normal*
-**Insert**|`Backspace`|*Backspace*
-**Insert**|`Enter`|*NewLine*
-**Insert**|`Home`|*Home*
-**Insert**|`End`|*End*
-**Insert**|`Down`|*CursorDown*
-**Insert**|`Up`|*CursorUp*
-**Insert**|`Left`|*CursorLeft*
-**Insert**|`Right`|*CursorRight*
+**Normal**|`Esc`|*NormalMode*|
+**Normal**|`ZZ`|*Save Quit*|
+**Normal**|`ZQ`|*Quit*|
+**Normal**|`<C-y>`|*ScrollUp Cursor Keeps Line Number*|Not working 100% correct
+**Normal**|`<C-e>`|*ScrollDown Cursor Keeps Line Number*|Not working 100% correct
+**Normal**|`<C-u>`|*ScrollUp*|Not working 100% correct
+**Normal**|`<C-d>`|*ScrollDown*|Not working 100% correct
+**Normal**|`j`|*CursorDown*|
+**Normal**|`Down`|*CursorDown*|
+**Normal**|`k`|*CursorUp*|
+**Normal**|`Up`|*CursorUp*|
+**Normal**|`h`|*CursorLeft*|
+**Normal**|`Left`|*CursorLeft*|
+**Normal**|`l`|*CursorRight*|
+**Normal**|`Right`|*CursorRight*|
+**Normal**|`:`|*CommandMode*|
+**Normal**|`i`|*InsertMode*|
+**Normal**|`x`|*DeleteChar*|
+**Normal**|`Delete`|*DeleteChar*|
+**Normal**|`d`|*DeleteLine*|
+**Normal**|`Home`|*Home*|
+**Normal**|`End`|*End*|
+**Normal**|`0`|*Home*|
+**Normal**|`$`|*End*|
+**Normal**|`A`|*End InsertMode CursorLeft*|
+**Insert**|`Esc`|*Normal*|
+**Insert**|`Backspace`|*Backspace*|
+**Insert**|`Enter`|*NewLine*|
+**Insert**|`Home`|*Home*|
+**Insert**|`End`|*End*|
+**Insert**|`Down`|*CursorDown*|
+**Insert**|`Up`|*CursorUp*|
+**Insert**|`Left`|*CursorLeft*|
+**Insert**|`Right`|*CursorRight*|
 
 
 

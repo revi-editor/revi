@@ -78,6 +78,8 @@ impl ReVi {
                 ReViCommand::StartUp => {}
                 ReViCommand::CursorUp => self.focused_window_mut().move_cursor_up(count),
                 ReViCommand::CursorDown => self.focused_window_mut().move_cursor_down(count),
+                ReViCommand::ScrollUp => self.focused_window_mut().scroll_up(count),
+                ReViCommand::ScrollDown => self.focused_window_mut().scroll_down(count),
                 ReViCommand::CursorLeft => self.focused_window_mut().move_cursor_left(count),
                 ReViCommand::CursorRight => self.focused_window_mut().move_cursor_right(count),
                 ReViCommand::Home => self.focused_window_mut().home(),
