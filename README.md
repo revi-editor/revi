@@ -36,8 +36,10 @@
 # About
 
 ReVi is a cross-platform terminal based Vim inspired text editor.
-Currently ReVi is in heavy development and is not really at a point for
-every day usage.  If you find a bug please feel free to open a issues for it.
+Currently ReVi is in heavy development probably not good to use for every day use
+but I have been using this editor to while working on this project to help find bugs.
+If you like what you see help the project out with a [github](https://github.com/revi-editor/revi) star.
+If you find a bug please feel free to open a issues for it.
 
 <p align="center">
   <a><img alt="Image" src="./snapshots/line_numbers.png"></a>
