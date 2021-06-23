@@ -31,6 +31,7 @@
     - [**Development**](#development-use)
   - [**KeyBindings**](#keybindings)
   - [**Road Map**](#road-map)
+  - [**Change Log**](./change_log.md)
 
 # About
 
