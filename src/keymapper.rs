@@ -78,7 +78,7 @@ impl Mapper {
             .insert_mapping(
                 &Normal,
                 vec![Key::LD, Key::LD],
-                vec![ReViCommand::DeleteLine],
+                vec![ReViCommand::DeleteLine, ReViCommand::CursorUp],
             )
             .insert_mapping(&Normal, vec![Key::Home], vec![ReViCommand::Home])
             .insert_mapping(&Normal, vec![Key::End], vec![ReViCommand::End])
@@ -112,6 +112,26 @@ impl Mapper {
                 &Normal,
                 vec![Key::LD, Key::Ctrl],
                 vec![ReViCommand::ScrollDown],
+            )
+            .insert_mapping(
+                &Normal,
+                vec![Key::LO],
+                vec![
+                    ReViCommand::End,
+                    ReViCommand::Mode(Insert),
+                    ReViCommand::CursorRight,
+                    ReViCommand::NewLine,
+                ],
+            )
+            .insert_mapping(
+                &Normal,
+                vec![Key::UO, Key::Shift],
+                vec![
+                    ReViCommand::Home,
+                    ReViCommand::NewLine,
+                    ReViCommand::Mode(Insert),
+                    ReViCommand::CursorUp,
+                ],
             )
     }
 
