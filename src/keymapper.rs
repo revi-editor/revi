@@ -140,6 +140,11 @@ impl Mapper {
                     ReViCommand::FirstCharInLine,
                 ],
             )
+            .insert_mapping(
+                &Normal,
+                vec![Key::UI, Key::Shift],
+                vec![ReViCommand::FirstCharInLine, ReViCommand::Mode(Insert)],
+            )
     }
 
     fn build_insert(self) -> Self {
