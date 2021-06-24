@@ -101,6 +101,8 @@ cargo run --release -- <filename>
 
 ### **Insert Mode**
 
+|'Key'|*Command*|Note
+|:---|:---:|:---:
 `Esc`|*Normal*|
 `Backspace`|*Backspace*|
 `Enter`|*NewLine*|
@@ -113,6 +115,8 @@ cargo run --release -- <filename>
 
 ### **Command Mode**
 
+|'Key'|*Command*|Note
+|:---|:---:|:---:
 `Esc`|*Normal*|
 `Enter`|*Normal*|
 
