@@ -163,6 +163,7 @@ impl Mapper {
     fn build_command(self) -> Self {
         use Mode::*;
         self.insert_mapping(&Command, vec![Key::Esc], vec![ReViCommand::Mode(Normal)])
+        self.insert_mapping(&Command, vec![Key::Enter], vec![ReViCommand::Mode(Normal)])
     }
 }
 

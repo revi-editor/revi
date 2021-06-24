@@ -69,50 +69,67 @@ cargo run --release -- <filename>
 
 # KeyBindings
 
-**Mode**|'Key'|*Command*|Note
-:---|:---:|:---:|:---:
-**Normal**|`Esc`|*NormalMode*|
-**Normal**|`ZZ`|*Save Quit*|
-**Normal**|`ZQ`|*Quit*|
-**Normal**|`<C-y>`|*ScrollUp Cursor Keeps Line Number*|Not working 100% correct
-**Normal**|`<C-e>`|*ScrollDown Cursor Keeps Line Number*|Not working 100% correct
-**Normal**|`<C-u>`|*ScrollUp*|Not working 100% correct
-**Normal**|`<C-d>`|*ScrollDown*|Not working 100% correct
-**Normal**|`j`|*CursorDown*|
-**Normal**|`Down`|*CursorDown*|
-**Normal**|`k`|*CursorUp*|
-**Normal**|`Up`|*CursorUp*|
-**Normal**|`h`|*CursorLeft*|
-**Normal**|`Left`|*CursorLeft*|
-**Normal**|`l`|*CursorRight*|
-**Normal**|`Right`|*CursorRight*|
-**Normal**|`:`|*CommandMode*|
-**Normal**|`i`|*InsertMode*|
-**Normal**|`x`|*DeleteChar*|
-**Normal**|`Delete`|*DeleteChar*|
-**Normal**|`d`|*DeleteLine*|
-**Normal**|`Home`|*Home*|
-**Normal**|`End`|*End*|
-**Normal**|`0`|*Home*|
-**Normal**|`$`|*End*|
-**Normal**|`A`|*End InsertMode CursorLeft*|
-**Insert**|`Esc`|*Normal*|
-**Insert**|`Backspace`|*Backspace*|
-**Insert**|`Enter`|*NewLine*|
-**Insert**|`Home`|*Home*|
-**Insert**|`End`|*End*|
-**Insert**|`Down`|*CursorDown*|
-**Insert**|`Up`|*CursorUp*|
-**Insert**|`Left`|*CursorLeft*|
-**Insert**|`Right`|*CursorRight*|
+### **Normal Mode**
+
+|'Key'|*Command*|Note
+|:---|:---:|:---:
+`Esc`|*NormalMode*|
+`ZZ`|*Save Quit*|
+`ZQ`|*Quit*|
+`<C-y>`|*ScrollUp Cursor Keeps Line Number*|Not working 100% correct
+`<C-e>`|*ScrollDown Cursor Keeps Line Number*|Not working 100% correct
+`<C-u>`|*ScrollUp*|Not working 100% correct
+`<C-d>`|*ScrollDown*|Not working 100% correct
+`j`|*CursorDown*|
+`Down`|*CursorDown*|
+`k`|*CursorUp*|
+`Up`|*CursorUp*|
+`h`|*CursorLeft*|
+`Left`|*CursorLeft*|
+`l`|*CursorRight*|
+`Right`|*CursorRight*|
+`:`|*CommandMode*|
+`i`|*InsertMode*|
+`x`|*DeleteChar*|
+`Delete`|*DeleteChar*|
+`d`|*DeleteLine*|
+`Home`|*Home*|
+`End`|*End*|
+`0`|*Home*|
+`$`|*End*|
+`A`|*End InsertMode CursorLeft*|
+
+### **Insert Mode**
+
+`Esc`|*Normal*|
+`Backspace`|*Backspace*|
+`Enter`|*NewLine*|
+`Home`|*Home*|
+`End`|*End*|
+`Down`|*CursorDown*|
+`Up`|*CursorUp*|
+`Left`|*CursorLeft*|
+`Right`|*CursorRight*|
+
+### **Command Mode**
+
+`Esc`|*Normal*|
+`Enter`|*Normal*|
 
 # Road Map
 
+- [ ] **Added Modes**:
+  - [X] **Normal**
+  - [X] **Insert**
+  - [ ] **Command**
+  - [ ] **Visual**
+  - [ ] **Visual Line**
+  - [ ] **Visual Block**
 - [X] **Basic KeyBindings**
 - [ ] **Basic Unicode Support**
-- [ ] **Plugin API** `0.1%`:
+- [ ] **Plugin API**:
   - [ ] **Custom KeyBindings**
-- [ ] **Help Docs** `0%`
-- [ ] **WebSite** `0%`
-- [ ] **Package Manager** `0%`
-- [ ] **LSP** `0%`
+- [ ] **Help Docs**
+- [ ] **WebSite**
+- [ ] **Package Manager**
+- [ ] **LSP**
