@@ -155,6 +155,17 @@ impl Window {
         self.cursor.set_x(0);
     }
 
+    pub fn first_char_in_line(&mut self) {
+        let y = (self.cursor + self.scroll_offset).as_usize_y();
+        for (i, c) in self.buffer.line(y).chars().enumerate() {
+            if c != ' ' {
+                self.cursor.set_x(i);
+                self.max_cursor.set_x(max(i, self.cursor.as_usize_x()));
+                break;
+            }
+        }
+    }
+
     pub fn backspace(&mut self) {
         if self.cursor_file().as_u16() == (0, 0) {
             return;

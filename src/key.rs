@@ -97,6 +97,7 @@ pub enum Key {
     Null,
     Colon,
     SimiColon,
+    Caret,
     Char(char),
 }
 impl From<u8> for Key {
@@ -184,6 +185,7 @@ impl From<char> for Key {
             '9' => Self::N9,
             ':' => Self::Colon,
             ';' => Self::SimiColon,
+            '^' => Self::Caret,
             _ => Self::Char(c),
         }
     }

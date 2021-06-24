@@ -133,6 +133,13 @@ impl Mapper {
                     ReViCommand::CursorUp,
                 ],
             )
+            .insert_mapping(
+                &Normal,
+                vec![Key::Caret],
+                vec![
+                    ReViCommand::FirstCharInLine,
+                ],
+            )
     }
 
     fn build_insert(self) -> Self {

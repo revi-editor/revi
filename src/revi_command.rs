@@ -13,6 +13,7 @@ pub enum ReViCommand {
     End,
     Backspace,
     NewLine,
+    FirstCharInLine,
     DeleteChar,
     DeleteLine,
     InsertChar(char),

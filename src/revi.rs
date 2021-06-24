@@ -84,6 +84,7 @@ impl ReVi {
                 ReViCommand::CursorRight => self.focused_window_mut().move_cursor_right(count),
                 ReViCommand::Home => self.focused_window_mut().home(),
                 ReViCommand::End => self.focused_window_mut().end(),
+                ReViCommand::FirstCharInLine => self.focused_window_mut().first_char_in_line(),
                 ReViCommand::DeleteChar => self.focused_window_mut().delete(),
                 ReViCommand::DeleteLine => self.focused_window_mut().delete_line(),
                 ReViCommand::NewLine => self.focused_window_mut().insert_newline(),
