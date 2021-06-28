@@ -66,6 +66,10 @@ impl Position {
     pub fn as_u16_y(&self) -> u16 {
         self.y as u16
     }
+
+    pub fn is_zero(&self) -> bool {
+        self.x == 0 && self.y == 0
+    }
 }
 
 impl std::ops::Add for Position {
@@ -93,5 +97,35 @@ impl std::ops::Sub for Position {
 impl fmt::Display for Position {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}/{}", self.x, self.y)
+    }
+}
+
+impl From<(u16, u16)> for Position {
+    fn from((x, y): (u16, u16)) -> Self {
+        Self::new_u16(x, y)
+    }
+}
+
+impl From<&(u16, u16)> for Position {
+    fn from((x, y): &(u16, u16)) -> Self {
+        Self::new_u16(*x, *y)
+    }
+}
+
+impl From<(usize, usize)> for Position {
+    fn from((x, y): (usize, usize)) -> Self {
+        Self { x, y }
+    }
+}
+
+impl From<(i32, i32)> for Position {
+    fn from((x, y): (i32, i32)) -> Self {
+        Self::new(x as usize, y as usize)
+    }
+}
+
+impl From<&(i32, i32)> for Position {
+    fn from((x, y): &(i32, i32)) -> Self {
+        Self::new(*x as usize, *y as usize)
     }
 }

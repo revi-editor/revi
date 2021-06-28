@@ -1,4 +1,5 @@
-use crate::{key::Key, mode::Mode, revi_command::ReViCommand};
+use crate::{mode::Mode, revi_command::ReViCommand};
+use revi_ui::Key;
 use std::collections::HashMap;
 
 type KeyMap = HashMap<Vec<Key>, Vec<ReViCommand>>;
@@ -142,6 +143,12 @@ impl Mapper {
                 &Normal,
                 vec![Key::UI, Key::Shift],
                 vec![ReViCommand::FirstCharInLine, ReViCommand::Mode(Insert)],
+            )
+            .insert_mapping(&Normal, vec![Key::LW], vec![ReViCommand::MoveForwardByWord])
+            .insert_mapping(
+                &Normal,
+                vec![Key::LB],
+                vec![ReViCommand::MoveBackwardByWord],
             )
     }
 

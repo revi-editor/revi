@@ -1,34 +1,39 @@
 // use crate::Input;
+use crate::commandline::{argparser, from_path};
 use crate::mode::Mode;
 use crate::position::Position;
 use crate::revi_command::ReViCommand;
-use crate::ui;
 use crate::window::Window;
-use crate::InputState;
-use ropey::Rope;
+use revi_ui::*;
+use std::{cell::RefCell, rc::Rc};
 
 #[derive(Debug, Clone)]
 pub struct ReVi {
-    pub size: Position,
     pub is_running: bool,
-    pub windows: Vec<Window>,
-    pub focused: usize,
-    pub command: String,
+    size: Position,
+    windows: Vec<Window>,
+    focused: usize,
+    command: String,
+    clipboard: String,
 }
 
 impl ReVi {
-    pub fn new(buffer: Rope, path: Option<String>) -> Self {
-        let (w, h) = ui::screen_size();
+    pub fn new(/* buffer: Rope, path: Option<String> */) -> Rc<RefCell<Self>> {
+        let file_path = argparser();
+        let (buffer, path) = from_path(file_path);
+        let (w, h) = screen_size();
         let window = Window::new(w, h.saturating_sub(2), buffer, path);
         let windows = vec![window];
         let command = (0..w).map(|_| " ").collect::<String>();
-        Self {
+        let revi = Self {
             size: Position::new_u16(w, h),
             is_running: true,
             windows,
             focused: 0,
             command,
-        }
+            clipboard: String::new(),
+        };
+        Rc::new(RefCell::new(revi))
     }
 
     pub fn _windows_locations(&self) -> Vec<(u16, u16)> {
@@ -62,16 +67,7 @@ impl ReVi {
         &mut self.windows[self.focused]
     }
 
-    fn _command_bar_pos(&self) -> Position {
-        Position::new_u16(0, self.size.as_u16_y())
-    }
-
-    pub fn execute(
-        &mut self,
-        count: usize,
-        commands: &[ReViCommand],
-    ) -> (InputState, Vec<ui::Render>) {
-        let state = InputState::Clear;
+    pub fn execute(&mut self, count: usize, commands: &[ReViCommand]) -> Vec<Render> {
         let mut render_commands = Vec::new();
         for command in commands {
             match command {
@@ -92,31 +88,41 @@ impl ReVi {
                 ReViCommand::InsertChar(c) => self.focused_window_mut().insert_char(*c),
                 ReViCommand::Mode(m) => {
                     match m {
-                        Mode::Normal => render_commands.push(ui::Render::CursorShapeBlock),
+                        Mode::Normal => render_commands.push(Render::CursorShapeBlock),
                         Mode::Command => {}
-                        Mode::Insert => render_commands.push(ui::Render::CursorShapeLine),
+                        Mode::Insert => render_commands.push(Render::CursorShapeLine),
                     }
                     *self.mode_mut() = *m;
                     self.focused_window_mut().adjust_cursor_x();
+                }
+                ReViCommand::MoveForwardByWord => self.focused_window_mut().move_forward_by_word(),
+                ReViCommand::MoveBackwardByWord => {
+                    self.focused_window_mut().move_backward_by_word()
                 }
                 ReViCommand::Save => self.focused_window().save(),
                 ReViCommand::Quit => self.is_running = false,
             }
         }
         let window = self.focused_window();
-        render_commands.push(ui::Render::StatusBar {
-            pos: window.status_bar_pos(),
+        if cfg!(feature = "debug_input_number") {
+            render_commands.push(Render::StatusBar {
+                pos: (window.status_bar_pos() + Position::new_u16(0, 1)).as_u16(),
+                text: format!("input-number: {}                ", count),
+            });
+        }
+        render_commands.push(Render::StatusBar {
+            pos: window.status_bar_pos().as_u16(),
             text: window.status_bar(),
         });
-        render_commands.push(ui::Render::Window {
-            pos: window.offset(),
+        render_commands.push(Render::Window {
+            pos: window.offset().as_u16(),
             text: window.to_string(),
         });
-        render_commands.push(ui::Render::LineNumbers {
-            pos: window.position(),
+        render_commands.push(Render::LineNumbers {
+            pos: window.position().as_u16(),
             text: window.line_number(),
         });
-        render_commands.push(ui::Render::Cursor(window.cursor_screen()));
-        (state, render_commands)
+        render_commands.push(Render::Cursor(window.cursor_screen().as_u16()));
+        render_commands
     }
 }

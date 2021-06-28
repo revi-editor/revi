@@ -1,5 +1,4 @@
 use crate::key::Key;
-use crate::position::Position;
 use std::fmt::{self, Debug};
 use std::io::{stdout, Stdout, Write};
 use std::time::Duration;
@@ -10,10 +9,10 @@ pub fn screen_size() -> (u16, u16) {
 
 #[derive(Clone)]
 pub enum Render {
-    Window { pos: Position, text: String },
-    StatusBar { pos: Position, text: String },
-    LineNumbers { pos: Position, text: String },
-    Cursor(Position),
+    Window { pos: (u16, u16), text: String },
+    StatusBar { pos: (u16, u16), text: String },
+    LineNumbers { pos: (u16, u16), text: String },
+    Cursor((u16, u16)),
     CursorShapeBlock,
     CursorShapeLine,
 }
@@ -22,16 +21,10 @@ impl fmt::Debug for Render {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let output;
         match self {
-            Self::Window { pos, .. } => {
-                output = format!("Window({}, {})", pos.as_u16_x(), pos.as_u16_y())
-            }
-            Self::StatusBar { pos, .. } => {
-                output = format!("StatusBar({}, {})", pos.as_u16_x(), pos.as_u16_y())
-            }
-            Self::LineNumbers { pos, .. } => {
-                output = format!("LineNumbers({}, {})", pos.as_u16_x(), pos.as_u16_y())
-            }
-            Self::Cursor(pos) => output = format!("Cursor({}, {})", pos.as_u16_x(), pos.as_u16_y()),
+            Self::Window { pos, .. } => output = format!("Window({}, {})", pos.0, pos.1),
+            Self::StatusBar { pos, .. } => output = format!("StatusBar({}, {})", pos.0, pos.1),
+            Self::LineNumbers { pos, .. } => output = format!("LineNumbers({}, {})", pos.0, pos.1),
+            Self::Cursor(pos) => output = format!("Cursor({}, {})", pos.0, pos.1),
             Self::CursorShapeBlock => output = "CursorShapeBlock".to_string(),
             Self::CursorShapeLine => output = "CursorShapeLine".to_string(),
         }
@@ -107,23 +100,23 @@ impl Tui {
         .expect("Printing Debug Failed.");
     }
 
-    fn update_window(&mut self, pos: &Position, text: &str) {
-        let offset_y = pos.as_u16_y();
+    fn update_window(&mut self, pos: &(u16, u16), text: &str) {
+        let offset_y = pos.1;
         for (idx, line) in text.to_string().lines().enumerate() {
             let y = offset_y + idx as u16;
             crossterm::queue!(
                 self.writer,
-                crossterm::cursor::MoveTo(pos.as_u16_x(), y),
+                crossterm::cursor::MoveTo(pos.0, y),
                 crossterm::style::Print(line.strip_suffix("\r\n").unwrap_or(line)),
             )
             .expect("Drawing Window Failed.");
         }
     }
 
-    pub fn update_status_bar(&mut self, pos: &Position, text: &str) {
+    pub fn update_status_bar(&mut self, pos: &(u16, u16), text: &str) {
         crossterm::queue!(
             self.writer,
-            crossterm::cursor::MoveTo(pos.as_u16_x(), pos.as_u16_y()),
+            crossterm::cursor::MoveTo(pos.0, pos.1),
             crossterm::style::Print(text),
         )
         .expect("Drawing StatusBar Failed.");
@@ -131,11 +124,11 @@ impl Tui {
 
     pub fn _update_command_bar(&mut self) {}
 
-    pub fn update_cursor(&mut self, pos: &Position) {
+    pub fn update_cursor(&mut self, pos: &(u16, u16)) {
         crossterm::queue!(
             self.writer,
             crossterm::cursor::RestorePosition,
-            crossterm::cursor::MoveTo(pos.as_u16_x(), pos.as_u16_y()),
+            crossterm::cursor::MoveTo(pos.0, pos.1),
             crossterm::cursor::SavePosition
         )
         .expect("Failure to update cursor position.");
@@ -220,13 +213,5 @@ impl Default for Tui {
         };
         tui.enable_raw_mode();
         tui
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
     }
 }

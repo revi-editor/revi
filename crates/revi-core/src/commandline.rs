@@ -1,5 +1,6 @@
-use crate::{Rope, AUTHOR};
+use crate::AUTHOR;
 use clap::{crate_description, crate_name, crate_version, App, Arg};
+use ropey::Rope;
 use std::fs::{metadata, OpenOptions};
 use std::io::BufReader;
 

@@ -15,6 +15,7 @@
   <a><img alt="issues" src="https://img.shields.io/github/issues/revi-editor/revi"></a>
   <a><img alt="last commit" src="https://img.shields.io/github/last-commit/revi-editor/revi"></a>
   <a><img alt="repo size" src="https://img.shields.io/github/repo-size/revi-editor/revi"></a> <a href="https://discord.gg/KwnGX8P"><img alt="Discord Chat" src="https://img.shields.io/discord/509849754155614230"></a>
+  <a><img alt="lines" src="https://img.shields.io/tokei/lines/github/revi-editor/revi"></a>
 </p>
 <p align="center">
   <a><img alt="RUST" src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white"></a>
@@ -29,8 +30,8 @@
     - [**Clone && Installing**](#github)
     - [**Development**](#development-use)
   - [**KeyBindings**](#keybindings)
-  - [**Road Map**](#road-map)
-  - [**Change Log**](./change_log.md)
+  - [**Roadmap**](#road-map)
+  - [**Changelog**](./CHANGELOG.md)
 
 # About
 

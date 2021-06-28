@@ -11,6 +11,8 @@ pub enum ReViCommand {
     ScrollDown,
     Home,
     End,
+    MoveForwardByWord,
+    MoveBackwardByWord,
     Backspace,
     NewLine,
     FirstCharInLine,

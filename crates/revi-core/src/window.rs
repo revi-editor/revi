@@ -1,6 +1,7 @@
 /* windows.rs
  */
 
+use crate::buffer::Buffer;
 use crate::line_number::LineNumbers;
 use crate::mode::Mode;
 use crate::position::Position;
@@ -24,7 +25,7 @@ pub struct Window {
     /// Furthest from 0 the cursor has been.
     max_cursor: Position,
     /// Text File Data
-    buffer: Rope,
+    buffer: Buffer,
     /// Name of Text File
     name: Option<String>,
     /// Line Number Type.
@@ -32,8 +33,9 @@ pub struct Window {
 }
 
 impl Window {
-    pub fn new(width: u16, height: u16, buffer: Rope, name: Option<String>) -> Self {
+    pub fn new(width: u16, height: u16, rope: Rope, name: Option<String>) -> Self {
         // TODO: Fix the Starting position of the window.
+        let buffer = Buffer::from(rope);
         let line_number_width = (buffer.len_lines().to_string().len().max(3) + 2) as u16;
         Self {
             mode: Mode::Normal,
@@ -143,6 +145,36 @@ impl Window {
         self.max_cursor.set_x(self.cursor.as_usize_x());
     }
 
+    pub fn move_forward_by_word(&mut self) {
+        let pos = self.cursor + self.scroll_offset;
+        if let Some(i) = self.buffer.next_jump_idx(&pos) {
+            self.cursor.set_x(i);
+            self.max_cursor.set_x(self.cursor.as_usize_x());
+        } else {
+            self.move_cursor_down(1);
+            self.first_char_in_line();
+        }
+    }
+
+    pub fn move_backward_by_word(&mut self) {
+        let pos = self.cursor + self.scroll_offset;
+        if pos == Position::new(0, 0) {
+            return;
+        }
+        if let Some(i) = self.buffer.prev_jump_idx(&pos) {
+            self.cursor.set_x(i);
+            self.max_cursor.set_x(self.cursor.as_usize_x());
+        } else {
+            self.move_cursor_up(1);
+            self.end();
+            let pos = self.cursor + self.scroll_offset;
+            if let Some(i) = self.buffer.prev_jump_idx(&pos) {
+                self.cursor.set_x(i);
+                self.max_cursor.set_x(self.cursor.as_usize_x());
+            }
+        }
+    }
+
     pub fn move_cursor_right(&mut self, cols: usize) {
         self.cursor.add_to_x(cols);
         self.adjust_cursor_x();
@@ -216,7 +248,7 @@ impl Window {
 
     pub fn end(&mut self) {
         let y = self.cursor_file().as_usize_y();
-        self.cursor.set_x(self.buffer.line(y).len_chars());
+        self.cursor.set_x(self.buffer.line_len(y));
         self.max_cursor.set_x(self.cursor.as_usize_x());
         self.adjust_cursor_x();
     }
@@ -232,10 +264,11 @@ impl Window {
         let buff = BufWriter::new(file);
         self.buffer
             .write_to(buff)
-            .expect("Failed to write to File buffer to file");
+            .expect("Failed to write to file.");
     }
 
     pub fn status_bar(&self) -> String {
+        // TODO: Pull this out of Window
         let debug_line = if cfg!(feature = "debug_line") {
             format!(
                 " | {:?}",
@@ -244,6 +277,11 @@ impl Window {
                     .chars()
                     .collect::<String>()
             )
+        } else if cfg!(feature = "debug_line_words") {
+            let pos = self.cursor + self.scroll_offset;
+            let left = "NOTHING";
+            let right = self.buffer.next_jump_idx(&pos);
+            format!(" | {:?}<{}>{:?}", left, pos.as_u16_x(), right)
         } else {
             String::new()
         };
@@ -261,14 +299,18 @@ impl Window {
     }
 
     pub fn status_bar_pos(&self) -> Position {
+        // TODO: Pull this out of Window
         let y = self.position().as_u16_y() + self.height() as u16;
         Position::new_u16(self.position().as_u16_x(), y)
     }
 
     pub fn line_number(&self) -> String {
+        // TODO: Pull this out of Window
         match self.line_number_state {
             LineNumbers::RelativeNumber(_) => "".to_string(),
             LineNumbers::AbsoluteNumber(w) => {
+                // TODO: Refactor this to maybe be a trait LineNumers.
+                // UI will need to have its own Display trait.
                 let file_len = self.buffer.len_lines();
                 let max_number_len = file_len.to_string().len();
                 let top = self.scroll_offset.as_usize_y();
@@ -309,27 +351,9 @@ impl Window {
 
 impl fmt::Display for Window {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        /* Formatting Screen Instructions
-         *
-         * 1. Get the text from buffer relevant to screen size
-         *      and location of view into file.
-         *
-         * 2. Give string to format_window_buffer function with
-         *      the dimensions of the Window.
-         *
-         * 3. Give output to write macro.
-         */
-
-        // Step 1
-        let top_line = self.scroll_offset.as_usize_y();
-        let bottom_line = self.dimensions.as_usize_y() + top_line; // This may need to be a variable.
-        let window = self
-            .buffer
-            .lines_at(top_line)
-            .enumerate()
-            .filter(|(i, _)| *i < bottom_line)
-            .map(|(_, s)| s.to_string())
-            .collect::<String>();
+        let top = self.scroll_offset.as_usize_y();
+        let bottom = self.dimensions.as_usize_y() + top;
+        let window = self.buffer.on_screen(top, bottom);
         let formated_window = format_window_buffer(&window, self.width(), self.height());
 
         write!(f, "{}", formated_window)
@@ -337,6 +361,7 @@ impl fmt::Display for Window {
 }
 
 fn format_window_buffer(text: &str, width: usize, height: usize) -> String {
+    // TODO: Pull this out of window.rs
     let filler = ' '; // std::char::from_u32(9608).unwrap_or('&');
     let mut new = String::new();
     for (y, line) in text.lines().enumerate() {
@@ -362,14 +387,8 @@ fn format_window_buffer(text: &str, width: usize, height: usize) -> String {
     new
 }
 
-fn _format_command_bar(line: &mut String, length: usize) {
-    let filler = ' ';
-    let spaces = length.saturating_sub(line.len());
-    let blanks = vec![filler; spaces].iter().collect::<String>();
-    line.push_str(&blanks);
-}
-
 fn count_char(string: &str, chr: char) -> usize {
+    // TODO: Pull this out of window.rs
     let mut counter = 0;
     for c in string.chars() {
         if c == chr {
