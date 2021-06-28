@@ -3,6 +3,11 @@ name = "revi-ui"
 version = "0.0.0-beta-0.6"
 authors = ["cowboy8625 <cowboy8625@protonmail.com>"]
 edition = "2018"
+description = "Provides ui functionality for revi test editor."
+readme = "../README.md"
+repository = "https://github.com/revi-editor/revi"
+license-file = "LICENSE"
+keywords = ["revi"]
 
 [dependencies]
 crossterm = "0.20.0"
