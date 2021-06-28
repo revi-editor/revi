@@ -5,7 +5,7 @@ authors = ["cowboy8625 <cowboy8625@protonmail.com>"]
 edition = "2018"
 description = "Provides ui functionality for revi test editor."
 repository = "https://github.com/revi-editor/revi"
-license-file = "MIT"
+license = "MIT"
 keywords = ["revi"]
 
 [dependencies]
