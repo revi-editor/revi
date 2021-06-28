@@ -29,7 +29,7 @@
     - [**Install**](#cratesio)
     - [**Clone && Installing**](#github)
     - [**Development**](#development-use)
-  - [**Q&A**](#question-and-answers)
+  - [**Q&A**](#questions-and-answers)
   - [**KeyBindings**](#keybindings)
   - [**Roadmap**](#road-map)
   - [**Changelog**](./CHANGELOG.md)
