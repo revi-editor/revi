@@ -95,6 +95,8 @@ cargo run --release -- <filename>
 `Left`|*CursorLeft*|
 `l`|*CursorRight*|
 `Right`|*CursorRight*|
+`w`|*Move Forwards by a Word*|
+`b`|*Move Backwards by a Word*|
 `:`|*CommandMode*|
 `i`|*InsertMode*|
 `x`|*DeleteChar*|
