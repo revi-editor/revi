@@ -29,6 +29,7 @@
     - [**Install**](#cratesio)
     - [**Clone && Installing**](#github)
     - [**Development**](#development-use)
+  - [**Q&A**](#question-and-answers)
   - [**KeyBindings**](#keybindings)
   - [**Roadmap**](#road-map)
   - [**Changelog**](./CHANGELOG.md)
@@ -67,6 +68,11 @@ git clone https://github.com/revi-editor/revi
 cd revi
 cargo run --release -- <filename>
 ```
+
+### **Questions and Answers**
+
+- *ReVi is locked up* => Press `Esc` and then do command to clear command chase.  WIP.
+- *ReVi doesn't even open* => for version's `0.0.0-beta-0.5` and below need to have a `init.lua` file in the directory.  FIXED on version `0.0.0-beta-0.6`
 
 # KeyBindings
 
