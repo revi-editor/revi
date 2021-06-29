@@ -1,5 +1,5 @@
 /* windows.rs
- */
+*/
 
 use crate::buffer::Buffer;
 use crate::line_number::LineNumbers;
@@ -196,6 +196,21 @@ impl Window {
                 break;
             }
         }
+    }
+
+    pub fn jump_to_first_line_buffer(&mut self) {
+        self.cursor.set_y(0);
+        self.scroll_offset.set_y(0);
+        self.adjust_cursor_x()
+    }
+
+    pub fn jump_to_last_line_buffer(&mut self) {
+        let total_y = self.buffer.len_lines().saturating_sub(1);
+        let screen_y = self.height() - 1;
+        let offset_y = total_y.saturating_sub(screen_y);
+        self.cursor.set_y(screen_y);
+        self.scroll_offset.set_y(offset_y);
+        self.adjust_cursor_x()
     }
 
     pub fn backspace(&mut self) {

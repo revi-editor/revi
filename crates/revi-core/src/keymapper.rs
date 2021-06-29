@@ -150,6 +150,16 @@ impl Mapper {
                 vec![Key::LB],
                 vec![ReViCommand::MoveBackwardByWord],
             )
+            .insert_mapping(
+                &Normal,
+                vec![Key::LG, Key::LG],
+                vec![ReViCommand::JumpToFirstLineBuffer],
+            )
+            .insert_mapping(
+                &Normal,
+                vec![Key::UG, Key::Shift],
+                vec![ReViCommand::JumpToLastLineBuffer],
+            )
     }
 
     fn build_insert(self) -> Self {

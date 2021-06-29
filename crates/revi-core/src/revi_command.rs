@@ -13,6 +13,8 @@ pub enum ReViCommand {
     End,
     MoveForwardByWord,
     MoveBackwardByWord,
+    JumpToFirstLineBuffer,
+    JumpToLastLineBuffer,
     Backspace,
     NewLine,
     FirstCharInLine,

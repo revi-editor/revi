@@ -2,7 +2,16 @@
 
 ## ------------- **Version 0.0.0-beta-0.6 (Jun 2021)** -------------------------------------------
 
-### Enhancements Add
+### Added
+- [keybinding `gg` to jump to top of file](38)
+- [keybinding `G` to jump to bottom of file](38)
+
+### Fixed
+
+## ------------- **Version 0.0.0-beta-0.6 (Jun 28 2021)** -------------------------------------------
+Mon 28 Jun 2021 06:42:48 PM CDT
+
+### Added
 
 In these update brought a lot of structural changes to ReVi in the regards to breaking up some
 of it into there own packages.  Now ReVi has [revi-core]() and [revi-ui]() so that we can
