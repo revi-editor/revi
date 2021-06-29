@@ -1,6 +1,6 @@
 use ropey::Rope;
 use std::ops::Range;
-use unicode_segmentation::*;
+// use unicode_segmentation::*;
 use unicode_width::UnicodeWidthStr;
 
 use crate::position::Position;
@@ -178,7 +178,7 @@ fn word_indices(items: &[(usize, CharType)]) -> Vec<Vec<(usize, CharType)>> {
     let mut stream = items.iter().peekable();
     let mut word_loc = Vec::new();
     if let Some(f) = stream.next() {
-        word_loc.push(vec![f.clone()]);
+        word_loc.push(vec![*f]);
     } else {
         return word_loc;
     }
@@ -195,16 +195,16 @@ fn word_indices(items: &[(usize, CharType)]) -> Vec<Vec<(usize, CharType)>> {
         if let Some(last_word) = word_loc.last_mut() {
             if let Some(last_char) = last_word.last() {
                 if current.1 != last_char.1 {
-                    word_loc.push(vec![current.clone()]);
+                    word_loc.push(vec![*current]);
                 } else if let Some(next) = stream.peek() {
                     if next.1 != current.1 {
-                        last_word.push(current.clone());
+                        last_word.push(*current);
                     }
                 } else {
-                    last_word.push(current.clone());
+                    last_word.push(*current);
                 }
             } else {
-                last_word.push(current.clone());
+                last_word.push(*current);
             }
         }
     }
