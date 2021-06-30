@@ -302,8 +302,7 @@ impl Window {
         };
         let left = format!(" {} | {}{}", self.mode, self.buffer_name(), debug_line);
         let right = format!(
-            "offsets: {} | file: {} | window: {} ",
-            self.scroll_offset,
+            "file: {} | window: {} ",
             self.scroll_offset + self.cursor,
             self.window_offset + self.cursor
         );

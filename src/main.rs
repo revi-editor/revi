@@ -1,25 +1,21 @@
 use revi_core::*;
 use revi_ui::*;
 
-// use mlua::prelude::*;
+use mlua::prelude::*;
 // use ropey::Rope;
 
 #[allow(dead_code)]
-fn main() {
+fn main() -> LuaResult<()> {
     let revi = ReVi::new();
+    let lua = Lua::new();
 
-    // let lua = Lua::new();
-    // let mut tui = ui::Tui::default();
-    //
-    // let editor = Rc::new(RefCell::new(revi::ReVi::new(rope, path)));
-    // let keymapper = keymapper::key_builder();
-    // let mut input = Input::default();
-    //
-    // lua.globals().set("revi", editor.clone())?;
-    // lua.load(&std::fs::read_to_string("init.lua").expect("Failed to load init.lua"))
-    //     .exec()?;
+    lua.globals().set("revi", revi.clone())?;
+    let init_lua = std::fs::read_to_string("init.lua");
+    lua.load(init_lua.unwrap_or(String::new()).as_str())
+        .exec()?;
+
     let mut tui = Tui::default();
-    let keymapper = keymapper::key_builder();
+    let keymapper = Mapper::default();
     let mut input = Input::default();
 
     let render_commands = revi
@@ -53,6 +49,7 @@ fn main() {
             }
         }
     }
+    Ok(())
 }
 
 #[derive(Debug, Clone, Default)]

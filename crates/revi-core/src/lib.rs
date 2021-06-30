@@ -19,6 +19,7 @@ mod window;
 pub mod keymapper;
 
 pub use buffer::Buffer;
+pub use keymapper::Mapper;
 pub use mode::Mode;
 pub use position::Position;
 pub use revi::ReVi;
