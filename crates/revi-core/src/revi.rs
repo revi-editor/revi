@@ -18,7 +18,7 @@ pub struct ReVi {
 }
 
 impl ReVi {
-    pub fn new(/* buffer: Rope, path: Option<String> */) -> Rc<RefCell<Self>> {
+    pub fn new() -> Rc<RefCell<Self>> {
         let file_path = argparser();
         let (buffer, path) = from_path(file_path);
         let (w, h) = screen_size();
