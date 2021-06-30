@@ -79,7 +79,7 @@ cargo run --release -- <filename>
 ### **Normal Mode**
 
 |'Key'|*Command*|Note
-|:---|:---:|:---:
+|:---|:---:|---:
 `Esc`|*NormalMode*|
 `ZZ`|*Save Quit*|
 `ZQ`|*Quit*|
@@ -107,11 +107,13 @@ cargo run --release -- <filename>
 `0`|*Home*|
 `$`|*End*|
 `A`|*End InsertMode CursorLeft*|
+'gg'|*JumpToFirstLine*
+'G'|*JumpToLastLine*
 
 ### **Insert Mode**
 
 |'Key'|*Command*|Note
-|:---|:---:|:---:
+|:---|:---:|---:
 `Esc`|*Normal*|
 `Backspace`|*Backspace*|
 `Enter`|*NewLine*|
@@ -125,7 +127,7 @@ cargo run --release -- <filename>
 ### **Command Mode**
 
 |'Key'|*Command*|Note
-|:---|:---:|:---:
+|:---|:---:|---:
 `Esc`|*Normal*|
 `Enter`|*Normal*|
 
