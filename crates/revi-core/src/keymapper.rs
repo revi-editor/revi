@@ -10,6 +10,12 @@ pub struct Mapper {
     cmaps: KeyMap,
 }
 
+impl Default for Mapper {
+    fn default() -> Self {
+        Self::new().build_normal().build_insert().build_command()
+    }
+}
+
 impl Mapper {
     fn new() -> Self {
         Self {
@@ -182,6 +188,7 @@ impl Mapper {
     }
 }
 
+/// Builds All Default Key
 pub fn key_builder() -> Mapper {
     Mapper::new().build_normal().build_insert().build_command()
 }
