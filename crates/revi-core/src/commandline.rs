@@ -1,3 +1,4 @@
+// TODO: Move this file into main.
 use crate::AUTHOR;
 use clap::{crate_description, crate_name, crate_version, App, Arg};
 use ropey::Rope;
@@ -19,7 +20,7 @@ pub fn argparser() -> Option<String> {
     matches.value_of("in_file").map(|v| v.to_string())
 }
 
-// wrapper around Rope for a drity flag.
+// TODO: Instead of returning a Rope return a File Path.
 pub fn from_path(path: Option<String>) -> (Rope, Option<String>) {
     let text = path
         .as_ref()

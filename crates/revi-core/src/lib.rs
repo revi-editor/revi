@@ -14,6 +14,7 @@ mod mode;
 mod position;
 mod revi;
 mod revi_command;
+mod text_formater;
 mod window;
 
 pub mod keymapper;

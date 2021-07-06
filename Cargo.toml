@@ -21,6 +21,7 @@ debug_bar = ["revi-core/debug_bar"]
 debug_line = ["revi-core/debug_line"]
 debug_line_words = ["revi-core/debug_line_words"]
 debug_input_number = ["revi-core/debug_input_number"]
+debug_offset = ["revi-core/debug_offset"]
 
 [workspace]
 

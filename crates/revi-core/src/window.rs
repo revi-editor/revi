@@ -5,6 +5,8 @@ use crate::buffer::Buffer;
 use crate::line_number::LineNumbers;
 use crate::mode::Mode;
 use crate::position::Position;
+// use crate::text_formater::format_window_buffer;
+use crate::text_formater::format_screen;
 use ropey::Rope;
 use std::cmp::{max, min};
 use std::fmt;
@@ -25,9 +27,9 @@ pub struct Window {
     /// Furthest from 0 the cursor has been.
     max_cursor: Position,
     /// Text File Data
-    buffer: Buffer,
+    buffer: Buffer, //  Move buffer into a list
     /// Name of Text File
-    name: Option<String>,
+    name: Option<String>, // Make this from a String to a Path
     /// Line Number Type.
     line_number_state: LineNumbers,
 }
@@ -137,12 +139,20 @@ impl Window {
     }
 
     pub fn move_cursor_left(&mut self, cols: usize) {
-        self.cursor.set_x(if cols > self.cursor.as_usize_x() {
-            0
+        if self.cursor.as_usize_x() == 0 {
+            self.scroll_left(cols);
         } else {
-            self.cursor.as_usize_x() - cols
-        });
-        self.max_cursor.set_x(self.cursor.as_usize_x());
+            self.cursor.set_x(if cols > self.cursor.as_usize_x() {
+                0
+            } else {
+                self.cursor.as_usize_x() - cols
+            });
+            self.max_cursor.set_x(self.cursor.as_usize_x());
+        }
+    }
+
+    pub fn scroll_left(&mut self, cols: usize) {
+        self.scroll_offset.sub_to_x(cols);
     }
 
     pub fn move_forward_by_word(&mut self) {
@@ -176,9 +186,22 @@ impl Window {
     }
 
     pub fn move_cursor_right(&mut self, cols: usize) {
-        self.cursor.add_to_x(cols);
-        self.adjust_cursor_x();
-        self.max_cursor.set_x(self.cursor.as_usize_x());
+        if self.cursor.as_usize_x() >= self.width() - 1 {
+            self.scroll_right(cols)
+        } else {
+            self.cursor.add_to_x(cols);
+            self.max_cursor.set_x(self.cursor.as_usize_x());
+            self.adjust_cursor_x();
+        }
+    }
+
+    pub fn scroll_right(&mut self, cols: usize) {
+        if cols + self.scroll_offset.as_usize_x() + self.cursor.as_usize_x()
+            < self.buffer.line_len(self.cursor_file().as_usize_y())
+        {
+            self.scroll_offset.add_to_x(cols);
+            // self.adjust_cursor_x()
+        }
     }
 
     pub fn insert_newline(&mut self) {
@@ -258,12 +281,21 @@ impl Window {
 
     pub fn home(&mut self) {
         self.cursor.set_x(0);
+        self.scroll_offset.set_x(0);
         self.max_cursor.set_x(0);
     }
 
     pub fn end(&mut self) {
         let y = self.cursor_file().as_usize_y();
-        self.cursor.set_x(self.buffer.line_len(y));
+        let line_len = self.buffer.line_len(y);
+        let cursor = line_len.min(self.width() - 1);
+        let offset = if line_len >= self.width() - 1 {
+            line_len.saturating_sub(cursor)
+        } else {
+            0
+        };
+        self.cursor.set_x(cursor);
+        self.scroll_offset.set_x(offset);
         self.max_cursor.set_x(self.cursor.as_usize_x());
         self.adjust_cursor_x();
     }
@@ -297,6 +329,8 @@ impl Window {
             let left = "NOTHING";
             let right = self.buffer.next_jump_idx(&pos);
             format!(" | {:?}<{}>{:?}", left, pos.as_u16_x(), right)
+        } else if cfg!(feature = "debug_offset") {
+            format!(" | {}", self.scroll_offset)
         } else {
             String::new()
         };
@@ -368,46 +402,14 @@ impl fmt::Display for Window {
         let top = self.scroll_offset.as_usize_y();
         let bottom = self.dimensions.as_usize_y() + top;
         let window = self.buffer.on_screen(top, bottom);
-        let formated_window = format_window_buffer(&window, self.width(), self.height());
+        // let formated_window = format_window_buffer(&window, self.width(), self.height());
+        let formated_window = format_screen(
+            &window,
+            self.scroll_offset.as_usize_x(),
+            self.width(),
+            self.height(),
+        );
 
         write!(f, "{}", formated_window)
     }
-}
-
-fn format_window_buffer(text: &str, width: usize, height: usize) -> String {
-    // TODO: Pull this out of window.rs
-    let filler = ' '; // std::char::from_u32(9608).unwrap_or('&');
-    let mut new = String::new();
-    for (y, line) in text.lines().enumerate() {
-        if y == height {
-            break;
-        }
-        let l = line.get(..line.len().min(width)).unwrap_or("");
-        let w = width.saturating_sub(count_char(l, '\t') * 3);
-        let line = line
-            .get(..line.len().min(w))
-            .unwrap_or("")
-            .replace("\t", "    ");
-        new.push_str(&line);
-        let spaces = width.saturating_sub(line.len());
-        let blanks = vec![filler; spaces].iter().collect::<String>();
-        new.push_str(&blanks);
-        new.push_str("\r\n");
-    }
-    for _ in 0..(height.saturating_sub(count_char(&new, '\n'))) {
-        new.push_str(&vec![filler; width].iter().collect::<String>());
-        new.push_str("\r\n");
-    }
-    new
-}
-
-fn count_char(string: &str, chr: char) -> usize {
-    // TODO: Pull this out of window.rs
-    let mut counter = 0;
-    for c in string.chars() {
-        if c == chr {
-            counter += 1;
-        }
-    }
-    counter
 }
