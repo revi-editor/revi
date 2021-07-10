@@ -210,3 +210,10 @@ fn word_indices(items: &[(usize, CharType)]) -> Vec<Vec<(usize, CharType)>> {
     }
     word_loc
 }
+
+#[test]
+fn test_buffer_len() {
+    use ropey::Rope;
+    let rope = Rope::from("0\n1\n2\n3\n4\n5\n"); // 7 lines
+    assert_eq!(rope.len_lines(), 7);
+}

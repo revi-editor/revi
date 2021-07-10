@@ -22,7 +22,11 @@ impl ReVi {
         let file_path = argparser();
         let (buffer, path) = from_path(file_path);
         let (w, h) = screen_size();
-        let window = Window::new(w, h.saturating_sub(2), buffer, path);
+
+        // We subtract 1 from the hight here to count for the command bar.
+        let h = h.saturating_sub(1);
+
+        let window = Window::new(w, h, buffer, path);
         let windows = vec![window];
         let command = (0..w).map(|_| " ").collect::<String>();
         let revi = Self {
@@ -107,15 +111,10 @@ impl ReVi {
                 }
                 ReViCommand::Save => self.focused_window().save(),
                 ReViCommand::Quit => self.is_running = false,
+                ReViCommand::InsertCharCommand(c) => self.command_insert_char(*c),
             }
         }
         let window = self.focused_window();
-        if cfg!(feature = "debug_input_number") {
-            render_commands.push(Render::StatusBar {
-                pos: (window.status_bar_pos() + Position::new_u16(0, 1)).as_u16(),
-                text: format!("input-number: {}                ", count),
-            });
-        }
         render_commands.push(Render::StatusBar {
             pos: window.status_bar_pos().as_u16(),
             text: window.status_bar(),
@@ -130,5 +129,11 @@ impl ReVi {
         });
         render_commands.push(Render::Cursor(window.cursor_screen().as_u16()));
         render_commands
+    }
+}
+
+impl ReVi {
+    fn command_insert_char(&mut self, char: char) {
+        self.command.push(char)
     }
 }

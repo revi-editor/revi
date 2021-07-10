@@ -38,17 +38,17 @@ impl Window {
     pub fn new(width: u16, height: u16, rope: Rope, name: Option<String>) -> Self {
         // TODO: Fix the Starting position of the window.
         let buffer = Buffer::from(rope);
-        let line_number_width = (buffer.len_lines().to_string().len().max(3) + 2) as u16;
+        let line_number_width = buffer.len_lines().to_string().len().max(3) + 2;
         Self {
             mode: Mode::Normal,
-            dimensions: Position::new_u16(width, height),
+            dimensions: Position::new_u16(width, height - 1),
             window_offset: Position::default(),
             scroll_offset: Position::default(),
             cursor: Position::default(),
             max_cursor: Position::default(),
             buffer,
             name,
-            line_number_state: LineNumbers::AbsoluteNumber(line_number_width),
+            line_number_state: LineNumbers::RelativeNumber(line_number_width, height as usize - 1),
         }
     }
 
@@ -84,7 +84,7 @@ impl Window {
 
     pub fn scroll_down(&mut self, lines: usize) {
         if lines + self.scroll_offset.as_usize_y() + self.cursor.as_usize_y()
-            < self.buffer.len_lines()
+            < self.buffer.len_lines().saturating_sub(1)
         {
             self.scroll_offset.add_to_y(lines);
             self.adjust_cursor_x()
@@ -99,7 +99,7 @@ impl Window {
     pub fn move_cursor_down(&mut self, lines: usize) {
         if self.cursor.as_usize_y() >= self.height() - 1 {
             self.scroll_down(lines);
-        } else if self.cursor_file().as_usize_y() < self.buffer.len_lines() - 1 {
+        } else if self.cursor_file().as_usize_y() <= self.buffer.len_lines().saturating_sub(1) {
             self.cursor.add_to_y(lines);
             self.cursor.set_x(self.max_cursor.as_usize_x());
             self.adjust_cursor_x()
@@ -126,7 +126,7 @@ impl Window {
         if let Mode::Normal = self.mode {
             if line.ends_with('\n') {
                 line_len = line_len.saturating_sub(2);
-            } else if self.buffer.len_lines() - 1 == self.cursor_file().as_usize_y() {
+            } else if self.buffer.len_lines().saturating_sub(1) == self.cursor_file().as_usize_y() {
                 line_len = line_len.saturating_sub(1);
             }
         } else if let Mode::Insert = self.mode {
@@ -228,9 +228,13 @@ impl Window {
     }
 
     pub fn jump_to_last_line_buffer(&mut self) {
+        // Gets line count but screen is off by one so we subtract one.
         let total_y = self.buffer.len_lines().saturating_sub(1);
+        // Gets screen height but it also is off by one so we subtract one.
         let screen_y = self.height() - 1;
-        let offset_y = total_y.saturating_sub(screen_y);
+        // Finds Y offset into file but it is off by one as well for indexing so we subtract one as
+        // well
+        let offset_y = total_y.saturating_sub(screen_y).saturating_sub(1);
         self.cursor.set_y(screen_y);
         self.scroll_offset.set_y(offset_y);
         self.adjust_cursor_x()
@@ -348,52 +352,19 @@ impl Window {
 
     pub fn status_bar_pos(&self) -> Position {
         // TODO: Pull this out of Window
-        let y = self.position().as_u16_y() + self.height() as u16;
-        Position::new_u16(self.position().as_u16_x(), y)
+        let y = self.position().as_usize_y() + self.height();
+        Position::new(self.position().as_usize_x(), y)
     }
 
     pub fn line_number(&self) -> String {
         // TODO: Pull this out of Window
-        match self.line_number_state {
-            LineNumbers::RelativeNumber(_) => "".to_string(),
-            LineNumbers::AbsoluteNumber(w) => {
-                // TODO: Refactor this to maybe be a trait LineNumers.
-                // UI will need to have its own Display trait.
-                let file_len = self.buffer.len_lines();
-                let max_number_len = file_len.to_string().len();
-                let top = self.scroll_offset.as_usize_y();
-                let bottom = top + self.height();
-                let blank = (0..w + 1)
-                    .enumerate()
-                    .map(|(i, _)| {
-                        if i == 0 {
-                            "~"
-                        } else if i as u16 == w {
-                            "\r\n"
-                        } else {
-                            " "
-                        }
-                    })
-                    .collect::<String>();
-                (top..bottom)
-                    .map(|n| {
-                        if n > file_len.saturating_sub(1) {
-                            return blank.clone();
-                        }
-                        let padding = (0..(max(max_number_len, w as usize - 2)
-                            - n.to_string().len()))
-                            .map(|_| " ")
-                            .collect::<String>();
-                        let line_number = format!(" {}{}", padding, n);
-                        let width = (0..w.saturating_sub(line_number.len() as u16))
-                            .map(|_| " ")
-                            .collect::<String>();
-                        format!("{}{}\r\n", line_number, width)
-                    })
-                    .collect::<String>()
-            }
-            LineNumbers::None => "".to_string(),
-        }
+        let scroll = self.scroll_offset.as_usize_y();
+        let len_lines = self.buffer.len_lines().saturating_sub(1);
+        let y = self
+            .cursor_file()
+            .as_usize_y()
+            .saturating_sub(self.scroll_offset.as_usize_y());
+        self.line_number_state.lines(scroll, len_lines, y)
     }
 }
 
@@ -402,7 +373,6 @@ impl fmt::Display for Window {
         let top = self.scroll_offset.as_usize_y();
         let bottom = self.dimensions.as_usize_y() + top;
         let window = self.buffer.on_screen(top, bottom);
-        // let formated_window = format_window_buffer(&window, self.width(), self.height());
         let formated_window = format_screen(
             &window,
             self.scroll_offset.as_usize_x(),
