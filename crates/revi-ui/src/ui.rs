@@ -1,35 +1,11 @@
 use crate::key::Key;
-use std::fmt::{self, Debug};
+use crate::CursorShape;
+use crate::Display;
 use std::io::{stdout, Stdout, Write};
 use std::time::Duration;
 
 pub fn screen_size() -> (u16, u16) {
     crossterm::terminal::size().expect("Failed to find screen size")
-}
-
-#[derive(Clone)]
-pub enum Render {
-    Window { pos: (u16, u16), text: String },
-    StatusBar { pos: (u16, u16), text: String },
-    LineNumbers { pos: (u16, u16), text: String },
-    Cursor((u16, u16)),
-    CursorShapeBlock,
-    CursorShapeLine,
-}
-
-impl fmt::Debug for Render {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let output;
-        match self {
-            Self::Window { pos, .. } => output = format!("Window({}, {})", pos.0, pos.1),
-            Self::StatusBar { pos, .. } => output = format!("StatusBar({}, {})", pos.0, pos.1),
-            Self::LineNumbers { pos, .. } => output = format!("LineNumbers({}, {})", pos.0, pos.1),
-            Self::Cursor(pos) => output = format!("Cursor({}, {})", pos.0, pos.1),
-            Self::CursorShapeBlock => output = "CursorShapeBlock".to_string(),
-            Self::CursorShapeLine => output = "CursorShapeLine".to_string(),
-        }
-        write!(f, "{}", output)
-    }
 }
 
 pub struct Tui {
@@ -57,103 +33,49 @@ impl Tui {
         keys
     }
 
-    pub fn update(&mut self, render: &[Render]) {
-        if render.is_empty() {
-            return;
-        }
+    pub fn update(&mut self, displayable: &impl Display<()>) {
         self.save_cursor();
         self.hide_cursor();
-        if cfg!(feature = "debug_bar") {
-            self.debug(render);
-        }
-        for revent in render.iter() {
-            match revent {
-                Render::Cursor(pos) => self.update_cursor(pos),
-                Render::StatusBar { pos, text } => self.update_status_bar(pos, text),
-                Render::Window { pos, text } => self.update_window(pos, text), // Possible rename to redaw_area
-                Render::LineNumbers { pos, text } => self.update_window(pos, text),
-                Render::CursorShapeBlock => {
-                    self.set_cursor_shape(crossterm::cursor::CursorShape::Block)
-                }
-                Render::CursorShapeLine => {
-                    self.set_cursor_shape(crossterm::cursor::CursorShape::Line)
-                }
-            }
-        }
+        displayable.render(&(), |x, y, text| {
+            self.update_window(x, y, text.as_str());
+        });
+        displayable.line_numbers(&(), |x, y, text| {
+            self.update_window(x, y, text.as_str());
+        });
+        displayable.status_bar(&(), |x, y, text| {
+            self.update_window(x, y, text.as_str());
+        });
+        displayable.cursor(&(), |x, y, shape| {
+            self.update_cursor(x, y, shape);
+        });
         self.restore_cursor();
         self.show_cursor();
         self.flush();
     }
 
-    pub fn debug<T>(&mut self, t: T)
-    where
-        T: Debug,
-    {
-        crossterm::queue!(
-            self.writer,
-            crossterm::cursor::MoveTo(0, 10000),
-            crossterm::style::Print(format!(
-                "{:?}                                                ",
-                t
-            )),
-        )
-        .expect("Printing Debug Failed.");
-    }
-
-    fn update_window(&mut self, pos: &(u16, u16), text: &str) {
-        let offset_y = pos.1;
+    fn update_window(&mut self, x: u16, offset_y: u16, text: &str) {
         for (idx, line) in text.to_string().lines().enumerate() {
             let y = offset_y + idx as u16;
             crossterm::queue!(
                 self.writer,
-                crossterm::cursor::MoveTo(pos.0, y),
+                crossterm::cursor::MoveTo(x, y),
                 crossterm::style::Print(line.strip_suffix("\r\n").unwrap_or(line)),
             )
             .expect("Drawing Window Failed.");
         }
     }
 
-    pub fn update_status_bar(&mut self, pos: &(u16, u16), text: &str) {
-        crossterm::queue!(
-            self.writer,
-            crossterm::cursor::MoveTo(pos.0, pos.1),
-            crossterm::style::Print(text),
-        )
-        .expect("Drawing StatusBar Failed.");
-    }
-
-    pub fn _update_command_bar(&mut self) {}
-
-    pub fn update_cursor(&mut self, pos: &(u16, u16)) {
+    pub fn update_cursor(&mut self, x: u16, y: u16, shape: Option<CursorShape>) {
+        if let Some(shape) = shape {
+            self.set_cursor_shape(shape.into());
+        }
         crossterm::queue!(
             self.writer,
             crossterm::cursor::RestorePosition,
-            crossterm::cursor::MoveTo(pos.0, pos.1),
+            crossterm::cursor::MoveTo(x, y),
             crossterm::cursor::SavePosition
         )
         .expect("Failure to update cursor position.");
-    }
-
-    pub fn _update_windows<T>(&mut self, windows: &[T], positions: &[(u16, u16)])
-    where
-        T: std::fmt::Display,
-    {
-        self.save_cursor();
-        self.hide_cursor();
-        for (window, (x, y)) in itertools::izip!(windows, positions) {
-            for (idx, line) in window.to_string().lines().enumerate() {
-                let y = y + idx as u16;
-                crossterm::queue!(
-                    self.writer,
-                    crossterm::cursor::MoveTo(*x, y),
-                    crossterm::style::Print(line),
-                )
-                .expect("Drawing Window Failed.");
-            }
-        }
-        self.restore_cursor();
-        self.show_cursor();
-        self.flush();
     }
 
     fn set_cursor_shape(&mut self, shape: crossterm::cursor::CursorShape) {

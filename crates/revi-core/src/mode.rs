@@ -1,11 +1,20 @@
 use std::fmt;
 
-#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Mode {
     Normal,
     Command,
     Insert,
+}
+impl Mode {
+    pub fn shape(&self) -> revi_ui::CursorShape {
+        use revi_ui::CursorShape::*;
+        match self {
+            Self::Normal => Block,
+            Self::Command => Block,
+            Self::Insert => Line,
+        }
+    }
 }
 
 impl fmt::Display for Mode {

@@ -1,6 +1,8 @@
 use ropey::Rope;
 use std::ops::Range;
 // use unicode_segmentation::*;
+use std::fs::OpenOptions;
+use std::io::BufReader;
 use unicode_width::UnicodeWidthStr;
 
 use crate::position::Position;
@@ -53,14 +55,20 @@ impl From<&str> for CharType {
 #[allow(dead_code)]
 pub struct Buffer {
     _inner: Rope,
+    _name: Option<String>,
 }
 
 #[allow(dead_code)]
 impl Buffer {
-    pub fn new(string: &str) -> Self {
+    pub fn new() -> Self {
         Self {
-            _inner: Rope::from(string),
+            _inner: Rope::new(),
+            _name: None,
         }
+    }
+
+    pub fn name(&self) -> &Option<String> {
+        &self._name
     }
 
     pub fn idx_of_position(&self, pos: &Position) -> usize {
@@ -128,7 +136,6 @@ impl Buffer {
             .map(|(i, c)| (i, c.into()))
             .collect();
         let possible_jumps = word_indices(&result);
-        eprintln!("{:?}", possible_jumps);
         possible_jumps
             .get(1)
             .map(|w| w.first())
@@ -144,7 +151,6 @@ impl Buffer {
             .map(|(i, c)| (i, c.into()))
             .collect();
         let possible_jumps = word_indices(&result);
-        eprintln!("{:?}", possible_jumps);
         let idx = possible_jumps
             .get(0)
             .map(|w| w.last())
@@ -159,18 +165,25 @@ impl Buffer {
     }
 }
 
-impl From<Rope> for Buffer {
-    fn from(buf: Rope) -> Self {
-        Self { _inner: buf }
+impl From<&str> for Buffer {
+    fn from(filename: &str) -> Self {
+        let rope = from_path(filename);
+        Self {
+            _inner: rope,
+            _name: Some(filename.to_string()),
+        }
     }
 }
 
-impl From<&str> for Buffer {
-    fn from(s: &str) -> Self {
-        Self {
-            _inner: Rope::from_str(s),
-        }
-    }
+pub fn from_path(path: &str) -> Rope {
+    let file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .open(path)
+        .expect("Problem opening the file");
+
+    Rope::from_reader(BufReader::new(file)).expect("Failed to open file.")
 }
 
 fn word_indices(items: &[(usize, CharType)]) -> Vec<Vec<(usize, CharType)>> {

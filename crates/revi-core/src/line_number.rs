@@ -1,29 +1,23 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[allow(dead_code)]
 pub enum LineNumbers {
-    RelativeNumber(usize, usize),
-    AbsoluteNumber(usize, usize),
+    RelativeNumber,
+    AbsoluteNumber,
     None,
 }
 
 impl LineNumbers {
-    pub fn width(&self) -> usize {
+    pub fn lines(
+        &self,
+        width: usize,
+        height: usize,
+        offset: usize,
+        line_len: usize,
+        cursor_y: usize,
+    ) -> String {
         match self {
-            Self::AbsoluteNumber(w, _) | Self::RelativeNumber(w, _) => *w as usize,
-            Self::None => 0,
-        }
-    }
-
-    pub fn height(&self) -> usize {
-        match self {
-            Self::AbsoluteNumber(_, h) | Self::RelativeNumber(_, h) => *h as usize,
-            Self::None => 0,
-        }
-    }
-    pub fn lines(&self, offset: usize, line_len: usize, cursor_y: usize) -> String {
-        match self {
-            Self::RelativeNumber(w, h) => relative_number(*w, *h, cursor_y, 0),
-            Self::AbsoluteNumber(w, h) => absolute_number(*w, *h, offset, line_len),
+            Self::RelativeNumber => relative_number(width, height, cursor_y, 0),
+            Self::AbsoluteNumber => absolute_number(width, height, offset, line_len),
             Self::None => String::new(),
         }
     }

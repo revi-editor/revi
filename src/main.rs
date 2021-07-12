@@ -1,3 +1,12 @@
+const AUTHOR: &str = "
+▞▀▖       ▌        ▞▀▖▞▀▖▞▀▖▛▀▘
+▌  ▞▀▖▌  ▌▛▀▖▞▀▖▌ ▌▚▄▘▙▄  ▗▘▙▄
+▌ ▖▌ ▌▐▐▐ ▌ ▌▌ ▌▚▄▌▌ ▌▌ ▌▗▘ ▖ ▌
+▝▀ ▝▀  ▘▘ ▀▀ ▝▀ ▗▄▘▝▀ ▝▀ ▀▀▘▝▀
+Email: cowboy8625@protonmail.com
+";
+
+mod commandline;
 use revi_core::*;
 use revi_ui::*;
 
@@ -6,7 +15,8 @@ use mlua::prelude::*;
 
 #[allow(dead_code)]
 fn main() -> LuaResult<()> {
-    let revi = ReVi::new();
+    let files = commandline::args();
+    let revi = ReVi::new(&files);
     let lua = Lua::new();
 
     lua.globals().set("revi", revi.clone())?;
@@ -18,11 +28,10 @@ fn main() -> LuaResult<()> {
     let keymapper = Mapper::default();
     let mut input = Input::default();
 
-    let render_commands = revi
-        .borrow_mut()
+    revi.borrow_mut()
         .execute(input.number_usize(), &[ReViCommand::StartUp]);
     input.clear();
-    tui.update(&render_commands);
+    tui.update(&*revi.borrow());
 
     while revi.borrow().is_running {
         if tui.poll_read(std::time::Duration::from_millis(50)) {
@@ -31,8 +40,8 @@ fn main() -> LuaResult<()> {
             input.input(&mode, keys);
 
             if let Some(commands) = keymapper.get_mapping(&mode, &input.keys()) {
-                let render_commands = revi.borrow_mut().execute(input.number_usize(), commands);
-                tui.update(&render_commands);
+                revi.borrow_mut().execute(input.number_usize(), commands);
+                tui.update(&*revi.borrow());
                 input.clear();
             } else if mode == Mode::Insert {
                 let input_chars = input
@@ -41,11 +50,10 @@ fn main() -> LuaResult<()> {
                     .filter(|c| **c != '\0')
                     .map(|c| ReViCommand::InsertChar(*c))
                     .collect::<Vec<ReViCommand>>();
-                let render_commands = revi
-                    .borrow_mut()
+                revi.borrow_mut()
                     .execute(input.number_usize(), &input_chars);
                 input.clear();
-                tui.update(&render_commands);
+                tui.update(&*revi.borrow());
             }
         }
     }

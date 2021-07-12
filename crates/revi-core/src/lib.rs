@@ -1,21 +1,15 @@
-const AUTHOR: &str = "
-▞▀▖       ▌        ▞▀▖▞▀▖▞▀▖▛▀▘
-▌  ▞▀▖▌  ▌▛▀▖▞▀▖▌ ▌▚▄▘▙▄  ▗▘▙▄
-▌ ▖▌ ▌▐▐▐ ▌ ▌▌ ▌▚▄▌▌ ▌▌ ▌▗▘ ▖ ▌
-▝▀ ▝▀  ▘▘ ▀▀ ▝▀ ▗▄▘▝▀ ▝▀ ▀▀▘▝▀
-Email: cowboy8625@protonmail.com
-";
+// ▞▀▖       ▌        ▞▀▖▞▀▖▞▀▖▛▀▘
+// ▌  ▞▀▖▌  ▌▛▀▖▞▀▖▌ ▌▚▄▘▙▄  ▗▘▙▄
+// ▌ ▖▌ ▌▐▐▐ ▌ ▌▌ ▌▚▄▌▌ ▌▌ ▌▗▘ ▖ ▌
+// ▝▀ ▝▀  ▘▘ ▀▀ ▝▀ ▗▄▘▝▀ ▝▀ ▀▀▘▝▀
 
 mod api;
 mod buffer;
-mod commandline;
 mod line_number;
 mod mode;
-mod pane;
 mod position;
 mod revi;
 mod revi_command;
-mod status_bar;
 mod text_formater;
 mod window;
 

@@ -3,7 +3,7 @@ name = "revi"
 version = "0.0.0-beta-0.7"
 authors = ["cowboy8625 <cowboy8625@protonmail.com>"]
 edition = "2018"
-description = "A Terminal Based Vim Inspired Text Editor"
+description = "A Vim/NeoVim Inspired Text Editor"
 readme = "README.md"
 repository = "https://github.com/revi-editor/revi"
 license-file = "LICENSE"
@@ -11,17 +11,10 @@ keywords = ["text-editor", "command-line", "termainl", "vim", "configuration"]
 categories = ["text-editors", "text-processing", "command-line-utilities", "command-line-interface"]
 
 [dependencies]
-revi-ui = { path = "./crates/revi-ui", version="0.0.0-beta-0.6" }
-revi-core = { path = "./crates/revi-core", version="0.0.0-beta-0.6" }
+revi-ui = { path = "./crates/revi-ui", version="0.0.0-beta-0.7" }
+revi-core = { path = "./crates/revi-core", version="0.0.0-beta-0.7" }
 mlua = { version = "0.6.1", features = ["lua53", "vendored"] }
-
-[features]
-
-debug_bar = ["revi-core/debug_bar"]
-debug_line = ["revi-core/debug_line"]
-debug_line_words = ["revi-core/debug_line_words"]
-debug_input_number = ["revi-core/debug_input_number"]
-debug_offset = ["revi-core/debug_offset"]
+clap = "2.33.3"
 
 [workspace]
 
