@@ -381,7 +381,7 @@ impl Window {
                     .borrow()
                     .name()
                     .clone()
-                    .unwrap_or("N/A".to_string())
+                    .unwrap_or_else(|| "N/A".to_string())
             );
             let right = format!(
                 "file: {} | window: {} ",

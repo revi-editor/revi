@@ -101,70 +101,88 @@ impl ReVi {
         self.is_running = false;
     }
 
+    pub fn next_window(&mut self) {
+        self.focused = if self.focused < self.windows.len().saturating_sub(1) {
+            self.focused + 1
+        } else {
+            1
+        }
+    }
+
+    pub fn change_modes(&mut self, mode: &Mode) {
+        *self.mode_mut() = *mode;
+        self.focused_window_mut().adjust_cursor_x();
+    }
+
+    pub fn enter_command_mode(&mut self) {
+        *self.mode_mut() = Mode::Command;
+        self.last_focused = self.focused.max(1);
+        self.focused = 0;
+        *self.mode_mut() = Mode::Insert;
+    }
+
+    pub fn exit_command_mode(&mut self) {
+        *self.mode_mut() = Mode::Normal;
+        self.focused = self.last_focused;
+    }
+
+    pub fn execute_command_line(&mut self) {
+        let string = self.focused_window().buffer().contents();
+        let new_buffer = Rc::new(RefCell::new(Buffer::new()));
+        let _ = self.buffers.remove(0);
+        self.buffers.insert(0, Clone::clone(&new_buffer));
+        self.focused_window_mut().set_buffer(new_buffer);
+        self.run_command_line(&string);
+    }
+
     pub fn execute(&mut self, count: usize, commands: &[ReViCommand]) {
+        use ReViCommand::*;
         for command in commands {
             match command {
-                ReViCommand::StartUp => {}
-                ReViCommand::CursorUp => self.focused_window_mut().move_cursor_up(count),
-                ReViCommand::CursorDown => self.focused_window_mut().move_cursor_down(count),
-                ReViCommand::ScrollUp => self.focused_window_mut().scroll_up(count),
-                ReViCommand::ScrollDown => self.focused_window_mut().scroll_down(count),
-                ReViCommand::CursorLeft => self.focused_window_mut().move_cursor_left(count),
-                ReViCommand::CursorRight => self.focused_window_mut().move_cursor_right(count),
-                ReViCommand::Home => self.focused_window_mut().home(),
-                ReViCommand::End => self.focused_window_mut().end(),
-                ReViCommand::FirstCharInLine => self.focused_window_mut().first_char_in_line(),
-                ReViCommand::JumpToFirstLineBuffer => {
-                    self.focused_window_mut().jump_to_first_line_buffer()
-                }
-                ReViCommand::JumpToLastLineBuffer => {
-                    self.focused_window_mut().jump_to_last_line_buffer()
-                }
-                ReViCommand::DeleteChar => self.focused_window_mut().delete(),
-                ReViCommand::DeleteLine => self.focused_window_mut().delete_line(),
-                ReViCommand::NewLine => self.focused_window_mut().insert_newline(),
-                ReViCommand::Backspace => self.focused_window_mut().backspace(),
-                ReViCommand::InsertChar(c) => self.focused_window_mut().insert_char(*c),
-                ReViCommand::EnterCommandMode => {
-                    *self.mode_mut() = Mode::Command;
-                    self.last_focused = self.focused.max(1);
-                    self.focused = 0;
-                    *self.mode_mut() = Mode::Insert;
-                }
-                ReViCommand::ExitCommandMode => {
-                    *self.mode_mut() = Mode::Normal;
-                    self.focused = self.last_focused;
-                }
-                ReViCommand::ExcuteCommandLine if self.focused == 0 => {
-                    let string = self.focused_window().buffer().contents();
-                    self.focused_window_mut().buffer_mut().clear();
-                    self.run_command_line(&string);
-                }
-                ReViCommand::ExcuteCommandLine => {}
-                ReViCommand::NextWindow => {
-                    self.focused = if self.focused < self.windows.len().saturating_sub(1) {
-                        self.focused + 1
-                    } else {
-                        1
-                    }
-                }
-                ReViCommand::Mode(m) => {
-                    *self.mode_mut() = *m;
-                    self.focused_window_mut().adjust_cursor_x();
-                }
-                ReViCommand::MoveForwardByWord => self.focused_window_mut().move_forward_by_word(),
-                ReViCommand::MoveBackwardByWord => {
-                    self.focused_window_mut().move_backward_by_word()
-                }
-                ReViCommand::Save => self.focused_window().save(),
-                ReViCommand::Quit => self.exit(),
+                StartUp => {}
+                CursorUp => self.focused_window_mut().move_cursor_up(count),
+                CursorDown => self.focused_window_mut().move_cursor_down(count),
+                ScrollUp => self.focused_window_mut().scroll_up(count),
+                ScrollDown => self.focused_window_mut().scroll_down(count),
+                CursorLeft => self.focused_window_mut().move_cursor_left(count),
+                CursorRight => self.focused_window_mut().move_cursor_right(count),
+                Home => self.focused_window_mut().home(),
+                End => self.focused_window_mut().end(),
+                FirstCharInLine => self.focused_window_mut().first_char_in_line(),
+                JumpToFirstLineBuffer => self.focused_window_mut().jump_to_first_line_buffer(),
+                JumpToLastLineBuffer => self.focused_window_mut().jump_to_last_line_buffer(),
+                DeleteChar => self.focused_window_mut().delete(),
+                DeleteLine => self.focused_window_mut().delete_line(),
+                NewLine => self.focused_window_mut().insert_newline(),
+                Backspace => self.focused_window_mut().backspace(),
+                InsertChar(c) => self.focused_window_mut().insert_char(*c),
+                EnterCommandMode => self.enter_command_mode(),
+                ExitCommandMode => self.exit_command_mode(),
+                ExcuteCommandLine if self.focused == 0 => self.execute_command_line(),
+                ExcuteCommandLine => {}
+                NextWindow => self.next_window(),
+                Mode(m) => self.change_modes(m),
+                MoveForwardByWord => self.focused_window_mut().move_forward_by_word(),
+                MoveBackwardByWord => self.focused_window_mut().move_backward_by_word(),
+                Save => self.focused_window().save(),
+                Quit => self.exit(),
             }
         }
     }
 
     fn run_command_line(&mut self, command: &str) {
-        match command {
+        let mut items: Vec<&str> = command.split(' ').collect();
+        match items.remove(0) {
             "q" => self.exit(),
+            "b" if !items.is_empty() => {
+                if let Some(i) = items.get(0).map(|i| i.parse::<usize>().ok()).flatten() {
+                    let buffer = self.buffers.get(i).map(|rc| Clone::clone(rc));
+                    if let Some(b) = buffer {
+                        self.focused = self.last_focused;
+                        self.focused_window_mut().set_buffer(b);
+                    }
+                }
+            }
             _ => {}
         }
     }
@@ -174,14 +192,14 @@ impl revi_ui::Display for ReVi {
     fn render(&self, mut func: impl FnMut(u16, u16, String)) {
         for id in self.queued() {
             let window = &self.windows[*id];
-            for data in vec![
-                window.get_text_feild(),
-                window.get_line_number(),
-                window.get_status_bar(),
-            ] {
-                if let Some(((x, y), text)) = data {
-                    func(x, y, text);
-                }
+            if let Some(((x, y), text)) = window.get_text_feild() {
+                func(x, y, text);
+            }
+            if let Some(((x, y), text)) = window.get_line_number() {
+                func(x, y, text);
+            }
+            if let Some(((x, y), text)) = window.get_status_bar() {
+                func(x, y, text);
             }
         }
     }

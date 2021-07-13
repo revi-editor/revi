@@ -196,7 +196,7 @@ impl Mapper {
             .insert_mapping(
                 &Insert,
                 vec![Key::Enter],
-                vec![ReViCommand::ExcuteCommandLine],
+                vec![ReViCommand::ExcuteCommandLine, ReViCommand::ExitCommandMode],
             )
     }
 
@@ -206,7 +206,7 @@ impl Mapper {
             .insert_mapping(
                 &Command,
                 vec![Key::Enter],
-                vec![ReViCommand::ExitCommandMode],
+                vec![ReViCommand::ExcuteCommandLine, ReViCommand::ExitCommandMode],
             )
     }
 }

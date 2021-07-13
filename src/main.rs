@@ -21,7 +21,7 @@ fn main() -> LuaResult<()> {
 
     lua.globals().set("revi", revi.clone())?;
     let init_lua = std::fs::read_to_string("init.lua");
-    lua.load(init_lua.unwrap_or(String::new()).as_str())
+    lua.load(init_lua.unwrap_or_else(|_| String::new()).as_str())
         .exec()?;
 
     let mut tui = Tui::default();
