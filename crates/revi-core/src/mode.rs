@@ -27,3 +27,36 @@ impl fmt::Display for Mode {
         write!(f, "{}", mode)
     }
 }
+
+// trait Scroll {
+//     fn scroll_up(&mut self);
+//     fn scroll_down(&mut self);
+//     fn scroll_left(&mut self);
+//     fn scroll_right(&mut self);
+// }
+//
+// trait Movement {
+//     fn move_cursor_up(&mut self);
+//     fn move_cursor_down(&mut self);
+//     fn move_cursor_left(&mut self);
+//     fn move_cursor_right(&mut self);
+// }
+//
+//
+// /// Inserting text into buffer and basic movement.
+// trait Insert: Movement {
+//     fn insert_char(&mut self);
+//     fn backspace(&mut self);
+//     fn delete(&mut self);
+//     fn new_line(&mut self);
+// }
+// /// This is all of your Movement commands
+// trait Normal: Movement + Scroll {
+// }
+//
+// /// Command Bar behavior
+// trait Comand: Insert {}
+// trait ModalComand: Insert + Normal {}
+//
+// /// Fuzzy File
+// trait Fuzzy: Normal + Insert {}

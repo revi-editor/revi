@@ -8,6 +8,7 @@ pub fn screen_size() -> (u16, u16) {
     crossterm::terminal::size().expect("Failed to find screen size")
 }
 
+#[derive(Debug)]
 pub struct Tui {
     writer: Stdout,
     current_event: Option<crossterm::event::Event>,
@@ -33,19 +34,13 @@ impl Tui {
         keys
     }
 
-    pub fn update(&mut self, displayable: &impl Display<()>) {
+    pub fn update(&mut self, displayable: &impl Display) {
         self.save_cursor();
         self.hide_cursor();
-        displayable.render(&(), |x, y, text| {
+        displayable.render(|x, y, text: String| {
             self.update_window(x, y, text.as_str());
         });
-        displayable.line_numbers(&(), |x, y, text| {
-            self.update_window(x, y, text.as_str());
-        });
-        displayable.status_bar(&(), |x, y, text| {
-            self.update_window(x, y, text.as_str());
-        });
-        displayable.cursor(&(), |x, y, shape| {
+        displayable.cursor(|x, y, shape| {
             self.update_cursor(x, y, shape);
         });
         self.restore_cursor();

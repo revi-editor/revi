@@ -78,7 +78,11 @@ impl Mapper {
             .insert_mapping(&Normal, vec![Key::Left], vec![ReViCommand::CursorLeft])
             .insert_mapping(&Normal, vec![Key::LL], vec![ReViCommand::CursorRight])
             .insert_mapping(&Normal, vec![Key::Right], vec![ReViCommand::CursorRight])
-            .insert_mapping(&Normal, vec![Key::Colon], vec![ReViCommand::Mode(Command)])
+            .insert_mapping(
+                &Normal,
+                vec![Key::Colon],
+                vec![ReViCommand::EnterCommandMode],
+            )
             .insert_mapping(&Normal, vec![Key::LI], vec![ReViCommand::Mode(Insert)])
             .insert_mapping(&Normal, vec![Key::LX], vec![ReViCommand::DeleteChar])
             .insert_mapping(&Normal, vec![Key::Delete], vec![ReViCommand::DeleteChar])
@@ -166,6 +170,16 @@ impl Mapper {
                 vec![Key::UG, Key::Shift],
                 vec![ReViCommand::JumpToLastLineBuffer],
             )
+            .insert_mapping(
+                &Normal,
+                vec![Key::LW, Key::Ctrl, Key::LW, Key::Ctrl],
+                vec![ReViCommand::NextWindow],
+            )
+            .insert_mapping(
+                &Normal,
+                vec![Key::Enter],
+                vec![ReViCommand::ExcuteCommandLine],
+            )
     }
 
     fn build_insert(self) -> Self {
@@ -179,12 +193,21 @@ impl Mapper {
             .insert_mapping(&Insert, vec![Key::Up], vec![ReViCommand::CursorUp])
             .insert_mapping(&Insert, vec![Key::Left], vec![ReViCommand::CursorLeft])
             .insert_mapping(&Insert, vec![Key::Right], vec![ReViCommand::CursorRight])
+            .insert_mapping(
+                &Insert,
+                vec![Key::Enter],
+                vec![ReViCommand::ExcuteCommandLine],
+            )
     }
 
     fn build_command(self) -> Self {
         use Mode::*;
-        self.insert_mapping(&Command, vec![Key::Esc], vec![ReViCommand::Mode(Normal)])
-            .insert_mapping(&Command, vec![Key::Enter], vec![ReViCommand::Mode(Normal)])
+        self.insert_mapping(&Command, vec![Key::Esc], vec![ReViCommand::ExitCommandMode])
+            .insert_mapping(
+                &Command,
+                vec![Key::Enter],
+                vec![ReViCommand::ExitCommandMode],
+            )
     }
 }
 

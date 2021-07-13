@@ -22,6 +22,10 @@ pub enum ReViCommand {
     DeleteLine,
     InsertChar(char),
     Mode(Mode),
+    EnterCommandMode,
+    ExitCommandMode,
+    ExcuteCommandLine,
+    NextWindow,
     Save,
     Quit,
 }

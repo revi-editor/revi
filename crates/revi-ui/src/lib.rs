@@ -4,11 +4,9 @@ pub use key::Key;
 pub use ui::screen_size;
 pub use ui::Tui;
 
-pub trait Display<B> {
-    fn render<F: FnMut(u16, u16, String)>(&self, buffer: &B, func: F);
-    fn line_numbers<F: FnMut(u16, u16, String)>(&self, buffer: &B, func: F);
-    fn status_bar<F: FnMut(u16, u16, String)>(&self, buffer: &B, func: F);
-    fn cursor<F: FnMut(u16, u16, Option<CursorShape>)>(&self, buffer: &B, func: F);
+pub trait Display {
+    fn render(&self, func: impl FnMut(u16, u16, String));
+    fn cursor(&self, func: impl FnMut(u16, u16, Option<CursorShape>));
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

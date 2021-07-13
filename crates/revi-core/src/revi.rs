@@ -12,55 +12,65 @@ pub struct ReVi {
     pub is_running: bool,
     size: Position,
     windows: Vec<Window>,
-    buffers: Vec<Buffer>,
+    queue: Vec<usize>,
+    buffers: Vec<Rc<RefCell<Buffer>>>,
     focused: usize,
+    last_focused: usize,
     clipboard: String,
 }
 
 impl ReVi {
     pub fn new(files: &[String]) -> Rc<RefCell<Self>> {
-        let mut buffers: Vec<Buffer> = files.iter().map(|f| Buffer::from(f.as_str())).collect();
-        buffers.insert(0, Buffer::new());
+        let mut buffers: Vec<Rc<RefCell<Buffer>>> = files
+            .iter()
+            .map(|f| Rc::new(RefCell::new(Buffer::from(f.as_str()))))
+            .collect();
+        if buffers.is_empty() {
+            buffers.push(Rc::new(RefCell::new(Buffer::new())));
+        }
+
+        let cbuffer = Rc::new(RefCell::new(Buffer::new()));
+        buffers.insert(0, Clone::clone(&cbuffer));
+
         let (w, h) = screen_size();
 
         // We subtract 1 from the hight here to count for the command bar.
         let h = h.saturating_sub(1);
-        let window = Window::new(w, h, Some(1))
+
+        // let w1 = w / 2;
+        // let w2 = w - w1;
+        let window1 = Window::new(w, h, Clone::clone(&buffers[1]))
             .with_status_bar(true)
             .with_line_numbers(LineNumbers::RelativeNumber);
-        let command_bar = Window::new(w, 1, Some(0)).with_position((0, h + 2).into());
-        let windows = vec![command_bar, window];
+        // let window2 = Window::new(w2, h, Clone::clone(&buffers[2]))
+        //     .with_status_bar(true)
+        //     .with_line_numbers(LineNumbers::RelativeNumber)
+        //     .with_position((window1.width(), 0).into());
+
+        let command_bar = Window::new(w, 1, cbuffer).with_position((0, h + 2).into());
+
+        let windows = vec![command_bar, window1];
+        let queue = windows
+            .iter()
+            .enumerate()
+            .map(|(i, _)| i)
+            .collect::<Vec<usize>>();
+
         let revi = Self {
             size: Position::new_u16(w, h),
             is_running: true,
             windows,
+            queue,
             buffers,
             focused: 1,
+            last_focused: 1,
             clipboard: String::new(),
         };
         Rc::new(RefCell::new(revi))
     }
 
-    pub fn get_current_buffer(&self) -> Option<&Buffer> {
-        self.focused_window()
-            .get_buffer_id()
-            .map(|id| self.buffers.get(id))
-            .flatten()
-    }
-
-    pub fn get_current_buffer_mut(&mut self) -> Option<&mut Buffer> {
-        let window = &mut self.windows[self.focused];
-        if let Some(id) = window.get_buffer_id() {
-            return self.buffers.get_mut(id);
-        }
-        None
-    }
-
     pub fn cursor_position_u16(&self) -> (u16, u16) {
-        if let Some(buffer) = self.get_current_buffer() {
-            return self.windows[self.focused].cursor_screen(buffer).as_u16();
-        }
-        (0, 0)
+        self.windows[self.focused].cursor_screen().as_u16()
     }
 
     pub fn set_cursor_position(&mut self, x: u16, y: u16) {
@@ -79,157 +89,106 @@ impl ReVi {
         &self.windows[self.focused]
     }
 
-    pub fn focused_window_with_buffer(&self) -> (&Window, Option<&Buffer>) {
-        let window = &self.windows[self.focused];
-        let buffer = window
-            .get_buffer_id()
-            .map(|id| self.buffers.get(id))
-            .flatten();
-        (window, buffer)
-    }
-
     pub fn focused_window_mut(&mut self) -> &mut Window {
         &mut self.windows[self.focused]
     }
 
-    pub fn focused_window_mut_with_buffer_mut(&mut self) -> (&mut Window, Option<&mut Buffer>) {
-        let window = &mut self.windows[self.focused];
-        if let Some(id) = window.get_buffer_id() {
-            return (window, self.buffers.get_mut(id));
-        }
-        (window, None)
+    pub fn queued(&self) -> &[usize] {
+        &self.queue
     }
 
-    pub fn focused_window_mut_with_buffer(&mut self) -> (&mut Window, Option<&Buffer>) {
-        let window = &mut self.windows[self.focused];
-        if let Some(id) = window.get_buffer_id() {
-            return (window, self.buffers.get(id));
-        }
-        (window, None)
+    pub fn exit(&mut self) {
+        self.is_running = false;
     }
 
     pub fn execute(&mut self, count: usize, commands: &[ReViCommand]) {
         for command in commands {
             match command {
                 ReViCommand::StartUp => {}
-                ReViCommand::CursorUp => {
-                    if let (w, Some(b)) = self.focused_window_mut_with_buffer() {
-                        w.move_cursor_up(count, b);
-                    }
-                }
-                ReViCommand::CursorDown => {
-                    if let (w, Some(b)) = self.focused_window_mut_with_buffer() {
-                        w.move_cursor_down(count, b);
-                    }
-                }
-                ReViCommand::ScrollUp => {
-                    if let (w, Some(b)) = self.focused_window_mut_with_buffer() {
-                        w.scroll_up(count, b);
-                    }
-                }
-                ReViCommand::ScrollDown => {
-                    if let (w, Some(b)) = self.focused_window_mut_with_buffer() {
-                        w.scroll_down(count, b);
-                    }
-                }
+                ReViCommand::CursorUp => self.focused_window_mut().move_cursor_up(count),
+                ReViCommand::CursorDown => self.focused_window_mut().move_cursor_down(count),
+                ReViCommand::ScrollUp => self.focused_window_mut().scroll_up(count),
+                ReViCommand::ScrollDown => self.focused_window_mut().scroll_down(count),
                 ReViCommand::CursorLeft => self.focused_window_mut().move_cursor_left(count),
-                ReViCommand::CursorRight => {
-                    if let (w, Some(b)) = self.focused_window_mut_with_buffer() {
-                        w.move_cursor_right(count, b);
-                    }
-                }
+                ReViCommand::CursorRight => self.focused_window_mut().move_cursor_right(count),
                 ReViCommand::Home => self.focused_window_mut().home(),
-                ReViCommand::End => {
-                    if let (w, Some(b)) = self.focused_window_mut_with_buffer() {
-                        w.end(b);
-                    }
-                }
-                ReViCommand::FirstCharInLine => {
-                    if let (w, Some(b)) = self.focused_window_mut_with_buffer() {
-                        w.first_char_in_line(b);
-                    }
-                }
+                ReViCommand::End => self.focused_window_mut().end(),
+                ReViCommand::FirstCharInLine => self.focused_window_mut().first_char_in_line(),
                 ReViCommand::JumpToFirstLineBuffer => {
-                    if let (w, Some(b)) = self.focused_window_mut_with_buffer() {
-                        w.jump_to_first_line_buffer(b);
-                    }
+                    self.focused_window_mut().jump_to_first_line_buffer()
                 }
                 ReViCommand::JumpToLastLineBuffer => {
-                    if let (w, Some(b)) = self.focused_window_mut_with_buffer() {
-                        w.jump_to_last_line_buffer(b);
-                    }
+                    self.focused_window_mut().jump_to_last_line_buffer()
                 }
-                ReViCommand::DeleteChar => {
-                    if let (w, Some(b)) = self.focused_window_mut_with_buffer_mut() {
-                        w.delete(b);
-                    }
+                ReViCommand::DeleteChar => self.focused_window_mut().delete(),
+                ReViCommand::DeleteLine => self.focused_window_mut().delete_line(),
+                ReViCommand::NewLine => self.focused_window_mut().insert_newline(),
+                ReViCommand::Backspace => self.focused_window_mut().backspace(),
+                ReViCommand::InsertChar(c) => self.focused_window_mut().insert_char(*c),
+                ReViCommand::EnterCommandMode => {
+                    *self.mode_mut() = Mode::Command;
+                    self.last_focused = self.focused.max(1);
+                    self.focused = 0;
+                    *self.mode_mut() = Mode::Insert;
                 }
-                ReViCommand::DeleteLine => {
-                    if let (w, Some(b)) = self.focused_window_mut_with_buffer_mut() {
-                        w.delete_line(b);
-                    }
+                ReViCommand::ExitCommandMode => {
+                    *self.mode_mut() = Mode::Normal;
+                    self.focused = self.last_focused;
                 }
-                ReViCommand::NewLine => {
-                    if let (w, Some(b)) = self.focused_window_mut_with_buffer_mut() {
-                        w.insert_newline(b);
-                    }
+                ReViCommand::ExcuteCommandLine if self.focused == 0 => {
+                    let string = self.focused_window().buffer().contents();
+                    self.focused_window_mut().buffer_mut().clear();
+                    self.run_command_line(&string);
                 }
-                ReViCommand::Backspace => {
-                    if let (w, Some(b)) = self.focused_window_mut_with_buffer_mut() {
-                        w.backspace(b);
-                    }
-                }
-                ReViCommand::InsertChar(c) => {
-                    if let (w, Some(b)) = self.focused_window_mut_with_buffer_mut() {
-                        w.insert_char(*c, b);
+                ReViCommand::ExcuteCommandLine => {}
+                ReViCommand::NextWindow => {
+                    self.focused = if self.focused < self.windows.len().saturating_sub(1) {
+                        self.focused + 1
+                    } else {
+                        1
                     }
                 }
                 ReViCommand::Mode(m) => {
                     *self.mode_mut() = *m;
-                    if let (w, Some(b)) = self.focused_window_mut_with_buffer() {
-                        w.adjust_cursor_x(b);
-                    }
+                    self.focused_window_mut().adjust_cursor_x();
                 }
-                ReViCommand::MoveForwardByWord => {
-                    if let (w, Some(b)) = self.focused_window_mut_with_buffer() {
-                        w.move_forward_by_word(b);
-                    }
-                }
+                ReViCommand::MoveForwardByWord => self.focused_window_mut().move_forward_by_word(),
                 ReViCommand::MoveBackwardByWord => {
-                    if let (w, Some(b)) = self.focused_window_mut_with_buffer() {
-                        w.move_backward_by_word(b);
-                    }
+                    self.focused_window_mut().move_backward_by_word()
                 }
-                ReViCommand::Save => {
-                    if let Some(buffer) = self.get_current_buffer() {
-                        self.focused_window().save(buffer);
-                    }
-                }
-                ReViCommand::Quit => self.is_running = false,
+                ReViCommand::Save => self.focused_window().save(),
+                ReViCommand::Quit => self.exit(),
             }
+        }
+    }
+
+    fn run_command_line(&mut self, command: &str) {
+        match command {
+            "q" => self.exit(),
+            _ => {}
         }
     }
 }
 
-impl revi_ui::Display<()> for ReVi {
-    fn render<F: FnMut(u16, u16, String)>(&self, _: &(), func: F) {
-        if let Some(b) = self.get_current_buffer() {
-            self.focused_window().render(b, func);
+impl revi_ui::Display for ReVi {
+    fn render(&self, mut func: impl FnMut(u16, u16, String)) {
+        for id in self.queued() {
+            let window = &self.windows[*id];
+            for data in vec![
+                window.get_text_feild(),
+                window.get_line_number(),
+                window.get_status_bar(),
+            ] {
+                if let Some(((x, y), text)) = data {
+                    func(x, y, text);
+                }
+            }
         }
     }
-    fn line_numbers<F: FnMut(u16, u16, String)>(&self, _: &(), func: F) {
-        if let Some(b) = self.get_current_buffer() {
-            self.focused_window().line_numbers(b, func);
-        }
-    }
-    fn status_bar<F: FnMut(u16, u16, String)>(&self, _: &(), func: F) {
-        if let Some(b) = self.get_current_buffer() {
-            self.focused_window().status_bar(b, func);
-        }
-    }
-    fn cursor<F: FnMut(u16, u16, Option<CursorShape>)>(&self, _: &(), func: F) {
-        if let Some(b) = self.get_current_buffer() {
-            self.focused_window().cursor(b, func);
-        }
+
+    fn cursor(&self, mut func: impl FnMut(u16, u16, Option<revi_ui::CursorShape>)) {
+        let window = self.focused_window();
+        let (x, y) = window.cursor_screen().as_u16();
+        func(x, y, Some(window.mode.shape()));
     }
 }

@@ -112,6 +112,14 @@ impl Buffer {
         self._inner.remove(range);
     }
 
+    pub fn contents(&self) -> String {
+        self._inner.chars().collect::<String>()
+    }
+
+    pub fn clear(&mut self) {
+        self._inner = Rope::new();
+    }
+
     pub fn on_screen(&self, top: usize, bottom: usize) -> String {
         let top_line = top;
         let bottom_line = bottom;
