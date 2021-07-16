@@ -51,7 +51,7 @@ If you find a bug please feel free to open a issues for it.
 
 ### **Crates.io**
 ```sh
-cargo install revi --version="0.0.0-beta-0.5"
+cargo install revi --version="0.0.0-beta-1"
 revi <filename>
 ```
 ### **GitHub**

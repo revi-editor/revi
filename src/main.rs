@@ -1,3 +1,5 @@
+#![warn(clippy::all, clippy::pedantic)]
+
 const AUTHOR: &str = "
 ▞▀▖       ▌        ▞▀▖▞▀▖▞▀▖▛▀▘
 ▌  ▞▀▖▌  ▌▛▀▖▞▀▖▌ ▌▚▄▘▙▄  ▗▘▙▄
@@ -7,8 +9,8 @@ Email: cowboy8625@protonmail.com
 ";
 
 mod commandline;
-use revi_core::*;
-use revi_ui::*;
+use revi_core::{Mapper, Mode, ReVi, ReViCommand};
+use revi_ui::{Key, Tui};
 
 use mlua::prelude::*;
 // use ropey::Rope;
@@ -37,7 +39,7 @@ fn main() -> LuaResult<()> {
         if tui.poll_read(std::time::Duration::from_millis(50)) {
             let mode = *revi.borrow().mode();
             let keys = tui.get_key_press();
-            input.input(&mode, keys);
+            input.input(mode, keys);
 
             if let Some(commands) = keymapper.get_mapping(&mode, &input.keys()) {
                 revi.borrow_mut().execute(input.number_usize(), commands);
@@ -74,7 +76,7 @@ impl Number {
     pub fn as_u16(&self) -> u16 {
         let mut number = 0;
         for (i, n) in self.inner.iter().rev().enumerate() {
-            number += 10u16.pow(i as u32) * n;
+            number += 10_u16.pow(i as u32) * n;
         }
         if number == 0 {
             1
@@ -115,16 +117,16 @@ impl Input {
         }
     }
 
-    fn insert_key(&mut self, mode: &Mode, (k1, k2): (Key, Key)) {
+    fn insert_key(&mut self, mode: Mode, (k1, k2): (Key, Key)) {
         match k1 {
-            Key::Esc | Key::LH | Key::LJ | Key::LK | Key::LL if mode == &Mode::Normal => {
+            Key::Esc | Key::LH | Key::LJ | Key::LK | Key::LL if mode == Mode::Normal => {
                 self.input_keys.clear();
                 self.input_keys.push(k1);
                 if k2 != Key::Null {
                     self.input_keys.push(k2);
                 }
             }
-            _ if mode == &Mode::Insert || mode == &Mode::Command => {
+            _ if mode == Mode::Insert || mode == Mode::Command => {
                 let c = k1.as_char();
                 if c != '\0' {
                     self.chars.push(c);
@@ -136,7 +138,7 @@ impl Input {
                     }
                 }
             }
-            _ if mode == &Mode::Normal && k1.try_digit().filter(|c| *c != 0).is_none() => {
+            _ if mode == Mode::Normal && k1.try_digit().filter(|c| *c != 0).is_none() => {
                 if k1.try_digit().is_some() && self.number.is_empty() {
                     self.input_keys.push(k1);
                     return;
@@ -150,7 +152,7 @@ impl Input {
         }
     }
 
-    pub fn input(&mut self, mode: &Mode, (k1, k2): (Key, Key)) {
+    pub fn input(&mut self, mode: Mode, (k1, k2): (Key, Key)) {
         if k1 == Key::Null {
             return;
         }

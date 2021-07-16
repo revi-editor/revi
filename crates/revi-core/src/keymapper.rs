@@ -46,7 +46,6 @@ impl Mapper {
     pub fn get_mapping(&self, mode: &Mode, event: &[Key]) -> Option<&Vec<ReViCommand>> {
         self.get_map(mode).get(event)
     }
-
     pub fn insert_mapping(
         mut self,
         mode: &Mode,
@@ -186,18 +185,21 @@ impl Mapper {
         use Mode::*;
         self.insert_mapping(&Insert, vec![Key::Esc], vec![ReViCommand::Mode(Normal)])
             .insert_mapping(&Insert, vec![Key::Backspace], vec![ReViCommand::Backspace])
-            .insert_mapping(&Insert, vec![Key::Enter], vec![ReViCommand::NewLine])
+            .insert_mapping(
+                &Insert,
+                vec![Key::Enter],
+                vec![
+                    ReViCommand::NewLine,
+                    ReViCommand::ExcuteCommandLine,
+                    ReViCommand::ExitCommandMode,
+                ],
+            )
             .insert_mapping(&Insert, vec![Key::Home], vec![ReViCommand::Home])
             .insert_mapping(&Insert, vec![Key::End], vec![ReViCommand::End])
             .insert_mapping(&Insert, vec![Key::Down], vec![ReViCommand::CursorDown])
             .insert_mapping(&Insert, vec![Key::Up], vec![ReViCommand::CursorUp])
             .insert_mapping(&Insert, vec![Key::Left], vec![ReViCommand::CursorLeft])
             .insert_mapping(&Insert, vec![Key::Right], vec![ReViCommand::CursorRight])
-            .insert_mapping(
-                &Insert,
-                vec![Key::Enter],
-                vec![ReViCommand::ExcuteCommandLine, ReViCommand::ExitCommandMode],
-            )
     }
 
     fn build_command(self) -> Self {
@@ -212,6 +214,7 @@ impl Mapper {
 }
 
 /// Builds All Default Key
+#[must_use]
 pub fn key_builder() -> Mapper {
     Mapper::new().build_normal().build_insert().build_command()
 }

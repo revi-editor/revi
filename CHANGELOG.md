@@ -4,9 +4,13 @@
 
 ### Added
 
+  - [Multiple Windows](46)
+  - [Multiple Buffers so more then one file can be worked on.](18)
+  - [Added a basic Command Mode](7)
   - [updated mlua crate from `1.2` to `1.3.1`](b337e8846e5fb1e74ac668c21af6f90b42a732fa)
   - [keybinding `gg` to jump to top of file](38)
   - [keybinding `G` to jump to bottom of file](38)
+  - [Added a Test for ever Method/Function in ReVi](35)
 
 ### Fixed
   - Cursor moving out of max file's line count.

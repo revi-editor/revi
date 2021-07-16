@@ -23,7 +23,7 @@ impl ReVi {
     pub fn new(files: &[String]) -> Rc<RefCell<Self>> {
         let mut buffers: Vec<Rc<RefCell<Buffer>>> = files
             .iter()
-            .map(|f| Rc::new(RefCell::new(Buffer::from(f.as_str()))))
+            .map(|f| Rc::new(RefCell::new(Buffer::from_path(f.as_str()))))
             .collect();
         if buffers.is_empty() {
             buffers.push(Rc::new(RefCell::new(Buffer::new())));
@@ -153,19 +153,19 @@ impl ReVi {
                 JumpToLastLineBuffer => self.focused_window_mut().jump_to_last_line_buffer(),
                 DeleteChar => self.focused_window_mut().delete(),
                 DeleteLine => self.focused_window_mut().delete_line(),
-                NewLine => self.focused_window_mut().insert_newline(),
+                NewLine if self.focused != 0 => self.focused_window_mut().insert_newline(),
                 Backspace => self.focused_window_mut().backspace(),
                 InsertChar(c) => self.focused_window_mut().insert_char(*c),
                 EnterCommandMode => self.enter_command_mode(),
-                ExitCommandMode => self.exit_command_mode(),
+                ExitCommandMode if self.focused == 0 => self.exit_command_mode(),
                 ExcuteCommandLine if self.focused == 0 => self.execute_command_line(),
-                ExcuteCommandLine => {}
                 NextWindow => self.next_window(),
                 Mode(m) => self.change_modes(m),
                 MoveForwardByWord => self.focused_window_mut().move_forward_by_word(),
                 MoveBackwardByWord => self.focused_window_mut().move_backward_by_word(),
                 Save => self.focused_window().save(),
                 Quit => self.exit(),
+                _ => {}
             }
         }
     }
@@ -183,6 +183,17 @@ impl ReVi {
                     }
                 }
             }
+            "set" if !items.is_empty() => match items.get(0).map(|s| *s).unwrap_or_default() {
+                "number" => self
+                    .focused_window_mut()
+                    .set_number(LineNumbers::AbsoluteNumber),
+                "nonumber" => self.focused_window_mut().set_number(LineNumbers::None),
+                "relativenumber" => self
+                    .focused_window_mut()
+                    .set_number(LineNumbers::RelativeNumber),
+                "norelativenumber" => self.focused_window_mut().set_number(LineNumbers::None),
+                _ => {}
+            },
             _ => {}
         }
     }

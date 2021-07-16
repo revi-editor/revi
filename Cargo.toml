@@ -1,6 +1,6 @@
 [package]
 name = "revi"
-version = "0.0.0-beta-0.7"
+version = "0.0.0-beta-1.0"
 authors = ["cowboy8625 <cowboy8625@protonmail.com>"]
 edition = "2018"
 description = "A Vim/NeoVim Inspired Text Editor"
@@ -11,8 +11,8 @@ keywords = ["text-editor", "command-line", "termainl", "vim", "configuration"]
 categories = ["text-editors", "text-processing", "command-line-utilities", "command-line-interface"]
 
 [dependencies]
-revi-ui = { path = "./crates/revi-ui", version="0.0.0-beta-0.7" }
-revi-core = { path = "./crates/revi-core", version="0.0.0-beta-0.7" }
+revi-ui = { path = "./crates/revi-ui", version="0.0.0-beta-1" }
+revi-core = { path = "./crates/revi-core", version="0.0.0-beta-1" }
 mlua = { version = "0.6.1", features = ["lua53", "vendored"] }
 clap = "2.33.3"
 

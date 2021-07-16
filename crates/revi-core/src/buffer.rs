@@ -52,17 +52,33 @@ impl From<&str> for CharType {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
-#[allow(dead_code)]
 pub struct Buffer {
     _inner: Rope,
     _name: Option<String>,
 }
 
-#[allow(dead_code)]
 impl Buffer {
+    /// Creates a new empty buffer with no name.
     pub fn new() -> Self {
         Self {
             _inner: Rope::new(),
+            _name: None,
+        }
+    }
+
+    /// Creates a new buffer from a string path of file.
+    pub fn from_path(filename: &str) -> Self {
+        let rope = from_path(filename);
+        Self {
+            _inner: rope,
+            _name: Some(filename.to_string()),
+        }
+    }
+
+    /// Creates a new buffer from string without a name.
+    pub fn from_str(text: &str) -> Self {
+        Self {
+            _inner: Rope::from(text),
             _name: None,
         }
     }
@@ -93,7 +109,7 @@ impl Buffer {
     }
 
     pub fn len_lines(&self) -> usize {
-        self._inner.len_lines()
+        self._inner.len_lines().saturating_sub(2)
     }
 
     pub fn line_to_char(&self, line: usize) -> usize {
@@ -170,16 +186,6 @@ impl Buffer {
             .map(|w| w.last())
             .flatten()
             .map(|(i, _)| *i)
-    }
-}
-
-impl From<&str> for Buffer {
-    fn from(filename: &str) -> Self {
-        let rope = from_path(filename);
-        Self {
-            _inner: rope,
-            _name: Some(filename.to_string()),
-        }
     }
 }
 

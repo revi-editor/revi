@@ -70,6 +70,10 @@ impl Window {
         self.buffer = buffer;
     }
 
+    pub fn set_number(&mut self, number_type: LineNumbers) {
+        self.line_number_type = number_type;
+    }
+
     pub fn buffer(&self) -> Ref<Buffer> {
         self.buffer.borrow()
     }
@@ -118,7 +122,7 @@ impl Window {
 
     pub fn scroll_down(&mut self, lines: usize) {
         if lines + self.scroll_offset.as_usize_y() + self.cursor.as_usize_y()
-            < self.buffer.borrow().len_lines().saturating_sub(1)
+            < self.buffer.borrow().len_lines()
         {
             self.scroll_offset.add_to_y(lines);
             self.adjust_cursor_x();
@@ -133,9 +137,7 @@ impl Window {
     pub fn move_cursor_down(&mut self, lines: usize) {
         if self.cursor.as_usize_y() >= self.height() - 1 {
             self.scroll_down(lines);
-        } else if self.cursor_file().as_usize_y()
-            <= self.buffer.borrow().len_lines().saturating_sub(1)
-        {
+        } else if self.cursor_file().as_usize_y() < self.buffer.borrow().len_lines() {
             self.cursor.add_to_y(lines);
             self.cursor.set_x(self.max_cursor.as_usize_x());
             self.adjust_cursor_x()
@@ -163,9 +165,7 @@ impl Window {
         if let Mode::Normal = self.mode {
             if line.ends_with('\n') {
                 line_len = line_len.saturating_sub(2);
-            } else if self.buffer.borrow().len_lines().saturating_sub(1)
-                == self.cursor_file().as_usize_y()
-            {
+            } else if self.buffer.borrow().len_lines() == self.cursor_file().as_usize_y() {
                 line_len = line_len.saturating_sub(1);
             }
         } else if let Mode::Insert = self.mode {
@@ -273,9 +273,9 @@ impl Window {
 
     pub fn jump_to_last_line_buffer(&mut self) {
         // Gets line count but screen is off by one so we subtract one.
-        let total_y = self.buffer.borrow().len_lines().saturating_sub(1);
+        let total_y = self.buffer.borrow().len_lines();
         // Gets screen height but it also is off by one so we subtract one.
-        let screen_y = self.height() - 1;
+        let screen_y = (self.height() - 1).min(total_y);
         // Finds Y offset into file but it is off by one as well for indexing so we subtract one as
         // well
         let offset_y = total_y.saturating_sub(screen_y).saturating_sub(1);
@@ -400,16 +400,13 @@ impl Window {
         // TODO: Pull this out of Window
         if self.line_number_type != LineNumbers::None {
             let scroll = self.scroll_offset.as_usize_y();
-            let len_lines = self.buffer.borrow().len_lines().saturating_sub(1);
-            let y = self
-                .cursor_file()
-                .as_usize_y()
-                .saturating_sub(self.scroll_offset.as_usize_y());
+            let len_lines = self.buffer.borrow().len_lines();
+            let cursor = self.cursor.as_usize_y();
             let width = self.line_number_width();
             return Some((
                 self.position().as_u16(),
                 self.line_number_type
-                    .lines(width, self.height(), scroll, len_lines, y),
+                    .lines(width, self.height(), scroll, cursor, len_lines),
             ));
         }
         None

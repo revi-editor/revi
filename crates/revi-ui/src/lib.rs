@@ -1,3 +1,4 @@
+#![warn(clippy::all, clippy::pedantic)]
 mod key;
 mod ui;
 pub use key::Key;

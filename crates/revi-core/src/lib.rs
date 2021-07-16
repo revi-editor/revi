@@ -1,17 +1,18 @@
+#![warn(clippy::all, clippy::pedantic)]
 // ▞▀▖       ▌        ▞▀▖▞▀▖▞▀▖▛▀▘
 // ▌  ▞▀▖▌  ▌▛▀▖▞▀▖▌ ▌▚▄▘▙▄  ▗▘▙▄
 // ▌ ▖▌ ▌▐▐▐ ▌ ▌▌ ▌▚▄▌▌ ▌▌ ▌▗▘ ▖ ▌
 // ▝▀ ▝▀  ▘▘ ▀▀ ▝▀ ▗▄▘▝▀ ▝▀ ▀▀▘▝▀
 
 mod api;
-mod buffer;
-mod line_number;
-mod mode;
-mod position;
-mod revi;
-mod revi_command;
+pub mod buffer;
+pub mod line_number;
+pub mod mode;
+pub mod position;
+pub mod revi;
+pub mod revi_command;
 mod text_formater;
-mod window;
+pub mod window;
 
 pub mod keymapper;
 
