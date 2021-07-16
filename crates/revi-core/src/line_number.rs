@@ -91,7 +91,7 @@ fn format_rel_lines(
     let mut prev: Option<&str> = None;
     while let Some(string_number) = all.next() {
         let number_len = string_number.len();
-        let padding = (0..(std::cmp::max(3, width as usize - 2) - number_len))
+        let padding = (0..(std::cmp::max(3, width as usize - 1) - number_len))
             .map(|_| " ")
             .collect::<String>();
 
@@ -155,11 +155,11 @@ fn cursor_line(number_type: &LineNumbers, lines: &mut String, width: usize, curr
 }
 
 fn make_padding(width: usize, number_len: usize) -> String {
-    (0..(width - number_len)).map(|_| " ").collect::<String>()
+    (0..=(width - number_len)).map(|_| " ").collect::<String>()
 }
 #[test]
 fn test_relative_number_bottom() {
-    let width = 5;
+    let width = 4;
     let height = 10;
     let offset = 0;
     let cursor = 9;
@@ -173,7 +173,7 @@ fn test_relative_number_bottom() {
 
 #[test]
 fn test_relative_number_bottom_with_emtpy_lines() {
-    let width = 5;
+    let width = 4;
     let height = 10;
     let offset = 0;
     let cursor = 7;
@@ -187,7 +187,7 @@ fn test_relative_number_bottom_with_emtpy_lines() {
 
 #[test]
 fn test_relative_number_with_empty_lines() {
-    let width = 5;
+    let width = 4;
     let height = 10;
     let offset = 0;
     let cursor = 3;
@@ -201,7 +201,7 @@ fn test_relative_number_with_empty_lines() {
 
 #[test]
 fn test_relative_number_without_empty_lines() {
-    let width = 5;
+    let width = 4;
     let height = 10;
     let offset = 0;
     let cursor = 3;
@@ -215,7 +215,7 @@ fn test_relative_number_without_empty_lines() {
 
 #[test]
 fn test_absolute_number_without_empty_lines() {
-    let width = 5;
+    let width = 4;
     let height = 10;
     let offset = 0;
     let cursor = 3;
@@ -228,7 +228,7 @@ fn test_absolute_number_without_empty_lines() {
 
 #[test]
 fn test_absolute_number_with_empty_lines() {
-    let width = 5;
+    let width = 4;
     let height = 10;
     let offset = 0;
     let cursor = 3;

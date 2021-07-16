@@ -122,8 +122,8 @@ impl ReVi {
     }
 
     pub fn exit_command_mode(&mut self) {
-        *self.mode_mut() = Mode::Normal;
         self.focused = self.last_focused;
+        *self.mode_mut() = Mode::Normal;
     }
 
     pub fn execute_command_line(&mut self) {
@@ -184,14 +184,12 @@ impl ReVi {
                 }
             }
             "set" if !items.is_empty() => match items.get(0).map(|s| *s).unwrap_or_default() {
-                "number" => self
-                    .focused_window_mut()
-                    .set_number(LineNumbers::AbsoluteNumber),
-                "nonumber" => self.focused_window_mut().set_number(LineNumbers::None),
-                "relativenumber" => self
-                    .focused_window_mut()
-                    .set_number(LineNumbers::RelativeNumber),
-                "norelativenumber" => self.focused_window_mut().set_number(LineNumbers::None),
+                "number" => self.windows[self.last_focused].set_number(LineNumbers::AbsoluteNumber),
+                "nonumber" => self.windows[self.last_focused].set_number(LineNumbers::None),
+                "relativenumber" => {
+                    self.windows[self.last_focused].set_number(LineNumbers::RelativeNumber)
+                }
+                "norelativenumber" => self.windows[self.last_focused].set_number(LineNumbers::None),
                 _ => {}
             },
             _ => {}
