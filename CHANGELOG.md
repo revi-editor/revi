@@ -1,6 +1,6 @@
 # Changelog
 
-## ------------- **Version 0.0.0-beta-0.6 (Jun 2021)** -------------------------------------------
+## ------------- **Version 0.0.0-beta-1 (Jul 2021)** -------------------------------------------
 
 ### Added
 
@@ -10,7 +10,7 @@
   - [updated mlua crate from `1.2` to `1.3.1`](b337e8846e5fb1e74ac668c21af6f90b42a732fa)
   - [keybinding `gg` to jump to top of file](38)
   - [keybinding `G` to jump to bottom of file](38)
-  - [Added a Test for ever Method/Function in ReVi](35)
+- [Added a Test for ever Method/Function in ReVi](35)
 
 ### Fixed
   - Cursor moving out of max file's line count.
@@ -37,12 +37,12 @@
   - [keybinding `I` place cursor at the first char in line and place into insert mode](28)
   - [keybinding `b` to move backwards by word](10)
   - [keybinding `w` to move forward by word](11)
-  - [keybinding `Enter` in command mode for exiting it for now]()
+- [keybinding `Enter` in command mode for exiting it for now]()
 
 ### Fixed
 
   - [Fixed behaver of 'dd' command add CursorUp command]()
-  - [Fixed Crash when no local init.lua file is found](36)
+- [Fixed Crash when no local init.lua file is found](36)
 
 ## ------------- **Version 0.0.0-beta-0.5 (Jun 22 2021)** -------------------------------------------
 
@@ -53,13 +53,13 @@
   - [Added Keybinding `<C-d>` to scroll down by one line](31)
   - [Added Keybinding `<C-u>` to scroll up by one line](31)
   - [Added Keybinding `<C-y>` to scroll up by one line and maintain cursor line](31)
-  - [Added Keybinding `<C-e>` to scroll down by one line and maintain cursor line](31)
+- [Added Keybinding `<C-e>` to scroll down by one line and maintain cursor line](31)
 
 ### Fixed
 
   - [Some times cursor would go out of text bounds](22)
   - [Backspace up a line would not remove line number](23)
-  - [Something I did with Fix #23 made it possible to go to far right letting you back space just the new line.](24)
+- [Something I did with Fix #23 made it possible to go to far right letting you back space just the new line.](24)
   - [When at bottom of screen pressing enter in insert mode does not scroll or move cursor down after inserting '\n'](30)
   - [Line number does not update correctly when scrolling off screen then backspacing back up.](31)
-  - [General Code Clean up](29)
+- [General Code Clean up](29)
