@@ -300,8 +300,11 @@ impl Window {
         if new_line != self.cursor_file().as_usize_y() {
             self.move_cursor_up(1);
         }
-        self.cursor
-            .set_x(index - self.buffer.borrow().line_to_char(new_line));
+        let total = index - self.buffer.borrow().line_to_char(new_line);
+        let cursor = total.min(self.text_width().saturating_sub(1));
+        let offset = total.saturating_sub(cursor);
+        self.scroll_offset.set_x(offset);
+        self.cursor.set_x(cursor);
     }
 
     pub fn delete(&mut self) {
