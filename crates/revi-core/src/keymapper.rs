@@ -2,9 +2,10 @@ use crate::mode::Mode;
 use crate::revi_command::ReViCommand::{
     self, Backspace, ChangeMode, CursorDown, CursorLeft, CursorRight, CursorUp, DeleteChar,
     DeleteLine, End, EnterCommandMode, ExcuteCommandLine, ExitCommandMode, FirstCharInLine, Home,
-    InsertChar, JumpToFirstLineBuffer, JumpToLastLineBuffer, MoveBackwardByWord, MoveForwardByWord,
-    NewLine, NextWindow, Quit, Save, ScrollDown, ScrollUp,
+    JumpToFirstLineBuffer, JumpToLastLineBuffer, MoveBackwardByWord, MoveForwardByWord, NewLine,
+    NextWindow, Quit, Save, ScrollDown, ScrollUp,
 };
+
 use revi_ui::Key;
 use std::collections::HashMap;
 
@@ -159,10 +160,4 @@ impl Mapper {
                 vec![ExcuteCommandLine, ExitCommandMode],
             )
     }
-}
-
-/// Builds All Default Key
-#[must_use]
-pub fn key_builder() -> Mapper {
-    Mapper::new().build_normal().build_insert().build_command()
 }
