@@ -160,7 +160,7 @@ impl ReVi {
                 ExitCommandMode if self.focused == 0 => self.exit_command_mode(),
                 ExcuteCommandLine if self.focused == 0 => self.execute_command_line(),
                 NextWindow => self.next_window(),
-                Mode(m) => self.change_modes(m),
+                ChangeMode(m) => self.change_modes(m),
                 MoveForwardByWord => self.focused_window_mut().move_forward_by_word(),
                 MoveBackwardByWord => self.focused_window_mut().move_backward_by_word(),
                 Save => self.focused_window().save(),

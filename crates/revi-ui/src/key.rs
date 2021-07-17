@@ -319,9 +319,25 @@ impl From<crossterm::event::KeyModifiers> for Key {
         if key.intersects(KeyModifiers::CONTROL) {
             return Self::Ctrl;
         }
-        if key.intersects(KeyModifiers::SHIFT) {
-            return Self::Shift;
-        }
+        // if key.intersects(KeyModifiers::SHIFT) {
+        //     return Self::Shift;
+        // }
         Self::Null
     }
+}
+
+#[test]
+fn test_from_crossterm_key_to_revi_key_colon() {
+    use crossterm::event::{KeyCode, KeyModifiers};
+    let (k1, k2) = (KeyCode::Char(':'), KeyModifiers::SHIFT);
+    let left = (Key::from(k1), Key::from(k2));
+    assert_eq!(left, (Key::Colon, Key::Null));
+}
+
+#[test]
+fn test_from_crossterm_key_to_revi_key_upper_a() {
+    use crossterm::event::{KeyCode, KeyModifiers};
+    let (k1, k2) = (KeyCode::Char('A'), KeyModifiers::SHIFT);
+    let left = (Key::from(k1), Key::from(k2));
+    assert_eq!(left, (Key::UA, Key::Null));
 }

@@ -1,4 +1,10 @@
-use crate::{mode::Mode, revi_command::ReViCommand};
+use crate::mode::Mode;
+use crate::revi_command::ReViCommand::{
+    self, Backspace, ChangeMode, CursorDown, CursorLeft, CursorRight, CursorUp, DeleteChar,
+    DeleteLine, End, EnterCommandMode, ExcuteCommandLine, ExitCommandMode, FirstCharInLine, Home,
+    InsertChar, JumpToFirstLineBuffer, JumpToLastLineBuffer, MoveBackwardByWord, MoveForwardByWord,
+    NewLine, NextWindow, Quit, Save, ScrollDown, ScrollUp,
+};
 use revi_ui::Key;
 use std::collections::HashMap;
 
@@ -58,157 +64,99 @@ impl Mapper {
 
     fn build_normal(self) -> Self {
         use Mode::*;
-        self.insert_mapping(&Normal, vec![Key::Esc], vec![ReViCommand::Mode(Normal)])
+        self.insert_mapping(&Normal, vec![Key::Esc], vec![ChangeMode(Normal)])
+            .insert_mapping(&Normal, vec![Key::UZ, Key::UZ], vec![Save, Quit])
+            .insert_mapping(&Normal, vec![Key::UZ, Key::UQ], vec![Quit])
+            .insert_mapping(&Normal, vec![Key::LJ], vec![CursorDown])
+            .insert_mapping(&Normal, vec![Key::Down], vec![CursorDown])
+            .insert_mapping(&Normal, vec![Key::LK], vec![CursorUp])
+            .insert_mapping(&Normal, vec![Key::Up], vec![CursorUp])
+            .insert_mapping(&Normal, vec![Key::LH], vec![CursorLeft])
+            .insert_mapping(&Normal, vec![Key::Left], vec![CursorLeft])
+            .insert_mapping(&Normal, vec![Key::LL], vec![CursorRight])
+            .insert_mapping(&Normal, vec![Key::Right], vec![CursorRight])
+            .insert_mapping(&Normal, vec![Key::Colon], vec![EnterCommandMode])
+            .insert_mapping(&Normal, vec![Key::LI], vec![ChangeMode(Insert)])
+            .insert_mapping(&Normal, vec![Key::LX], vec![DeleteChar])
+            .insert_mapping(&Normal, vec![Key::Delete], vec![DeleteChar])
+            .insert_mapping(&Normal, vec![Key::LD, Key::LD], vec![DeleteLine, CursorUp])
+            .insert_mapping(&Normal, vec![Key::Home], vec![Home])
+            .insert_mapping(&Normal, vec![Key::End], vec![End])
+            .insert_mapping(&Normal, vec![Key::N0], vec![Home])
+            .insert_mapping(&Normal, vec![Key::Char('$')], vec![End])
             .insert_mapping(
                 &Normal,
-                vec![Key::UZ, Key::Shift, Key::UZ, Key::Shift],
-                vec![ReViCommand::Save, ReViCommand::Quit],
-            )
-            .insert_mapping(
-                &Normal,
-                vec![Key::UZ, Key::Shift, Key::UQ, Key::Shift],
-                vec![ReViCommand::Quit],
-            )
-            .insert_mapping(&Normal, vec![Key::LJ], vec![ReViCommand::CursorDown])
-            .insert_mapping(&Normal, vec![Key::Down], vec![ReViCommand::CursorDown])
-            .insert_mapping(&Normal, vec![Key::LK], vec![ReViCommand::CursorUp])
-            .insert_mapping(&Normal, vec![Key::Up], vec![ReViCommand::CursorUp])
-            .insert_mapping(&Normal, vec![Key::LH], vec![ReViCommand::CursorLeft])
-            .insert_mapping(&Normal, vec![Key::Left], vec![ReViCommand::CursorLeft])
-            .insert_mapping(&Normal, vec![Key::LL], vec![ReViCommand::CursorRight])
-            .insert_mapping(&Normal, vec![Key::Right], vec![ReViCommand::CursorRight])
-            .insert_mapping(
-                &Normal,
-                vec![Key::Colon],
-                vec![ReViCommand::EnterCommandMode],
-            )
-            .insert_mapping(&Normal, vec![Key::LI], vec![ReViCommand::Mode(Insert)])
-            .insert_mapping(&Normal, vec![Key::LX], vec![ReViCommand::DeleteChar])
-            .insert_mapping(&Normal, vec![Key::Delete], vec![ReViCommand::DeleteChar])
-            .insert_mapping(
-                &Normal,
-                vec![Key::LD, Key::LD],
-                vec![ReViCommand::DeleteLine, ReViCommand::CursorUp],
-            )
-            .insert_mapping(&Normal, vec![Key::Home], vec![ReViCommand::Home])
-            .insert_mapping(&Normal, vec![Key::End], vec![ReViCommand::End])
-            .insert_mapping(&Normal, vec![Key::N0], vec![ReViCommand::Home])
-            .insert_mapping(&Normal, vec![Key::Char('$')], vec![ReViCommand::End])
-            .insert_mapping(
-                &Normal,
-                vec![Key::UA, Key::Shift],
-                vec![
-                    ReViCommand::End,
-                    ReViCommand::Mode(Insert),
-                    ReViCommand::CursorRight,
-                ],
+                vec![Key::UA],
+                vec![End, ChangeMode(Insert), CursorRight],
             )
             .insert_mapping(
                 &Normal,
                 vec![Key::LY, Key::Ctrl],
-                vec![ReViCommand::ScrollUp, ReViCommand::CursorDown],
+                vec![ScrollUp, CursorDown],
             )
             .insert_mapping(
                 &Normal,
                 vec![Key::LE, Key::Ctrl],
-                vec![ReViCommand::ScrollDown, ReViCommand::CursorUp],
+                vec![ScrollDown, CursorUp],
             )
-            .insert_mapping(
-                &Normal,
-                vec![Key::LU, Key::Ctrl],
-                vec![ReViCommand::ScrollUp],
-            )
-            .insert_mapping(
-                &Normal,
-                vec![Key::LD, Key::Ctrl],
-                vec![ReViCommand::ScrollDown],
-            )
+            .insert_mapping(&Normal, vec![Key::LU, Key::Ctrl], vec![ScrollUp])
+            .insert_mapping(&Normal, vec![Key::LD, Key::Ctrl], vec![ScrollDown])
             .insert_mapping(
                 &Normal,
                 vec![Key::LO],
-                vec![
-                    ReViCommand::End,
-                    ReViCommand::Mode(Insert),
-                    ReViCommand::CursorRight,
-                    ReViCommand::NewLine,
-                ],
+                vec![End, ChangeMode(Insert), CursorRight, NewLine],
             )
             .insert_mapping(
                 &Normal,
-                vec![Key::UO, Key::Shift],
-                vec![
-                    ReViCommand::Home,
-                    ReViCommand::NewLine,
-                    ReViCommand::Mode(Insert),
-                    ReViCommand::CursorUp,
-                ],
+                vec![Key::UO],
+                vec![Home, NewLine, ChangeMode(Insert), CursorUp],
             )
+            .insert_mapping(&Normal, vec![Key::Caret], vec![FirstCharInLine])
             .insert_mapping(
                 &Normal,
-                vec![Key::Caret],
-                vec![ReViCommand::FirstCharInLine],
+                vec![Key::UI],
+                vec![FirstCharInLine, ChangeMode(Insert)],
             )
-            .insert_mapping(
-                &Normal,
-                vec![Key::UI, Key::Shift],
-                vec![ReViCommand::FirstCharInLine, ReViCommand::Mode(Insert)],
-            )
-            .insert_mapping(&Normal, vec![Key::LW], vec![ReViCommand::MoveForwardByWord])
-            .insert_mapping(
-                &Normal,
-                vec![Key::LB],
-                vec![ReViCommand::MoveBackwardByWord],
-            )
-            .insert_mapping(
-                &Normal,
-                vec![Key::LG, Key::LG],
-                vec![ReViCommand::JumpToFirstLineBuffer],
-            )
-            .insert_mapping(
-                &Normal,
-                vec![Key::UG, Key::Shift],
-                vec![ReViCommand::JumpToLastLineBuffer],
-            )
+            .insert_mapping(&Normal, vec![Key::LW], vec![MoveForwardByWord])
+            .insert_mapping(&Normal, vec![Key::LB], vec![MoveBackwardByWord])
+            .insert_mapping(&Normal, vec![Key::LG, Key::LG], vec![JumpToFirstLineBuffer])
+            .insert_mapping(&Normal, vec![Key::UG], vec![JumpToLastLineBuffer])
             .insert_mapping(
                 &Normal,
                 vec![Key::LW, Key::Ctrl, Key::LW, Key::Ctrl],
-                vec![ReViCommand::NextWindow],
+                vec![NextWindow],
             )
             .insert_mapping(
                 &Normal,
                 vec![Key::Enter],
-                vec![ReViCommand::ExcuteCommandLine, ReViCommand::ExitCommandMode],
+                vec![ExcuteCommandLine, ExitCommandMode],
             )
     }
 
     fn build_insert(self) -> Self {
         use Mode::*;
-        self.insert_mapping(&Insert, vec![Key::Esc], vec![ReViCommand::Mode(Normal)])
-            .insert_mapping(&Insert, vec![Key::Backspace], vec![ReViCommand::Backspace])
+        self.insert_mapping(&Insert, vec![Key::Esc], vec![ChangeMode(Normal)])
+            .insert_mapping(&Insert, vec![Key::Backspace], vec![Backspace])
             .insert_mapping(
                 &Insert,
                 vec![Key::Enter],
-                vec![
-                    ReViCommand::NewLine,
-                    ReViCommand::ExcuteCommandLine,
-                    ReViCommand::ExitCommandMode,
-                ],
+                vec![NewLine, ExcuteCommandLine, ExitCommandMode],
             )
-            .insert_mapping(&Insert, vec![Key::Home], vec![ReViCommand::Home])
-            .insert_mapping(&Insert, vec![Key::End], vec![ReViCommand::End])
-            .insert_mapping(&Insert, vec![Key::Down], vec![ReViCommand::CursorDown])
-            .insert_mapping(&Insert, vec![Key::Up], vec![ReViCommand::CursorUp])
-            .insert_mapping(&Insert, vec![Key::Left], vec![ReViCommand::CursorLeft])
-            .insert_mapping(&Insert, vec![Key::Right], vec![ReViCommand::CursorRight])
+            .insert_mapping(&Insert, vec![Key::Home], vec![Home])
+            .insert_mapping(&Insert, vec![Key::End], vec![End])
+            .insert_mapping(&Insert, vec![Key::Down], vec![CursorDown])
+            .insert_mapping(&Insert, vec![Key::Up], vec![CursorUp])
+            .insert_mapping(&Insert, vec![Key::Left], vec![CursorLeft])
+            .insert_mapping(&Insert, vec![Key::Right], vec![CursorRight])
     }
 
     fn build_command(self) -> Self {
         use Mode::*;
-        self.insert_mapping(&Command, vec![Key::Esc], vec![ReViCommand::ExitCommandMode])
+        self.insert_mapping(&Command, vec![Key::Esc], vec![ExitCommandMode])
             .insert_mapping(
                 &Command,
                 vec![Key::Enter],
-                vec![ReViCommand::ExcuteCommandLine, ReViCommand::ExitCommandMode],
+                vec![ExcuteCommandLine, ExitCommandMode],
             )
     }
 }
