@@ -129,14 +129,14 @@ impl Input {
             _ if mode == Mode::Insert || mode == Mode::Command => {
                 let c = k1.as_char();
                 if c == '\0' {
-                    self.chars.push(c);
+                    self.input_keys.clear();
+                    self.input_keys.push(k1);
+                    if k2 != Key::Null {
+                        self.input_keys.push(k2);
+                    }
                     return;
                 }
-                self.input_keys.clear();
-                self.input_keys.push(k1);
-                if k2 != Key::Null {
-                    self.input_keys.push(k2);
-                }
+                self.chars.push(c);
             }
             _ if mode == Mode::Normal && k1.try_digit().filter(|c| *c != 0).is_none() => {
                 if k1.try_digit().is_some() && self.number.is_empty() {
