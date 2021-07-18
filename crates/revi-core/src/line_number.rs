@@ -10,6 +10,7 @@ pub enum LineNumbers {
 }
 
 impl LineNumbers {
+    #[must_use]
     pub fn lines(
         &self,
         width: usize,
@@ -20,8 +21,9 @@ impl LineNumbers {
     ) -> String {
         match self {
             Self::AbsoluteNumber => absolute_number(width, height, offset, cursor, len_lines),
-            Self::RelativeNumber => both_number(self, width, height, offset, cursor, len_lines),
-            Self::Both => both_number(self, width, height, offset, cursor, len_lines),
+            Self::RelativeNumber | Self::Both => {
+                both_number(self, width, height, offset, cursor, len_lines)
+            }
             Self::None => String::new(),
         }
     }
@@ -120,11 +122,11 @@ fn format_rel_lines(
     lines
 }
 
-fn rabs_lines<'a>(range: RangeInclusive<usize>) -> Vec<String> {
+fn rabs_lines(range: RangeInclusive<usize>) -> Vec<String> {
     range.rev().map(|i| i.to_string()).collect::<Vec<String>>()
 }
 
-fn abs_lines<'a>(range: RangeInclusive<usize>) -> Vec<String> {
+fn abs_lines(range: RangeInclusive<usize>) -> Vec<String> {
     range.map(|i| i.to_string()).collect::<Vec<String>>()
 }
 

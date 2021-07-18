@@ -41,7 +41,7 @@ fn main() -> LuaResult<()> {
             let keys = tui.get_key_press();
             input.input(mode, keys);
 
-            if let Some(commands) = keymapper.get_mapping(&mode, &input.keys()) {
+            if let Some(commands) = keymapper.get_mapping(mode, &input.keys()) {
                 revi.borrow_mut().execute(input.number_usize(), commands);
                 tui.update(&*revi.borrow());
                 input.clear();
@@ -128,14 +128,14 @@ impl Input {
             }
             _ if mode == Mode::Insert || mode == Mode::Command => {
                 let c = k1.as_char();
-                if c != '\0' {
+                if c == '\0' {
                     self.chars.push(c);
-                } else {
-                    self.input_keys.clear();
-                    self.input_keys.push(k1);
-                    if k2 != Key::Null {
-                        self.input_keys.push(k2);
-                    }
+                    return;
+                }
+                self.input_keys.clear();
+                self.input_keys.push(k1);
+                if k2 != Key::Null {
+                    self.input_keys.push(k2);
                 }
             }
             _ if mode == Mode::Normal && k1.try_digit().filter(|c| *c != 0).is_none() => {

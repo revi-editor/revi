@@ -6,12 +6,13 @@ pub struct Position {
     y: usize,
 }
 
-#[allow(dead_code)]
 impl Position {
+    #[must_use]
     pub fn new(x: usize, y: usize) -> Self {
         Self { x, y }
     }
 
+    #[must_use]
     pub fn new_u16(x: u16, y: u16) -> Self {
         Self {
             x: x as usize,
@@ -43,30 +44,37 @@ impl Position {
         self.y = self.y.saturating_sub(y);
     }
 
+    #[must_use]
     pub fn as_usize(&self) -> (usize, usize) {
         (self.x, self.y)
     }
 
+    #[must_use]
     pub fn as_usize_x(&self) -> usize {
         self.x
     }
 
+    #[must_use]
     pub fn as_usize_y(&self) -> usize {
         self.y
     }
 
+    #[must_use]
     pub fn as_u16(&self) -> (u16, u16) {
         (self.x as u16, self.y as u16)
     }
 
+    #[must_use]
     pub fn as_u16_x(&self) -> u16 {
         self.x as u16
     }
 
+    #[must_use]
     pub fn as_u16_y(&self) -> u16 {
         self.y as u16
     }
 
+    #[must_use]
     pub fn is_zero(&self) -> bool {
         self.x == 0 && self.y == 0
     }

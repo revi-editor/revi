@@ -218,7 +218,8 @@ impl From<crossterm::event::KeyCode> for Key {
 }
 
 impl Key {
-    pub fn try_digit(&self) -> Option<usize> {
+    #[must_use]
+    pub fn try_digit(self) -> Option<usize> {
         match self {
             Self::N0 => Some(0),
             Self::N1 => Some(1),
@@ -234,11 +235,13 @@ impl Key {
         }
     }
 
+    #[must_use]
     pub fn from_event(key: crossterm::event::KeyEvent) -> (Self, Self) {
         (Self::from(key.code), Self::from(key.modifiers))
     }
 
-    pub fn as_char(&self) -> char {
+    #[must_use]
+    pub fn as_char(self) -> char {
         match self {
             Self::LA => 'a',
             Self::LB => 'b',
@@ -304,7 +307,7 @@ impl Key {
             Self::N9 => '9',
             Self::Colon => ':',
             Self::SimiColon => ';',
-            Self::Char(c) => *c,
+            Self::Char(c) => c,
             _ => '\0',
         }
     }

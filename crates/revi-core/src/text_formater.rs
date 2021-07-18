@@ -103,7 +103,7 @@ fn test_format_screen() {
 fn test_format_screen_with_filler() {
     use crate::Buffer;
     let text = "Wow hey there this line should be way to long.\nThis is amazing cause it works\nSOOOOOOO Well\nRemoving the hard stufffffffffffffff\nnot really.";
-    let buffer = Buffer::from_str(text);
+    let buffer = Buffer::new_str(text);
     let width = 10;
     let height = 6;
     let offset_x = 15;

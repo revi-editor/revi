@@ -1,3 +1,4 @@
+use revi_ui::CursorShape::{Block, Line};
 use std::fmt;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -7,11 +8,10 @@ pub enum Mode {
     Insert,
 }
 impl Mode {
-    pub fn shape(&self) -> revi_ui::CursorShape {
-        use revi_ui::CursorShape::*;
+    #[must_use]
+    pub fn shape(self) -> revi_ui::CursorShape {
         match self {
-            Self::Normal => Block,
-            Self::Command => Block,
+            Self::Normal | Self::Command => Block,
             Self::Insert => Line,
         }
     }

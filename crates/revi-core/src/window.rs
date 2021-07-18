@@ -47,16 +47,19 @@ impl Window {
         }
     }
 
+    #[must_use]
     pub fn with_position(mut self, pos: Position) -> Self {
         self.window_offset = pos;
         self
     }
 
-    pub fn with_line_numbers(mut self, _type: LineNumbers) -> Self {
-        self.line_number_type = _type;
+    #[must_use]
+    pub fn with_line_numbers(mut self, line_number_type: LineNumbers) -> Self {
+        self.line_number_type = line_number_type;
         self
     }
 
+    #[must_use]
     pub fn with_status_bar(mut self, state: bool) -> Self {
         self.dimensions.sub_to_y(1);
         self.status_bar_state = state;
@@ -74,22 +77,27 @@ impl Window {
         self.line_number_type = number_type;
     }
 
+    #[must_use]
     pub fn buffer(&self) -> Ref<Buffer> {
         self.buffer.borrow()
     }
 
+    #[must_use]
     pub fn buffer_mut(&mut self) -> RefMut<Buffer> {
         self.buffer.borrow_mut()
     }
 
+    #[must_use]
     pub fn dimensions(&self) -> Position {
         self.dimensions
     }
 
+    #[must_use]
     pub fn position(&self) -> Position {
         self.window_offset
     }
 
+    #[must_use]
     pub fn offset(&self) -> Position {
         self.window_offset + Position::new(self.line_number_width(), 0)
     }
@@ -98,24 +106,29 @@ impl Window {
         self.cursor = pos;
     }
 
+    #[must_use]
     pub fn height(&self) -> usize {
         self.dimensions.as_usize_y()
     }
 
+    #[must_use]
     pub fn width(&self) -> usize {
         self.dimensions.as_usize_x()
     }
 
+    #[must_use]
     pub fn text_width(&self) -> usize {
         self.dimensions
             .as_usize_x()
             .saturating_sub(self.line_number_width())
     }
 
+    #[must_use]
     pub fn cursor_file(&self) -> Position {
         self.cursor + self.scroll_offset
     }
 
+    #[must_use]
     pub fn cursor_screen(&self) -> Position {
         self.cursor + self.offset()
     }
@@ -371,6 +384,7 @@ impl Window {
         }
     }
 
+    #[must_use]
     pub fn get_status_bar(&self) -> Option<((u16, u16), String)> {
         // FIXME: I hate this so much
         if self.status_bar_state {
@@ -399,6 +413,7 @@ impl Window {
         None
     }
 
+    #[must_use]
     pub fn get_line_number(&self) -> Option<((u16, u16), String)> {
         // TODO: Pull this out of Window
         if self.line_number_type != LineNumbers::None {
@@ -415,6 +430,7 @@ impl Window {
         None
     }
 
+    #[must_use]
     pub fn get_text_feild(&self) -> Option<((u16, u16), String)> {
         let top = self.scroll_offset.as_usize_y();
         let bottom = self.dimensions.as_usize_y() + top;
@@ -431,12 +447,11 @@ impl Window {
 
 // Private Methods
 impl Window {
-    /// Width of LineNumber Area if populated.
+    /// Width of `LineNumber` Area if populated.
     fn line_number_width(&self) -> usize {
-        if self.line_number_type != LineNumbers::None {
-            self.buffer.borrow().len_lines().to_string().len().max(3) + 2
-        } else {
-            0
+        if self.line_number_type == LineNumbers::None {
+            return 0;
         }
+        self.buffer.borrow().len_lines().to_string().len().max(3) + 2
     }
 }

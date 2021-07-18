@@ -2,9 +2,14 @@ use crate::buffer::Buffer;
 use crate::line_number::LineNumbers;
 use crate::mode::Mode;
 use crate::position::Position;
-use crate::revi_command::ReViCommand;
+use crate::revi_command::ReViCommand::{
+    self, Backspace, ChangeMode, CursorDown, CursorLeft, CursorRight, CursorUp, DeleteChar,
+    DeleteLine, End, EnterCommandMode, ExcuteCommandLine, ExitCommandMode, FirstCharInLine, Home,
+    InsertChar, JumpToFirstLineBuffer, JumpToLastLineBuffer, MoveBackwardByWord, MoveForwardByWord,
+    NewLine, NextWindow, Quit, Save, ScrollDown, ScrollUp, StartUp,
+};
 use crate::window::Window;
-use revi_ui::*;
+use revi_ui::screen_size;
 use std::{cell::RefCell, rc::Rc};
 
 #[derive(Debug)]
@@ -20,6 +25,7 @@ pub struct ReVi {
 }
 
 impl ReVi {
+    #[must_use]
     pub fn new(files: &[String]) -> Rc<RefCell<Self>> {
         let mut buffers: Vec<Rc<RefCell<Buffer>>> = files
             .iter()
@@ -37,19 +43,13 @@ impl ReVi {
         // We subtract 1 from the hight here to count for the command bar.
         let h = h.saturating_sub(1);
 
-        // let w1 = w / 2;
-        // let w2 = w - w1;
-        let window1 = Window::new(w, h, Clone::clone(&buffers[1]))
+        let main_window = Window::new(w, h, Clone::clone(&buffers[1]))
             .with_status_bar(true)
             .with_line_numbers(LineNumbers::RelativeNumber);
-        // let window2 = Window::new(w2, h, Clone::clone(&buffers[2]))
-        //     .with_status_bar(true)
-        //     .with_line_numbers(LineNumbers::RelativeNumber)
-        //     .with_position((window1.width(), 0).into());
 
         let command_bar = Window::new(w, 1, cbuffer).with_position((0, h + 2).into());
 
-        let windows = vec![command_bar, window1];
+        let windows = vec![command_bar, main_window];
         let queue = windows
             .iter()
             .enumerate()
@@ -69,6 +69,7 @@ impl ReVi {
         Rc::new(RefCell::new(revi))
     }
 
+    #[must_use]
     pub fn cursor_position_u16(&self) -> (u16, u16) {
         self.windows[self.focused].cursor_screen().as_u16()
     }
@@ -77,22 +78,27 @@ impl ReVi {
         self.windows[self.focused].set_cursor(Position::new_u16(x, y));
     }
 
+    #[must_use]
     pub fn mode(&self) -> &Mode {
         &self.focused_window().mode
     }
 
+    #[must_use]
     pub fn mode_mut(&mut self) -> &mut Mode {
         &mut self.focused_window_mut().mode
     }
 
+    #[must_use]
     pub fn focused_window(&self) -> &Window {
         &self.windows[self.focused]
     }
 
+    #[must_use]
     pub fn focused_window_mut(&mut self) -> &mut Window {
         &mut self.windows[self.focused]
     }
 
+    #[must_use]
     pub fn queued(&self) -> &[usize] {
         &self.queue
     }
@@ -109,8 +115,8 @@ impl ReVi {
         }
     }
 
-    pub fn change_modes(&mut self, mode: &Mode) {
-        *self.mode_mut() = *mode;
+    pub fn change_modes(&mut self, mode: Mode) {
+        *self.mode_mut() = mode;
         self.focused_window_mut().adjust_cursor_x();
     }
 
@@ -129,14 +135,13 @@ impl ReVi {
     pub fn execute_command_line(&mut self) {
         let string = self.focused_window().buffer().contents();
         let new_buffer = Rc::new(RefCell::new(Buffer::new()));
-        let _ = self.buffers.remove(0);
+        self.buffers.remove(0);
         self.buffers.insert(0, Clone::clone(&new_buffer));
         self.focused_window_mut().set_buffer(new_buffer);
         self.run_command_line(&string);
     }
 
     pub fn execute(&mut self, count: usize, commands: &[ReViCommand]) {
-        use ReViCommand::*;
         for command in commands {
             match command {
                 StartUp => {}
@@ -160,7 +165,7 @@ impl ReVi {
                 ExitCommandMode if self.focused == 0 => self.exit_command_mode(),
                 ExcuteCommandLine if self.focused == 0 => self.execute_command_line(),
                 NextWindow => self.next_window(),
-                ChangeMode(m) => self.change_modes(m),
+                ChangeMode(m) => self.change_modes(*m),
                 MoveForwardByWord => self.focused_window_mut().move_forward_by_word(),
                 MoveBackwardByWord => self.focused_window_mut().move_backward_by_word(),
                 Save => self.focused_window().save(),
@@ -175,7 +180,7 @@ impl ReVi {
         match items.remove(0) {
             "q" => self.exit(),
             "b" if !items.is_empty() => {
-                if let Some(i) = items.get(0).map(|i| i.parse::<usize>().ok()).flatten() {
+                if let Some(i) = items.get(0).and_then(|i| i.parse::<usize>().ok()) {
                     let buffer = self.buffers.get(i).map(|rc| Clone::clone(rc));
                     if let Some(b) = buffer {
                         self.focused = self.last_focused;
@@ -183,13 +188,14 @@ impl ReVi {
                     }
                 }
             }
-            "set" if !items.is_empty() => match items.get(0).map(|s| *s).unwrap_or_default() {
+            "set" if !items.is_empty() => match items.get(0).copied().unwrap_or_default() {
                 "number" => self.windows[self.last_focused].set_number(LineNumbers::AbsoluteNumber),
-                "nonumber" => self.windows[self.last_focused].set_number(LineNumbers::None),
                 "relativenumber" => {
                     self.windows[self.last_focused].set_number(LineNumbers::RelativeNumber)
                 }
-                "norelativenumber" => self.windows[self.last_focused].set_number(LineNumbers::None),
+                "nonumber" | "norelativenumber" => {
+                    self.windows[self.last_focused].set_number(LineNumbers::None)
+                }
                 _ => {}
             },
             _ => {}

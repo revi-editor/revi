@@ -4,6 +4,7 @@ use crate::Display;
 use std::io::{stdout, Stdout, Write};
 use std::time::Duration;
 
+#[must_use]
 pub fn screen_size() -> (u16, u16) {
     crossterm::terminal::size().expect("Failed to find screen size")
 }
@@ -98,11 +99,11 @@ impl Tui {
             .expect("Failure to Show Cursor Position.");
     }
 
-    fn enable_raw_mode(&mut self) {
+    fn enable_raw_mode() {
         crossterm::terminal::enable_raw_mode().expect("Failure to Enter Raw Mode.")
     }
 
-    fn disable_raw_mode(&mut self) {
+    fn disable_raw_mode() {
         crossterm::terminal::disable_raw_mode().expect("Failure to Exit Raw Mode.")
     }
 
@@ -113,7 +114,7 @@ impl Tui {
 
 impl Drop for Tui {
     fn drop(&mut self) {
-        self.disable_raw_mode();
+        Self::disable_raw_mode();
         crossterm::execute!(self.writer, crossterm::terminal::LeaveAlternateScreen)
             .expect("Failure to Leave Alternate Screen.");
     }
@@ -124,11 +125,13 @@ impl Default for Tui {
         let mut writer = stdout();
         crossterm::execute!(&mut writer, crossterm::terminal::EnterAlternateScreen)
             .expect("Failure to Enter Alternate Screen.");
-        let mut tui = Self {
+        let tui = Self {
             writer,
             current_event: None,
         };
-        tui.enable_raw_mode();
+
+        Self::enable_raw_mode();
+
         tui
     }
 }

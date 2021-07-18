@@ -19,7 +19,7 @@ pub enum CursorShape {
 
 impl From<CursorShape> for crossterm::cursor::CursorShape {
     fn from(cs: CursorShape) -> Self {
-        use crossterm::cursor::CursorShape::*;
+        use crossterm::cursor::CursorShape::{Block, Line, UnderScore};
         match cs {
             CursorShape::UnderScore => UnderScore,
             CursorShape::Line => Line,

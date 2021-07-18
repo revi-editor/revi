@@ -1,8 +1,7 @@
 use ropey::Rope;
-use std::ops::Range;
-// use unicode_segmentation::*;
 use std::fs::OpenOptions;
 use std::io::BufReader;
+use std::ops::Range;
 use unicode_width::UnicodeWidthStr;
 
 use crate::position::Position;
@@ -53,93 +52,107 @@ impl From<&str> for CharType {
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Buffer {
-    _inner: Rope,
-    _name: Option<String>,
+    inner: Rope,
+    name: Option<String>,
 }
 
 impl Buffer {
     /// Creates a new empty buffer with no name.
+    #[must_use]
     pub fn new() -> Self {
         Self {
-            _inner: Rope::new(),
-            _name: None,
+            inner: Rope::new(),
+            name: None,
         }
     }
 
     /// Creates a new buffer from a string path of file.
+    #[must_use]
     pub fn from_path(filename: &str) -> Self {
         let rope = from_path(filename);
         Self {
-            _inner: rope,
-            _name: Some(filename.to_string()),
+            inner: rope,
+            name: Some(filename.to_string()),
         }
     }
 
     /// Creates a new buffer from string without a name.
-    pub fn from_str(text: &str) -> Self {
+    #[must_use]
+    pub fn new_str(text: &str) -> Self {
         Self {
-            _inner: Rope::from(text),
-            _name: None,
+            inner: Rope::from(text),
+            name: None,
         }
     }
 
+    #[must_use]
     pub fn name(&self) -> &Option<String> {
-        &self._name
+        &self.name
     }
 
+    #[must_use]
     pub fn idx_of_position(&self, pos: &Position) -> usize {
-        self._inner.line_to_char(pos.as_usize_y()) + pos.as_usize_x()
+        self.inner.line_to_char(pos.as_usize_y()) + pos.as_usize_x()
     }
 
+    #[must_use]
     pub fn char_at_pos(&self, pos: &Position) -> char {
-        self._inner.char(self.idx_of_position(pos))
+        self.inner.char(self.idx_of_position(pos))
     }
 
+    #[must_use]
     pub fn line(&self, y: usize) -> String {
-        self._inner.line(y).chars().collect::<String>()
+        self.inner.line(y).chars().collect::<String>()
     }
 
+    #[must_use]
     pub fn line_len(&self, y: usize) -> usize {
-        let line = self._inner.line(y).chars().collect::<String>();
+        let line = self.inner.line(y).chars().collect::<String>();
         UnicodeWidthStr::width(line.as_str())
     }
 
+    #[must_use]
     pub fn len_chars(&self) -> usize {
-        self._inner.len_chars()
+        self.inner.len_chars()
     }
 
+    #[must_use]
     pub fn len_lines(&self) -> usize {
-        self._inner.len_lines().saturating_sub(2)
+        self.inner.len_lines().saturating_sub(2)
     }
 
+    #[must_use]
     pub fn line_to_char(&self, line: usize) -> usize {
-        self._inner.line_to_char(line)
+        self.inner.line_to_char(line)
     }
 
+    #[must_use]
     pub fn char_to_line(&self, line: usize) -> usize {
-        self._inner.char_to_line(line)
+        self.inner.char_to_line(line)
     }
 
     pub fn insert_char(&mut self, idx: usize, c: char) {
-        self._inner.insert_char(idx, c);
+        self.inner.insert_char(idx, c);
     }
 
     pub fn remove(&mut self, range: Range<usize>) {
-        self._inner.remove(range);
+        self.inner.remove(range);
     }
 
+    #[must_use]
     pub fn contents(&self) -> String {
-        self._inner.chars().collect::<String>()
+        self.inner.chars().collect::<String>()
     }
 
     pub fn clear(&mut self) {
-        self._inner = Rope::new();
+        self.inner = Rope::new();
     }
 
+    #[must_use]
     pub fn on_screen(&self, top: usize, bottom: usize) -> String {
         let top_line = top;
         let bottom_line = bottom;
-        self._inner
+        self.inner
             .lines_at(top_line)
             .enumerate()
             .filter(|(i, _)| *i < bottom_line)
@@ -148,10 +161,11 @@ impl Buffer {
     }
 
     pub fn write_to<T: std::io::Write>(&self, writer: T) -> std::io::Result<()> {
-        self._inner.write_to(writer)?;
+        self.inner.write_to(writer)?;
         Ok(())
     }
 
+    #[must_use]
     pub fn next_jump_idx(&self, pos: &Position) -> Option<usize> {
         // TODO: Fix this God awful garbage!!!!!!!!!!!
         let (x, y) = pos.as_usize();
@@ -162,11 +176,11 @@ impl Buffer {
         let possible_jumps = word_indices(&result);
         possible_jumps
             .get(1)
-            .map(|w| w.first())
-            .flatten()
+            .and_then(|w| w.first())
             .map(|(i, _)| *i + x)
     }
 
+    #[must_use]
     pub fn prev_jump_idx(&self, pos: &Position) -> Option<usize> {
         // TODO: Fix this God awful garbage!!!!!!!!!!!
         let (x, y) = pos.as_usize();
@@ -177,18 +191,16 @@ impl Buffer {
         let possible_jumps = word_indices(&result);
         let idx = possible_jumps
             .get(0)
-            .map(|w| w.last())
-            .flatten()
-            .map(|(_, i)| i == &CharType::WhiteSpace)
-            .unwrap_or(false) as usize;
+            .and_then(|w| w.last())
+            .map_or(false, |(_, i)| i == &CharType::WhiteSpace) as usize;
         possible_jumps
             .get(idx)
-            .map(|w| w.last())
-            .flatten()
+            .and_then(|w| w.last())
             .map(|(i, _)| *i)
     }
 }
 
+#[must_use]
 pub fn from_path(path: &str) -> Rope {
     let file = OpenOptions::new()
         .read(true)
