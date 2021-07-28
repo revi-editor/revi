@@ -1,6 +1,6 @@
 # Changelog
 
-## ------------- **Version 0.0.0-beta-1 (Jul 2021)** -------------------------------------------
+## ------------- **Version 0.0.0-beta-1 (Jul 27 2021)** -------------------------------------------
 
 With this update there was a lot of redesing with the rendering and also the file formating with the removeal
 of the command file out of `revi-core`.  Made a lot of new bugs but I think they were also fixed with the
