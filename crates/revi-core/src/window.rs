@@ -250,15 +250,17 @@ impl Window {
     }
 
     pub fn scroll_right(&mut self, cols: usize) {
-        if cols + self.scroll_offset.as_usize_x() + self.cursor.as_usize_x()
-            < self
-                .buffer
-                .borrow()
-                .line_len(self.cursor_file().as_usize_y())
-        {
-            self.scroll_offset.add_to_x(cols);
-            // self.adjust_cursor_x()
-        }
+        self.scroll_offset.add_to_x(cols);
+        self.adjust_cursor_x()
+        // if cols + self.scroll_offset.as_usize_x() + self.cursor.as_usize_x()
+        //     < self
+        //         .buffer
+        //         .borrow()
+        //         .line_len(self.cursor_file().as_usize_y())
+        // {
+        //     self.scroll_offset.add_to_x(cols);
+        //     // self.adjust_cursor_x()
+        // }
     }
 
     pub fn insert_newline(&mut self) {
