@@ -56,9 +56,7 @@
   ```
 ### **GitHub**
   ```sh
-  git clone https://github.com/revi-editor/revi
-  cd revi
-  cargo install --path .
+  cargo install --git https://github.com/revi-editor/revi
   revi <filename>
   ```
 
