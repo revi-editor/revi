@@ -40,7 +40,7 @@ impl ReVi {
 
         let (w, h) = screen_size();
 
-        // We subtract 1 from the hight here to count for the command bar.
+        // We subtract 1 from the height here to count for the command bar.
         let h = h.saturating_sub(1);
 
         let main_window = Window::new(w, h, Clone::clone(&buffers[1]))
@@ -86,6 +86,16 @@ impl ReVi {
     #[must_use]
     pub fn mode_mut(&mut self) -> &mut Mode {
         &mut self.focused_window_mut().mode
+    }
+
+    #[must_use]
+    pub fn last_focused_window(&self) -> &Window {
+        &self.windows[self.last_focused]
+    }
+
+    #[must_use]
+    pub fn last_focused_window_mut(&mut self) -> &mut Window {
+        &mut self.windows[self.last_focused]
     }
 
     #[must_use]
@@ -183,8 +193,8 @@ impl ReVi {
                 if let Some(i) = items.get(0).and_then(|i| i.parse::<usize>().ok()) {
                     let buffer = self.buffers.get(i).map(|rc| Clone::clone(rc));
                     if let Some(b) = buffer {
-                        self.focused = self.last_focused;
-                        self.focused_window_mut().set_buffer(b);
+                        // self.focused = self.last_focused;
+                        self.last_focused_window_mut().set_buffer(b);
                     }
                 }
             }

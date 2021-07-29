@@ -267,6 +267,7 @@ impl Window {
         self.insert_char('\n');
         self.move_cursor_down(1);
         self.cursor.set_x(0);
+        self.scroll_offset.set_x(0);
     }
 
     pub fn first_char_in_line(&mut self) {
