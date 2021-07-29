@@ -1,5 +1,12 @@
 # Changelog
 
+## ------------- **Version 0.0.0-beta-2 (Jul 29 2021)** -------------------------------------------
+
+### Added
+
+### Fixed
+  - Fixed a bug that put revi in a frozen state when trying to change buffers.
+
 ## ------------- **Version 0.0.0-beta-1 (Jul 27 2021)** -------------------------------------------
 
 With this update there was a lot of redesing with the rendering and also the file formating with the removeal

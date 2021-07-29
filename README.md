@@ -51,7 +51,7 @@
 
 ### **Crates.io**
   ```sh
-  cargo install revi --version="0.0.0-beta-1"
+  cargo install revi --version="0.0.0-beta-2"
   revi <filename>
   ```
 ### **GitHub**
