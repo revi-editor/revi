@@ -1,8 +1,15 @@
 # Changelog
 
-## ------------- **Version 0.0.0-beta-2 (Jul 29 2021)** -------------------------------------------
+## ------------- **Version 0.0.0-beta-3** -------------------------------------------
 
 ### Added
+
+### Fixed
+  - [Fixed rendering bug with line numbers]()
+
+# Changelog
+
+## ------------- **Version 0.0.0-beta-2 (Jul 29 2021)** -------------------------------------------
 
 ### Fixed
   - Fixed a bug that put revi in a frozen state when trying to change buffers.

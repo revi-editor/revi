@@ -1,6 +1,6 @@
 use crate::mode::Mode;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ReViCommand {
     StartUp,
     CursorUp,
@@ -26,6 +26,7 @@ pub enum ReViCommand {
     ExitCommandMode,
     ExcuteCommandLine,
     NextWindow,
+    Print(String),
     Save,
     Quit,
 }

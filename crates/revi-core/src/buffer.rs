@@ -54,6 +54,7 @@ impl From<&str> for CharType {
 pub struct Buffer {
     inner: Rope,
     name: Option<String>,
+    dirty: bool,
 }
 
 impl Buffer {
@@ -63,6 +64,7 @@ impl Buffer {
         Self {
             inner: Rope::new(),
             name: None,
+            dirty: false,
         }
     }
 
@@ -73,6 +75,7 @@ impl Buffer {
         Self {
             inner: rope,
             name: Some(filename.to_string()),
+            dirty: false,
         }
     }
 
@@ -82,7 +85,12 @@ impl Buffer {
         Self {
             inner: Rope::from(text),
             name: None,
+            dirty: false,
         }
+    }
+    #[must_use]
+    pub fn is_dirty(&self) -> bool {
+        self.dirty
     }
 
     #[must_use]
@@ -118,7 +126,7 @@ impl Buffer {
 
     #[must_use]
     pub fn len_lines(&self) -> usize {
-        self.inner.len_lines().saturating_sub(2)
+        self.inner.len_lines()
     }
 
     #[must_use]
@@ -133,10 +141,17 @@ impl Buffer {
 
     pub fn insert_char(&mut self, idx: usize, c: char) {
         self.inner.insert_char(idx, c);
+        self.dirty = true;
+    }
+
+    pub fn insert(&mut self, idx: usize, text: &str) {
+        self.inner.insert(idx, text);
+        self.dirty = true;
     }
 
     pub fn remove(&mut self, range: Range<usize>) {
         self.inner.remove(range);
+        self.dirty = true;
     }
 
     #[must_use]
@@ -160,14 +175,19 @@ impl Buffer {
             .collect::<String>()
     }
 
-    pub fn write_to<T: std::io::Write>(&self, writer: T) -> std::io::Result<()> {
-        self.inner.write_to(writer)?;
-        Ok(())
+    pub fn write_to<T: std::io::Write>(&mut self, writer: T) -> std::io::Result<()> {
+        match self.inner.write_to(writer) {
+            ok @ Ok(_) => {
+                self.dirty = false;
+                ok
+            }
+            err @ Err(_) => err,
+        }
     }
 
     #[must_use]
     pub fn next_jump_idx(&self, pos: &Position) -> Option<usize> {
-        // TODO: Fix this God awful garbage!!!!!!!!!!!
+        // TODO: Fix this awful garbage!!!!!!!!!!!
         let (x, y) = pos.as_usize();
         let result: Vec<(usize, CharType)> = self.line(y).as_str()[x..]
             .match_indices(&JUMP_MATCHES[..])
@@ -182,7 +202,7 @@ impl Buffer {
 
     #[must_use]
     pub fn prev_jump_idx(&self, pos: &Position) -> Option<usize> {
-        // TODO: Fix this God awful garbage!!!!!!!!!!!
+        // TODO: Fix this awful garbage!!!!!!!!!!!
         let (x, y) = pos.as_usize();
         let result: Vec<(usize, CharType)> = self.line(y).as_str()[..x]
             .rmatch_indices(&JUMP_MATCHES[..])
@@ -213,7 +233,7 @@ pub fn from_path(path: &str) -> Rope {
 }
 
 fn word_indices(items: &[(usize, CharType)]) -> Vec<Vec<(usize, CharType)>> {
-    // TODO: Fix this God awful garbage!!!!!!!!!!!
+    // TODO: Fix this awful garbage!!!!!!!!!!!
     let mut stream = items.iter().peekable();
     let mut word_loc = Vec::new();
     if let Some(f) = stream.next() {

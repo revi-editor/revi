@@ -33,7 +33,7 @@ fn main() -> LuaResult<()> {
     revi.borrow_mut()
         .execute(input.number_usize(), &[ReViCommand::StartUp]);
     input.clear();
-    tui.update(&*revi.borrow());
+    tui.update(&mut *revi.borrow_mut());
 
     while revi.borrow().is_running {
         if tui.poll_read(std::time::Duration::from_millis(50)) {
@@ -43,7 +43,7 @@ fn main() -> LuaResult<()> {
 
             if let Some(commands) = keymapper.get_mapping(mode, &input.keys()) {
                 revi.borrow_mut().execute(input.number_usize(), commands);
-                tui.update(&*revi.borrow());
+                tui.update(&mut *revi.borrow_mut());
                 input.clear();
             } else if mode == Mode::Insert {
                 let input_chars = input
@@ -55,7 +55,7 @@ fn main() -> LuaResult<()> {
                 revi.borrow_mut()
                     .execute(input.number_usize(), &input_chars);
                 input.clear();
-                tui.update(&*revi.borrow());
+                tui.update(&mut *revi.borrow_mut());
             }
         }
     }

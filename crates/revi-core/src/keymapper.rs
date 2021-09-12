@@ -65,6 +65,7 @@ impl Mapper {
 
     fn build_normal(self) -> Self {
         self.insert_mapping(Normal, vec![Key::Esc], vec![ChangeMode(Normal)])
+            .insert_mapping(Normal, vec![Key::LS, Key::Ctrl], vec![Save])
             .insert_mapping(Normal, vec![Key::UZ, Key::UZ], vec![Save, Quit])
             .insert_mapping(Normal, vec![Key::UZ, Key::UQ], vec![Quit])
             .insert_mapping(Normal, vec![Key::LJ], vec![CursorDown])

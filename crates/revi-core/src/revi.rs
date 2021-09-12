@@ -1,15 +1,16 @@
 use crate::buffer::Buffer;
-use crate::line_number::LineNumbers;
+use crate::line_number::LineNumberKind;
 use crate::mode::Mode;
 use crate::position::Position;
 use crate::revi_command::ReViCommand::{
     self, Backspace, ChangeMode, CursorDown, CursorLeft, CursorRight, CursorUp, DeleteChar,
     DeleteLine, End, EnterCommandMode, ExcuteCommandLine, ExitCommandMode, FirstCharInLine, Home,
     InsertChar, JumpToFirstLineBuffer, JumpToLastLineBuffer, MoveBackwardByWord, MoveForwardByWord,
-    NewLine, NextWindow, Quit, Save, ScrollDown, ScrollUp, StartUp,
+    NewLine, NextWindow, Print, Quit, Save, ScrollDown, ScrollUp, StartUp,
 };
 use crate::window::Window;
 use revi_ui::screen_size;
+use revi_ui::Stylize;
 use std::{cell::RefCell, rc::Rc};
 
 #[derive(Debug)]
@@ -45,7 +46,7 @@ impl ReVi {
 
         let main_window = Window::new(w, h, Clone::clone(&buffers[1]))
             .with_status_bar(true)
-            .with_line_numbers(LineNumbers::RelativeNumber);
+            .with_line_numbers(LineNumberKind::RelativeNumber);
 
         let command_bar = Window::new(w, 1, cbuffer).with_position((0, h + 2).into());
 
@@ -109,8 +110,25 @@ impl ReVi {
     }
 
     #[must_use]
-    pub fn queued(&self) -> &[usize] {
-        &self.queue
+    pub fn queued(&mut self) -> Vec<usize> {
+        let queue = self.queue.clone();
+        self.queue.clear();
+        queue
+    }
+
+    pub fn print(&mut self, msg: &str) {
+        self.buffers[0].borrow_mut().insert(0, msg);
+        self.queue.push(0);
+    }
+
+    pub fn error_message(&mut self, msgs: Vec<&str>) {
+        self.print(
+            &vec![
+                msgs[0].black().on_red().to_string(),
+                msgs[1].reset().to_string(),
+            ]
+            .join(" "),
+        );
     }
 
     pub fn exit(&mut self) {
@@ -135,6 +153,9 @@ impl ReVi {
         self.last_focused = self.focused.max(1);
         self.focused = 0;
         *self.mode_mut() = Mode::Insert;
+        self.buffers[0].borrow_mut().clear();
+        self.buffers[0].borrow_mut().insert_char(0, ':');
+        self.windows[0].move_cursor_right(1);
     }
 
     pub fn exit_command_mode(&mut self) {
@@ -152,33 +173,107 @@ impl ReVi {
     }
 
     pub fn execute(&mut self, count: usize, commands: &[ReViCommand]) {
+        // TODO Each Command needs to send there own update as needed.
         for command in commands {
             match command {
                 StartUp => {}
-                CursorUp => self.focused_window_mut().move_cursor_up(count),
-                CursorDown => self.focused_window_mut().move_cursor_down(count),
-                ScrollUp => self.focused_window_mut().scroll_up(count),
-                ScrollDown => self.focused_window_mut().scroll_down(count),
-                CursorLeft => self.focused_window_mut().move_cursor_left(count),
-                CursorRight => self.focused_window_mut().move_cursor_right(count),
-                Home => self.focused_window_mut().home(),
-                End => self.focused_window_mut().end(),
-                FirstCharInLine => self.focused_window_mut().first_char_in_line(),
-                JumpToFirstLineBuffer => self.focused_window_mut().jump_to_first_line_buffer(),
-                JumpToLastLineBuffer => self.focused_window_mut().jump_to_last_line_buffer(),
-                DeleteChar => self.focused_window_mut().delete(),
-                DeleteLine => self.focused_window_mut().delete_line(),
-                NewLine if self.focused != 0 => self.focused_window_mut().insert_newline(),
-                Backspace => self.focused_window_mut().backspace(),
-                InsertChar(c) => self.focused_window_mut().insert_char(*c),
-                EnterCommandMode => self.enter_command_mode(),
-                ExitCommandMode if self.focused == 0 => self.exit_command_mode(),
-                ExcuteCommandLine if self.focused == 0 => self.execute_command_line(),
-                NextWindow => self.next_window(),
-                ChangeMode(m) => self.change_modes(*m),
-                MoveForwardByWord => self.focused_window_mut().move_forward_by_word(),
-                MoveBackwardByWord => self.focused_window_mut().move_backward_by_word(),
-                Save => self.focused_window().save(),
+                CursorUp => {
+                    self.focused_window_mut().move_cursor_up(count);
+                    self.queue.push(self.focused);
+                }
+                CursorDown => {
+                    self.focused_window_mut().move_cursor_down(count);
+                    self.queue.push(self.focused);
+                }
+                ScrollUp => {
+                    self.focused_window_mut().scroll_up(count);
+                    self.queue.push(self.focused);
+                }
+                ScrollDown => {
+                    self.focused_window_mut().scroll_down(count);
+                    self.queue.push(self.focused);
+                }
+                CursorLeft => {
+                    self.focused_window_mut().move_cursor_left(count);
+                    self.queue.push(self.focused);
+                }
+                CursorRight => {
+                    self.focused_window_mut().move_cursor_right(count);
+                    self.queue.push(self.focused);
+                }
+                Home => {
+                    self.focused_window_mut().home();
+                    self.queue.push(self.focused);
+                }
+                End => {
+                    self.focused_window_mut().end();
+                    self.queue.push(self.focused);
+                }
+                FirstCharInLine => {
+                    self.focused_window_mut().first_char_in_line();
+                    self.queue.push(self.focused);
+                }
+                JumpToFirstLineBuffer => {
+                    self.focused_window_mut().jump_to_first_line_buffer();
+                    self.queue.push(self.focused);
+                }
+                JumpToLastLineBuffer => {
+                    self.focused_window_mut().jump_to_last_line_buffer();
+                    self.queue.push(self.focused);
+                }
+                DeleteChar => {
+                    self.focused_window_mut().delete();
+                    self.queue.push(self.focused);
+                }
+                DeleteLine => {
+                    self.focused_window_mut().delete_line();
+                    self.queue.push(self.focused);
+                }
+                NewLine if self.focused != 0 => {
+                    self.focused_window_mut().insert_newline();
+                    self.queue.push(self.focused);
+                }
+                Backspace => {
+                    self.focused_window_mut().backspace();
+                    self.queue.push(self.focused);
+                }
+                InsertChar(c) => {
+                    self.focused_window_mut().insert_char(*c);
+                    self.queue.push(self.focused);
+                }
+                EnterCommandMode => {
+                    self.enter_command_mode();
+                    self.queue.push(self.focused);
+                }
+                ExitCommandMode if self.focused == 0 => {
+                    self.exit_command_mode();
+                    self.queue.push(self.focused);
+                }
+                ExcuteCommandLine if self.focused == 0 => self.execute_command_line(), // Maybe
+                NextWindow => {
+                    self.next_window();
+                    self.queue.push(self.focused);
+                }
+                ChangeMode(m) => {
+                    self.change_modes(*m);
+                    self.queue.push(self.focused);
+                }
+                MoveForwardByWord => {
+                    self.focused_window_mut().move_forward_by_word();
+                    self.queue.push(self.focused);
+                }
+                MoveBackwardByWord => {
+                    self.focused_window_mut().move_backward_by_word();
+                    self.queue.push(self.focused);
+                }
+                Print(msg) => {
+                    self.print(msg);
+                    self.queue.push(0);
+                }
+                Save => {
+                    self.focused_window().save();
+                    self.queue.push(self.focused);
+                }
                 Quit => self.exit(),
                 _ => {}
             }
@@ -186,8 +281,27 @@ impl ReVi {
     }
 
     fn run_command_line(&mut self, command: &str) {
+        let command: String = if let Some(collon) = command.get(0..1) {
+            if collon == ":" {
+                command[1..].to_string()
+            } else {
+                command.to_string()
+            }
+        } else {
+            command.to_string()
+        };
         let mut items: Vec<&str> = command.split(' ').collect();
         match items.remove(0) {
+            "line" => {
+                let line_number = self.windows[self.last_focused].cursor_file().as_usize_y();
+                let text = self.windows[self.last_focused].buffer().line(line_number);
+                self.print(text.as_str());
+            }
+            "len" => {
+                let line_number = self.windows[self.last_focused].cursor_file().as_usize_y();
+                let text = self.windows[self.last_focused].buffer().line(line_number);
+                self.print(text.len().to_string().as_str());
+            }
             "q" => self.exit(),
             "b" if !items.is_empty() => {
                 if let Some(i) = items.get(0).and_then(|i| i.parse::<usize>().ok()) {
@@ -198,25 +312,28 @@ impl ReVi {
                     }
                 }
             }
+            "print" => self.print(&items.join(" ")),
             "set" if !items.is_empty() => match items.get(0).copied().unwrap_or_default() {
-                "number" => self.windows[self.last_focused].set_number(LineNumbers::AbsoluteNumber),
+                "number" => {
+                    self.windows[self.last_focused].set_number(LineNumberKind::AbsoluteNumber)
+                }
                 "relativenumber" => {
-                    self.windows[self.last_focused].set_number(LineNumbers::RelativeNumber)
+                    self.windows[self.last_focused].set_number(LineNumberKind::RelativeNumber)
                 }
                 "nonumber" | "norelativenumber" => {
-                    self.windows[self.last_focused].set_number(LineNumbers::None)
+                    self.windows[self.last_focused].set_number(LineNumberKind::None)
                 }
-                _ => {}
+                e => self.error_message(vec!["unknown command: ", e]),
             },
-            _ => {}
+            e => self.error_message(vec!["unknown command: ", e]),
         }
     }
 }
 
 impl revi_ui::Display for ReVi {
-    fn render(&self, mut func: impl FnMut(u16, u16, String)) {
+    fn render(&mut self, mut func: impl FnMut(u16, u16, Vec<String>)) {
         for id in self.queued() {
-            let window = &self.windows[*id];
+            let window = &self.windows[id];
             if let Some(((x, y), text)) = window.get_text_feild() {
                 func(x, y, text);
             }
@@ -227,6 +344,7 @@ impl revi_ui::Display for ReVi {
                 func(x, y, text);
             }
         }
+        assert_eq!(self.queue.len(), 0);
     }
 
     fn cursor(&self, mut func: impl FnMut(u16, u16, Option<revi_ui::CursorShape>)) {

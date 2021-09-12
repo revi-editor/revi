@@ -35,11 +35,11 @@ impl Tui {
         keys
     }
 
-    pub fn update(&mut self, displayable: &impl Display) {
+    pub fn update(&mut self, displayable: &mut impl Display) {
         self.save_cursor();
         self.hide_cursor();
-        displayable.render(|x, y, text: String| {
-            self.update_window(x, y, text.as_str());
+        displayable.render(|x, y, text: Vec<String>| {
+            self.update_window(x, y, text);
         });
         displayable.cursor(|x, y, shape| {
             self.update_cursor(x, y, shape);
@@ -49,8 +49,8 @@ impl Tui {
         self.flush();
     }
 
-    fn update_window(&mut self, x: u16, offset_y: u16, text: &str) {
-        for (idx, line) in text.to_string().lines().enumerate() {
+    fn update_window(&mut self, x: u16, offset_y: u16, text: Vec<String>) {
+        for (idx, line) in text.iter().enumerate() {
             let y = offset_y + idx as u16;
             crossterm::queue!(
                 self.writer,

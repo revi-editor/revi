@@ -32,7 +32,7 @@ fn test_getting_mode_and_setting_mode() {
 fn test_start_queued() {
     let files = vec![String::from("test.txt")];
     let revi = ReVi::new(&files);
-    assert_eq!(revi.borrow().queued().len(), 2);
+    assert_eq!(revi.borrow_mut().queued().len(), 2);
 }
 
 #[test]

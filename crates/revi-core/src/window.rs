@@ -2,7 +2,7 @@
 */
 
 use crate::buffer::Buffer;
-use crate::line_number::LineNumbers;
+use crate::line_number::{LineNumberBuilder, LineNumberKind};
 use crate::mode::Mode;
 use crate::position::Position;
 use crate::text_formater::format_screen;
@@ -27,7 +27,7 @@ pub struct Window {
     /// Text File Data
     buffer: Rc<RefCell<Buffer>>,
     /// Line Number Type.
-    line_number_type: LineNumbers,
+    line_number_type: LineNumberKind,
     /// This needs to be removed
     status_bar_state: bool,
 }
@@ -42,7 +42,7 @@ impl Window {
             cursor: Position::default(),
             max_cursor: Position::default(),
             buffer,
-            line_number_type: LineNumbers::None,
+            line_number_type: LineNumberKind::None,
             status_bar_state: false,
         }
     }
@@ -54,7 +54,7 @@ impl Window {
     }
 
     #[must_use]
-    pub fn with_line_numbers(mut self, line_number_type: LineNumbers) -> Self {
+    pub fn with_line_numbers(mut self, line_number_type: LineNumberKind) -> Self {
         self.line_number_type = line_number_type;
         self
     }
@@ -73,7 +73,7 @@ impl Window {
         self.buffer = buffer;
     }
 
-    pub fn set_number(&mut self, number_type: LineNumbers) {
+    pub fn set_number(&mut self, number_type: LineNumberKind) {
         self.line_number_type = number_type;
     }
 
@@ -150,7 +150,9 @@ impl Window {
     pub fn move_cursor_down(&mut self, lines: usize) {
         if self.cursor.as_usize_y() >= self.height() - 1 {
             self.scroll_down(lines);
-        } else if self.cursor_file().as_usize_y() < self.buffer.borrow().len_lines() {
+        } else if self.cursor_file().as_usize_y()
+            < self.buffer.borrow().len_lines().saturating_sub(1)
+        {
             self.cursor.add_to_y(lines);
             self.cursor.set_x(self.max_cursor.as_usize_x());
             self.adjust_cursor_x()
@@ -265,9 +267,12 @@ impl Window {
 
     pub fn insert_newline(&mut self) {
         self.insert_char('\n');
-        self.move_cursor_down(1);
+        // self.move_cursor_down(1);
+        self.cursor.add_to_y(1);
+        self.cursor.set_x(self.max_cursor.as_usize_x());
         self.cursor.set_x(0);
         self.scroll_offset.set_x(0);
+        self.adjust_cursor_x();
     }
 
     pub fn first_char_in_line(&mut self) {
@@ -289,11 +294,11 @@ impl Window {
 
     pub fn jump_to_last_line_buffer(&mut self) {
         // Gets line count but screen is off by one so we subtract one.
-        let total_y = self.buffer.borrow().len_lines();
+        let total_y = self.buffer.borrow().len_lines().saturating_sub(1);
         // Gets screen height but it also is off by one so we subtract one.
         let screen_y = (self.height() - 1).min(total_y);
-        // Finds Y offset into file but it is off by one as well for indexing so we subtract one as
-        // well
+        // Finds Y offset into file but it is off by one as well for indexing so we
+        // subtract one as well
         let offset_y = total_y.saturating_sub(screen_y).saturating_sub(1);
         self.cursor.set_y(screen_y);
         self.scroll_offset.set_y(offset_y);
@@ -375,11 +380,13 @@ impl Window {
 
     // This need to return a Result
     pub fn save(&self) {
-        if let Some(filename) = self.buffer.borrow().name() {
+        let name = self.buffer.borrow().name().clone();
+        if let Some(filename) = name {
             let file =
                 std::fs::File::create(filename).expect("Problem opening the file for saving");
 
             let buff = BufWriter::new(file);
+
             self.buffer
                 .borrow_mut()
                 .write_to(buff)
@@ -388,20 +395,20 @@ impl Window {
     }
 
     #[must_use]
-    pub fn get_status_bar(&self) -> Option<((u16, u16), String)> {
+    pub fn get_status_bar(&self) -> Option<((u16, u16), Vec<String>)> {
         // FIXME: I hate this so much
         if self.status_bar_state {
             let y = self.position().as_usize_y() + self.height();
             let pos = Position::new(self.position().as_usize_x(), y);
 
             let left = format!(
-                " {} | {}",
+                " {} | {}{}",
                 self.mode,
-                self.buffer
-                    .borrow()
+                self.buffer()
                     .name()
                     .clone()
-                    .unwrap_or_else(|| "N/A".to_string())
+                    .unwrap_or_else(|| "N/A".to_string()),
+                if self.buffer().is_dirty() { "[+]" } else { "" },
             );
             let right = format!(
                 "file: {} | window: {} ",
@@ -411,30 +418,37 @@ impl Window {
             let middle = (0..(self.text_width().saturating_sub(left.len() + right.len())))
                 .map(|_| ' ')
                 .collect::<String>();
-            return Some((pos.as_u16(), format!("{}{}{}", left, middle, right)));
+            return Some((pos.as_u16(), vec![format!("{}{}{}", left, middle, right)]));
         }
         None
     }
 
     #[must_use]
-    pub fn get_line_number(&self) -> Option<((u16, u16), String)> {
+    pub fn get_line_number(&self) -> Option<((u16, u16), Vec<String>)> {
         // TODO: Pull this out of Window
-        if self.line_number_type != LineNumbers::None {
+        if self.line_number_type != LineNumberKind::None {
             let scroll = self.scroll_offset.as_usize_y();
             let len_lines = self.buffer.borrow().len_lines();
             let cursor = self.cursor.as_usize_y();
-            let width = self.line_number_width();
+            let width = self.line_number_width().saturating_sub(1);
+            let builder = LineNumberBuilder {
+                width,
+                height: self.height(),
+                line_len: len_lines,
+                cursor_pos: cursor,
+                window_offset: scroll,
+                blank_line: "~".into(),
+            };
             return Some((
                 self.position().as_u16(),
-                self.line_number_type
-                    .lines(width, self.height(), scroll, cursor, len_lines),
+                self.line_number_type.lines(builder),
             ));
         }
         None
     }
 
     #[must_use]
-    pub fn get_text_feild(&self) -> Option<((u16, u16), String)> {
+    pub fn get_text_feild(&self) -> Option<((u16, u16), Vec<String>)> {
         let top = self.scroll_offset.as_usize_y();
         let bottom = self.dimensions.as_usize_y() + top;
         let window = self.buffer.borrow().on_screen(top, bottom);
@@ -444,7 +458,13 @@ impl Window {
             self.text_width(),
             self.height(),
         );
-        Some((self.offset().as_u16(), formated_window))
+        Some((
+            self.offset().as_u16(),
+            formated_window
+                .split("\r\n")
+                .map(ToString::to_string)
+                .collect::<Vec<String>>(),
+        ))
     }
 }
 
@@ -452,7 +472,7 @@ impl Window {
 impl Window {
     /// Width of `LineNumber` Area if populated.
     fn line_number_width(&self) -> usize {
-        if self.line_number_type == LineNumbers::None {
+        if self.line_number_type == LineNumberKind::None {
             return 0;
         }
         self.buffer.borrow().len_lines().to_string().len().max(3) + 2

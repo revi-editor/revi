@@ -1,12 +1,13 @@
 #![warn(clippy::all, clippy::pedantic)]
 mod key;
 mod ui;
+pub use crossterm::style::Stylize;
 pub use key::Key;
 pub use ui::screen_size;
 pub use ui::Tui;
 
 pub trait Display {
-    fn render(&self, func: impl FnMut(u16, u16, String));
+    fn render(&mut self, func: impl FnMut(u16, u16, Vec<String>));
     fn cursor(&self, func: impl FnMut(u16, u16, Option<CursorShape>));
 }
 
