@@ -302,7 +302,22 @@ impl ReVi {
                 let text = self.windows[self.last_focused].buffer().line(line_number);
                 self.print(text.len().to_string().as_str());
             }
+            "wq" if items.is_empty() => {
+                self.windows[self.last_focused].save();
+                self.queue.push(self.focused);
+                self.exit();
+            }
             "q" => self.exit(),
+            "w" if !items.is_empty() => {
+                let name = items.join(" ");
+                self.buffers[self.last_focused].borrow_mut().set_name(&name);
+                self.windows[self.last_focused].save();
+                self.queue.push(self.focused);
+            }
+            "w" if items.is_empty() => {
+                self.windows[self.last_focused].save();
+                self.queue.push(self.focused);
+            }
             "b" if !items.is_empty() => {
                 if let Some(i) = items.get(0).and_then(|i| i.parse::<usize>().ok()) {
                     let buffer = self.buffers.get(i).map(|rc| Clone::clone(rc));
@@ -312,7 +327,10 @@ impl ReVi {
                     }
                 }
             }
-            "print" => self.print(&items.join(" ")),
+            "print" => {
+                self.execute(1, &vec![Print(items.join(" "))]);
+                // self.print(&items.join(" "));
+            }
             "set" if !items.is_empty() => match items.get(0).copied().unwrap_or_default() {
                 "number" => {
                     self.windows[self.last_focused].set_number(LineNumberKind::AbsoluteNumber)
