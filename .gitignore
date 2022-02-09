@@ -2,5 +2,5 @@
 *.lock
 *.txt
 *.vim
-./crates/revi-key-parser
-./crates/eztui
+/crates/revi-key-parser
+/crates/eztui
