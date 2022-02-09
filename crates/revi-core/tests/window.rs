@@ -53,7 +53,7 @@ fn test_can_not_move_cursor_passed_end_of_last_line() {
     assert_eq!(left, right);
     window.jump_to_last_line_buffer();
     let left = window.cursor_screen().as_u16();
-    let right = (0, 8);
+    let right = (0, 6);
     eprintln!("left: {:?}, right: {:?}", left, right);
     assert_eq!(left, right);
 }
