@@ -98,6 +98,10 @@ impl Buffer {
         &self.name
     }
 
+    pub fn set_name(&mut self, name: &str) {
+        self.name = Some(name.to_string());
+    }
+
     #[must_use]
     pub fn idx_of_position(&self, pos: &Position) -> usize {
         self.inner.line_to_char(pos.as_usize_y()) + pos.as_usize_x()
