@@ -133,7 +133,9 @@
   *All Commands will change in further versions*
   |'Command'|*Action*|Note
   |:---|:---:|---:
+  `w[filename]`|*SAVE*
   `q`|*QUIT*|
+  `wq`|*SAVE then QUIT*|
   `quit`|*QUIT*|
   `exit`|*QUIT*|
   `b[buffer number]`|*Sets Buffer*|
