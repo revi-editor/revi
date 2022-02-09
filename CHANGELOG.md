@@ -2,6 +2,12 @@
 
 ## ------------- **Version 0.0.0-beta-3** -------------------------------------------
 
+In  this update we did a complete redesign of revi.   It has has been about 9 months sense the
+start of revi development and in this time much better designs have shown there selfs to me.
+I this there is much better ways of doing a text editor that I would like to pursue.
+In the current state of revi a rewrite is not that big of a deal do to it being so small at the
+moment.   Better now then way down the line.
+
 ### Added
 
 ### Fixed
