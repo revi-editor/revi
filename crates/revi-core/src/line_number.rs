@@ -1,3 +1,5 @@
+// This hole file SUCKS.
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[allow(dead_code)]
 pub enum LineNumberKind {
@@ -43,8 +45,14 @@ pub fn pad(w: usize, num_width: usize) -> String {
     (0..w.saturating_sub(num_width)).map(|_| " ").collect()
 }
 
-pub fn format_line_number(builder: LineNumberBuilder) -> impl Fn(usize) -> String {
-    move |num| format!("{}{} ", pad(builder.width, format!("{}", num).len()), num)
+pub fn format_line_number(builder: LineNumberBuilder, offset: usize) -> impl Fn(usize) -> String {
+    move |num| {
+        format!(
+            "{}{} ",
+            pad(builder.width, format!("{}", num + offset).len()),
+            num + offset
+        )
+    }
 }
 
 pub fn format_blanks(builder: LineNumberBuilder) -> impl Fn(usize) -> String {
@@ -59,7 +67,7 @@ pub fn format_blanks(builder: LineNumberBuilder) -> impl Fn(usize) -> String {
 
 pub fn absolute_line_numbers(builder: LineNumberBuilder) -> LineNumber {
     let mut numbers = (builder.top()..builder.bottom())
-        .map(format_line_number(builder.clone()))
+        .map(format_line_number(builder.clone(), 0))
         .collect::<Vec<_>>();
     let mut blanks = (0..builder.height.saturating_sub(numbers.len()))
         .map(format_blanks(builder.clone()))
@@ -70,13 +78,17 @@ pub fn absolute_line_numbers(builder: LineNumberBuilder) -> LineNumber {
 }
 
 pub fn relative_line_numbers(builder: LineNumberBuilder) -> LineNumber {
-    let mut above_cursor = (1..=builder.cursor_pos.saturating_sub(builder.top()))
-        .map(format_line_number(builder.clone()))
+    let mut above_cursor = (0..builder.cursor_pos.saturating_sub(builder.top()))
+        .map(format_line_number(builder.clone(), 1))
         .rev()
         .collect::<Vec<_>>();
-    let cursor = format_line_number(builder.clone())(0);
-    let mut below_cursor = (1..builder.bottom().saturating_sub(builder.cursor_pos))
-        .map(format_line_number(builder.clone()))
+    let cursor = format_line_number(builder.clone(), 0)(0);
+    // CHANGED: made this 1..=builder
+    let mut below_cursor = (0..builder
+        .bottom()
+        .saturating_sub(1)
+        .saturating_sub(builder.cursor_pos))
+        .map(format_line_number(builder.clone(), 1))
         .collect::<Vec<_>>();
     let mut blanks = (0..builder
         .height
@@ -89,6 +101,7 @@ pub fn relative_line_numbers(builder: LineNumberBuilder) -> LineNumber {
 
     above_cursor
 }
+
 mod test {
     const _WIDTH: usize = 5;
     use super::*;

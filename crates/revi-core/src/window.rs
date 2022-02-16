@@ -429,7 +429,7 @@ impl Window {
         if self.line_number_type != LineNumberKind::None {
             let scroll = self.scroll_offset.as_usize_y();
             let len_lines = self.buffer.borrow().len_lines();
-            let cursor = self.cursor.as_usize_y();
+            let cursor = self.cursor.as_usize_y() + scroll;
             let width = self.line_number_width().saturating_sub(1);
             let builder = LineNumberBuilder {
                 width,
