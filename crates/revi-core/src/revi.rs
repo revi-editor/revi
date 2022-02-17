@@ -171,8 +171,12 @@ impl ReVi {
         self.run_command_line(&string);
     }
 
+    // TODO: This execute method is getting out of hand.
+    //
+    // one thing we could do is Have commands that are struct's with a Command trait.
+    // That would put the code of the command in the impl of the struct to keep
+    // definition of Command and code will be close.
     pub fn execute(&mut self, count: usize, commands: &[ReViCommand]) {
-        // TODO Each Command needs to send there own update as needed.
         for command in commands {
             match command {
                 StartUp => {}

@@ -453,6 +453,8 @@ impl Window {
 
     #[must_use]
     pub fn get_text_feild(&self) -> Option<((u16, u16), Vec<String>)> {
+        // I removed this from in ui.
+        // It is the responsibility of the window to clean up line of new lines.
         // .strip_suffix("\r\n").unwrap_or(line)
         let top = self.scroll_offset.as_usize_y();
         let bottom = self.dimensions.as_usize_y() + top;
