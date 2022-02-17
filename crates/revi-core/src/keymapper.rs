@@ -3,7 +3,7 @@ use crate::revi_command::ReViCommand::{
     self, Backspace, ChangeMode, CursorDown, CursorLeft, CursorRight, CursorUp, DeleteChar,
     DeleteLine, End, EnterCommandMode, ExcuteCommandLine, ExitCommandMode, FirstCharInLine, Home,
     JumpToFirstLineBuffer, JumpToLastLineBuffer, MoveBackwardByWord, MoveForwardByWord, NewLine,
-    NextWindow, Quit, Save, ScrollDown, ScrollUp,
+    NextWindow, Paste, PasteBack, Quit, Save, ScrollDown, ScrollUp, YankLine,
 };
 
 use revi_ui::Key;
@@ -124,6 +124,9 @@ impl Mapper {
                 vec![Key::Enter],
                 vec![ExcuteCommandLine, ExitCommandMode],
             )
+            .insert_mapping(Normal, vec![Key::LY, Key::LY], vec![YankLine])
+            .insert_mapping(Normal, vec![Key::LP], vec![Paste])
+            .insert_mapping(Normal, vec![Key::UP], vec![PasteBack])
     }
 
     fn build_insert(self) -> Self {

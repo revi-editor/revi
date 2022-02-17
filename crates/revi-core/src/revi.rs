@@ -6,7 +6,8 @@ use crate::revi_command::ReViCommand::{
     self, Backspace, ChangeMode, CursorDown, CursorLeft, CursorRight, CursorUp, DeleteChar,
     DeleteLine, End, EnterCommandMode, ExcuteCommandLine, ExitCommandMode, FirstCharInLine, Home,
     InsertChar, JumpToFirstLineBuffer, JumpToLastLineBuffer, MoveBackwardByWord, MoveForwardByWord,
-    NewLine, NextWindow, Print, Quit, Save, ScrollDown, ScrollUp, StartUp,
+    NewLine, NextWindow, Paste, PasteBack, Print, Quit, Save, ScrollDown, ScrollUp, StartUp,
+    YankLine,
 };
 use crate::window::Window;
 use revi_ui::screen_size;
@@ -16,7 +17,6 @@ use std::{cell::RefCell, rc::Rc};
 #[derive(Debug)]
 pub struct ReVi {
     pub is_running: bool,
-    size: Position,
     windows: Vec<Window>,
     queue: Vec<usize>,
     buffers: Vec<Rc<RefCell<Buffer>>>,
@@ -58,7 +58,6 @@ impl ReVi {
             .collect::<Vec<usize>>();
 
         let revi = Self {
-            size: Position::new_u16(w, h),
             is_running: true,
             windows,
             queue,
@@ -226,8 +225,43 @@ impl ReVi {
                     self.queue.push(self.focused);
                 }
                 DeleteLine => {
-                    self.focused_window_mut().delete_line();
+                    let line = self.focused_window_mut().delete_line();
                     self.queue.push(self.focused);
+                    self.clipboard.push_str(line.as_str());
+                }
+                YankLine => {
+                    let yanked_line;
+                    {
+                        let cursor = self.focused_window().cursor_file();
+                        let line = cursor.as_usize_y();
+                        let buffer = self.focused_window().buffer();
+                        yanked_line = buffer.line(line);
+                    }
+                    self.clipboard.push_str(yanked_line.as_str());
+                    self.queue.push(self.focused);
+                }
+                PasteBack => {
+                    self.queue.push(self.focused);
+                    // TODO: Fix this cloning.
+                    let clipboard = self.clipboard.clone();
+                    {
+                        let window = self.focused_window_mut();
+                        let line_idx = window.cursor_file().as_usize_y();
+                        let mut buffer = window.buffer_mut();
+                        buffer.insert_line(line_idx, &clipboard);
+                    }
+                }
+                Paste => {
+                    self.queue.push(self.focused);
+                    // TODO: Fix this cloning.
+                    let clipboard = self.clipboard.clone();
+                    {
+                        let window = self.focused_window_mut();
+                        let line_idx = window.cursor_file().as_usize_y();
+                        let mut buffer = window.buffer_mut();
+                        buffer.insert_line(line_idx + 1, &clipboard);
+                    }
+                    self.focused_window_mut().move_cursor_down(1);
                 }
                 NewLine if self.focused != 0 => {
                     self.focused_window_mut().insert_newline();
@@ -280,6 +314,7 @@ impl ReVi {
         }
     }
 
+    // TODO: Make a lexer and parser for this.
     fn run_command_line(&mut self, command: &str) {
         let command: String = if let Some(collon) = command.get(0..1) {
             if collon == ":" {
@@ -312,6 +347,7 @@ impl ReVi {
                     }
                 }
             }
+            "clipboard" => self.print(self.clipboard.clone().as_str()),
             "print" => self.print(&items.join(" ")),
             "set" if !items.is_empty() => match items.get(0).copied().unwrap_or_default() {
                 "number" => {

@@ -144,6 +144,12 @@ impl Buffer {
         self.dirty = true;
     }
 
+    pub fn insert_line(&mut self, at_line: usize, text: &str) {
+        let idx = self.inner.line_to_char(at_line);
+        self.inner.insert(idx, text);
+        self.dirty = true;
+    }
+
     pub fn insert(&mut self, idx: usize, text: &str) {
         self.inner.insert(idx, text);
         self.dirty = true;

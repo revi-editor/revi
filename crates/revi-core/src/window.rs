@@ -77,6 +77,7 @@ impl Window {
         self.line_number_type = number_type;
     }
 
+    /// Gives a borrowed copy of the buffer.
     #[must_use]
     pub fn buffer(&self) -> Ref<Buffer> {
         self.buffer.borrow()
@@ -347,14 +348,17 @@ impl Window {
         self.move_cursor_right(1);
     }
 
-    pub fn delete_line(&mut self) {
+    pub fn delete_line(&mut self) -> String {
         let y = self.cursor_file().as_usize_y();
         let start_idx = self.buffer.borrow().line_to_char(y);
         let end_idx = self.buffer.borrow().line_to_char(y + 1);
 
+        // Grab line to be deleted and return it.
+        let line = self.buffer.borrow().line(y);
         // Remove the line...
         self.buffer.borrow_mut().remove(start_idx..end_idx);
         self.adjust_cursor_x();
+        line
     }
 
     pub fn home(&mut self) {
