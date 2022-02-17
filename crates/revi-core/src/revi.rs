@@ -366,7 +366,7 @@ impl ReVi {
     }
 }
 
-impl revi_ui::Display for ReVi {
+impl revi_ui::Display<String> for ReVi {
     fn render(&mut self, mut func: impl FnMut(u16, u16, Vec<String>)) {
         for id in self.queued() {
             let window = &self.windows[id];

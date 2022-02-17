@@ -6,8 +6,8 @@ pub use key::Key;
 pub use ui::screen_size;
 pub use ui::Tui;
 
-pub trait Display {
-    fn render(&mut self, func: impl FnMut(u16, u16, Vec<String>));
+pub trait Display<D: std::fmt::Display> {
+    fn render(&mut self, func: impl FnMut(u16, u16, Vec<D>));
     fn cursor(&self, func: impl FnMut(u16, u16, Option<CursorShape>));
 }
 

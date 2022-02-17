@@ -35,10 +35,10 @@ impl Tui {
         keys
     }
 
-    pub fn update(&mut self, displayable: &mut impl Display) {
+    pub fn update<D: std::fmt::Display>(&mut self, displayable: &mut impl Display<D>) {
         self.save_cursor();
         self.hide_cursor();
-        displayable.render(|x, y, text: Vec<String>| {
+        displayable.render(|x, y, text: Vec<D>| {
             self.update_window(x, y, text);
         });
         displayable.cursor(|x, y, shape| {
@@ -49,13 +49,13 @@ impl Tui {
         self.flush();
     }
 
-    fn update_window(&mut self, x: u16, offset_y: u16, text: Vec<String>) {
+    fn update_window<D: std::fmt::Display>(&mut self, x: u16, offset_y: u16, text: Vec<D>) {
         for (idx, line) in text.iter().enumerate() {
             let y = offset_y + idx as u16;
             crossterm::queue!(
                 self.writer,
                 crossterm::cursor::MoveTo(x, y),
-                crossterm::style::Print(line.strip_suffix("\r\n").unwrap_or(line)),
+                crossterm::style::Print(line),
             )
             .expect("Drawing Window Failed.");
         }
