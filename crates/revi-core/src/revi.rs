@@ -1,14 +1,8 @@
 use crate::buffer::Buffer;
+use crate::commands::Command;
 use crate::line_number::LineNumberKind;
 use crate::mode::Mode;
 use crate::position::Position;
-use crate::revi_command::ReViCommand::{
-    self, Backspace, ChangeMode, CursorDown, CursorLeft, CursorRight, CursorUp, DeleteChar,
-    DeleteLine, End, EnterCommandMode, ExcuteCommandLine, ExitCommandMode, FirstCharInLine, Home,
-    InsertChar, JumpToFirstLineBuffer, JumpToLastLineBuffer, MoveBackwardByWord, MoveForwardByWord,
-    NewLine, NextWindow, Paste, PasteBack, Print, Quit, Save, ScrollDown, ScrollUp, StartUp,
-    YankLine,
-};
 use crate::window::Window;
 use revi_ui::screen_size;
 use revi_ui::Stylize;
@@ -17,12 +11,12 @@ use std::{cell::RefCell, rc::Rc};
 #[derive(Debug)]
 pub struct ReVi {
     pub is_running: bool,
-    windows: Vec<Window>,
-    queue: Vec<usize>,
-    buffers: Vec<Rc<RefCell<Buffer>>>,
-    focused: usize,
-    last_focused: usize,
-    clipboard: String,
+    pub windows: Vec<Window>,
+    pub queue: Vec<usize>,
+    pub buffers: Vec<Rc<RefCell<Buffer>>>,
+    pub focused: usize,
+    pub last_focused: usize,
+    pub clipboard: String,
 }
 
 impl ReVi {
@@ -171,150 +165,9 @@ impl ReVi {
         self.run_command_line(&string);
     }
 
-    // TODO: This execute method is getting out of hand.
-    //
-    // one thing we could do is Have commands that are struct's with a Command trait.
-    // That would put the code of the command in the impl of the struct to keep
-    // definition of Command and code will be close.
-    pub fn execute(&mut self, count: usize, commands: &[ReViCommand]) {
+    pub fn execute(&mut self, count: usize, commands: &[Box<dyn Command>]) {
         for command in commands {
-            match command {
-                StartUp => {}
-                CursorUp => {
-                    self.focused_window_mut().move_cursor_up(count);
-                    self.queue.push(self.focused);
-                }
-                CursorDown => {
-                    self.focused_window_mut().move_cursor_down(count);
-                    self.queue.push(self.focused);
-                }
-                ScrollUp => {
-                    self.focused_window_mut().scroll_up(count);
-                    self.queue.push(self.focused);
-                }
-                ScrollDown => {
-                    self.focused_window_mut().scroll_down(count);
-                    self.queue.push(self.focused);
-                }
-                CursorLeft => {
-                    self.focused_window_mut().move_cursor_left(count);
-                    self.queue.push(self.focused);
-                }
-                CursorRight => {
-                    self.focused_window_mut().move_cursor_right(count);
-                    self.queue.push(self.focused);
-                }
-                Home => {
-                    self.focused_window_mut().home();
-                    self.queue.push(self.focused);
-                }
-                End => {
-                    self.focused_window_mut().end();
-                    self.queue.push(self.focused);
-                }
-                FirstCharInLine => {
-                    self.focused_window_mut().first_char_in_line();
-                    self.queue.push(self.focused);
-                }
-                JumpToFirstLineBuffer => {
-                    self.focused_window_mut().jump_to_first_line_buffer();
-                    self.queue.push(self.focused);
-                }
-                JumpToLastLineBuffer => {
-                    self.focused_window_mut().jump_to_last_line_buffer();
-                    self.queue.push(self.focused);
-                }
-                DeleteChar => {
-                    self.focused_window_mut().delete();
-                    self.queue.push(self.focused);
-                }
-                DeleteLine => {
-                    let line = self.focused_window_mut().delete_line();
-                    self.queue.push(self.focused);
-                    self.clipboard.push_str(line.as_str());
-                }
-                YankLine => {
-                    let yanked_line;
-                    {
-                        let cursor = self.focused_window().cursor_file();
-                        let line = cursor.as_usize_y();
-                        let buffer = self.focused_window().buffer();
-                        yanked_line = buffer.line(line);
-                    }
-                    self.clipboard.push_str(yanked_line.as_str());
-                    self.queue.push(self.focused);
-                }
-                PasteBack => {
-                    self.queue.push(self.focused);
-                    // TODO: Fix this cloning.
-                    let clipboard = self.clipboard.clone();
-                    {
-                        let window = self.focused_window_mut();
-                        let line_idx = window.cursor_file().as_usize_y();
-                        let mut buffer = window.buffer_mut();
-                        buffer.insert_line(line_idx, &clipboard);
-                    }
-                }
-                Paste => {
-                    self.queue.push(self.focused);
-                    // TODO: Fix this cloning.
-                    let clipboard = self.clipboard.clone();
-                    {
-                        let window = self.focused_window_mut();
-                        let line_idx = window.cursor_file().as_usize_y();
-                        let mut buffer = window.buffer_mut();
-                        buffer.insert_line(line_idx + 1, &clipboard);
-                    }
-                    self.focused_window_mut().move_cursor_down(1);
-                }
-                NewLine if self.focused != 0 => {
-                    self.focused_window_mut().insert_newline();
-                    self.queue.push(self.focused);
-                }
-                Backspace => {
-                    self.focused_window_mut().backspace();
-                    self.queue.push(self.focused);
-                }
-                InsertChar(c) => {
-                    self.focused_window_mut().insert_char(*c);
-                    self.queue.push(self.focused);
-                }
-                EnterCommandMode => {
-                    self.enter_command_mode();
-                    self.queue.push(self.focused);
-                }
-                ExitCommandMode if self.focused == 0 => {
-                    self.exit_command_mode();
-                    self.queue.push(self.focused);
-                }
-                ExcuteCommandLine if self.focused == 0 => self.execute_command_line(), // Maybe
-                NextWindow => {
-                    self.next_window();
-                    self.queue.push(self.focused);
-                }
-                ChangeMode(m) => {
-                    self.change_modes(*m);
-                    self.queue.push(self.focused);
-                }
-                MoveForwardByWord => {
-                    self.focused_window_mut().move_forward_by_word();
-                    self.queue.push(self.focused);
-                }
-                MoveBackwardByWord => {
-                    self.focused_window_mut().move_backward_by_word();
-                    self.queue.push(self.focused);
-                }
-                Print(msg) => {
-                    self.print(msg);
-                    self.queue.push(0);
-                }
-                Save => {
-                    self.focused_window().save();
-                    self.queue.push(self.focused);
-                }
-                Quit => self.exit(),
-                _ => {}
-            }
+            command.call(self, count);
         }
     }
 
@@ -393,3 +246,15 @@ impl revi_ui::Display<String> for ReVi {
         func(x, y, Some(window.mode.shape()));
     }
 }
+
+// struct InsertCharFOO {
+//     at: Option<Position>,
+// }
+//
+// impl Command for InsertCharFOO {
+// }
+//
+// trait Command {
+//     fn call(&mut self);
+//     fn undo(&mut self);
+// }

@@ -9,7 +9,7 @@ Email: cowboy8625@protonmail.com
 ";
 
 mod commandline;
-use revi_core::{Mapper, Mode, ReVi, ReViCommand};
+use revi_core::{commands::*, Mapper, Mode, ReVi};
 use revi_ui::{Key, Tui};
 
 use mlua::prelude::*;
@@ -30,8 +30,8 @@ fn main() -> LuaResult<()> {
     let keymapper = Mapper::default();
     let mut input = Input::default();
 
-    revi.borrow_mut()
-        .execute(input.number_usize(), &[ReViCommand::StartUp]);
+    // revi.borrow_mut()
+    //     .execute(input.number_usize(), &[ReViCommand::StartUp]);
     input.clear();
     tui.update(&mut *revi.borrow_mut());
 
@@ -50,8 +50,8 @@ fn main() -> LuaResult<()> {
                     .as_chars()
                     .iter()
                     .filter(|c| **c != '\0')
-                    .map(|c| ReViCommand::InsertChar(*c))
-                    .collect::<Vec<ReViCommand>>();
+                    .map(|c| InsertChar::new(*c) as Box<dyn Command>)
+                    .collect::<Vec<Box<dyn Command>>>();
                 revi.borrow_mut()
                     .execute(input.number_usize(), &input_chars);
                 input.clear();
