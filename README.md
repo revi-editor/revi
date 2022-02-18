@@ -81,6 +81,8 @@
   `Esc`|*NormalMode*|
   `ZZ`|*Save Quit*|
   `ZQ`|*Quit*|
+  `p`|*Paste Below Cursor*|
+  `P`|*Paste Above Cursor*|
   `<C-y>`|*ScrollUp Cursor Keeps Line Number*|Not working 100% correct
   `<C-e>`|*ScrollDown Cursor Keeps Line Number*|Not working 100% correct
   `<C-u>`|*ScrollUp*|Not working 100% correct
