@@ -7,6 +7,7 @@
 mod api;
 pub mod buffer;
 pub mod commands;
+mod key_parser;
 pub mod line_number;
 pub mod mode;
 pub mod position;
