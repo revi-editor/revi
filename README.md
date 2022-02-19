@@ -107,8 +107,8 @@
   `0`|*Home*|
   `$`|*End*|
   `A`|*End InsertMode CursorLeft*|
-  'gg'|*JumpToFirstLine*
-  'G'|*JumpToLastLine*
+  `gg`|*JumpToFirstLine*
+  `G`|*JumpToLastLine*
 
 ### **Insert Mode**
 
@@ -137,6 +137,8 @@
   |:---|:---:|---:
   `q`|*QUIT*|
   `quit`|*QUIT*|
+  `[number]`|*Goto LineNumber*
+  `qw`|*SAVE QUIT*|
   `exit`|*QUIT*|
   `b[buffer number]`|*Sets Buffer*|
   `set number`|*Sets line numbers to AbsoluteNumber*|
@@ -145,18 +147,26 @@
 
 # Road Map
 
-  - [ ] **Added Modes**:
+### **Added Modes**:
   - [X] **Normal**
   - [X] **Insert**
-  - [ ] **Command**
+  - [X] **Command**
   - [ ] **Visual**
   - [ ] **Visual Line**
   - [ ] **Visual Block**
+
+### **KeyBindings**
   - [X] **Basic KeyBindings**
-  - [ ] **Basic Unicode Support**
+
+### **Plugin Support**
   - [ ] **Plugin API**:
   - [ ] **Custom KeyBindings**
   - [ ] **Help Docs**
+
+### **WebSite**
   - [ ] **WebSite**
   - [ ] **Package Manager**
+
+### **Other**
+  - [ ] **Basic Unicode Support**
   - [ ] **LSP**
