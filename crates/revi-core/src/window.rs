@@ -107,6 +107,17 @@ impl Window {
         self.cursor = pos;
     }
 
+    pub fn goto(&mut self, pos: Position) {
+        let width = self.text_width();
+        let height = self.height().saturating_sub(1);
+        let x = pos.as_usize_x().min(width);
+        let y = pos.as_usize_y().min(height);
+        let off_x = pos.as_usize_x().saturating_sub(width);
+        let off_y = pos.as_usize_y().saturating_sub(height);
+        self.scroll_offset = Position::new(off_x, off_y);
+        self.set_cursor(Position::new(x, y));
+    }
+
     #[must_use]
     pub fn height(&self) -> usize {
         self.dimensions.as_usize_y()

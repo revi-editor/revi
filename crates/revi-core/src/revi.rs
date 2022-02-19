@@ -184,6 +184,13 @@ impl ReVi {
         };
         let mut items: Vec<&str> = command.split(' ').collect();
         match items.remove(0) {
+            num if num.parse::<usize>().ok().is_some() => {
+                let x = self.windows[self.last_focused].cursor_file().as_usize_x();
+                let max_y = self.windows[self.last_focused].buffer().len_lines();
+                let y = std::cmp::min(max_y, num.parse::<usize>().unwrap());
+                let pos = Position::new(x, y);
+                self.windows[self.last_focused].goto(pos);
+            }
             "line" => {
                 let line_number = self.windows[self.last_focused].cursor_file().as_usize_y();
                 let text = self.windows[self.last_focused].buffer().line(line_number);
@@ -195,6 +202,11 @@ impl ReVi {
                 self.print(text.len().to_string().as_str());
             }
             "q" => self.exit(),
+            "w" => self.windows[self.last_focused].save(),
+            "wq" => {
+                self.windows[self.last_focused].save();
+                self.exit();
+            }
             "b" if !items.is_empty() => {
                 if let Some(i) = items.get(0).and_then(|i| i.parse::<usize>().ok()) {
                     let buffer = self.buffers.get(i).map(|rc| Clone::clone(rc));
@@ -246,15 +258,3 @@ impl revi_ui::Display<String> for ReVi {
         func(x, y, Some(window.mode.shape()));
     }
 }
-
-// struct InsertCharFOO {
-//     at: Option<Position>,
-// }
-//
-// impl Command for InsertCharFOO {
-// }
-//
-// trait Command {
-//     fn call(&mut self);
-//     fn undo(&mut self);
-// }
