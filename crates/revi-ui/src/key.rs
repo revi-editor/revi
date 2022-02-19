@@ -1,5 +1,22 @@
 #[allow(dead_code)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum Keys {
+    Key(Key),
+    KeyAndMod { key: Key, modk: Key },
+}
+
+impl From<crossterm::event::KeyEvent> for Keys {
+    fn from(event: crossterm::event::KeyEvent) -> Self {
+        let key = Key::from(event.code);
+        let modk = Key::from(event.modifiers);
+        if let (_, Key::Null) = (key, modk) {
+            return Self::Key(key);
+        }
+        Self::KeyAndMod { key, modk }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Key {
     LA,
     LB,
@@ -343,4 +360,13 @@ fn test_from_crossterm_key_to_revi_key_upper_a() {
     let (k1, k2) = (KeyCode::Char('A'), KeyModifiers::SHIFT);
     let left = (Key::from(k1), Key::from(k2));
     assert_eq!(left, (Key::UA, Key::Null));
+}
+
+#[macro_export]
+macro_rules! keys {
+    ( $( $x:ident $(($($args:expr),*))? ),* ) => {
+        {
+            vec![$(Key::$x $(($($args),*))? ),*]
+        }
+    };
 }

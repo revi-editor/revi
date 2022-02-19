@@ -3,6 +3,7 @@ mod key;
 mod ui;
 pub use crossterm::style::Stylize;
 pub use key::Key;
+pub use key::Keys;
 pub use ui::screen_size;
 pub use ui::Tui;
 

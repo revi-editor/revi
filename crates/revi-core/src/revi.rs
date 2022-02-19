@@ -1,5 +1,5 @@
 use crate::buffer::Buffer;
-use crate::commands::Command;
+use crate::commands::BoxedCommand;
 use crate::line_number::LineNumberKind;
 use crate::mode::Mode;
 use crate::position::Position;
@@ -165,9 +165,9 @@ impl ReVi {
         self.run_command_line(&string);
     }
 
-    pub fn execute(&mut self, count: usize, commands: &[Box<dyn Command>]) {
-        for command in commands {
-            command.call(self, count);
+    pub fn execute(&mut self, count: usize, commands: &[BoxedCommand]) {
+        for boxed in commands {
+            boxed.command.call(self, count);
         }
     }
 

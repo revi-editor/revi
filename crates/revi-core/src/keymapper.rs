@@ -1,15 +1,17 @@
+use crate::commands;
 use crate::commands::{
-    Backspace, ChangeMode, Command, CursorDown, CursorLeft, CursorRight, CursorUp, DeleteChar,
+    Backspace, BoxedCommand, ChangeMode, CursorDown, CursorLeft, CursorRight, CursorUp, DeleteChar,
     DeleteLine, End, EnterCommandMode, ExcuteCommandLine, ExitCommandMode, FirstCharInLine, Home,
     JumpToFirstLineBuffer, JumpToLastLineBuffer, MoveBackwardByWord, MoveForwardByWord, NewLine,
     NextWindow, Paste, PasteBack, Quit, Save, ScrollDown, ScrollUp, YankLine,
 };
 use crate::mode::Mode;
-use revi_ui::Key;
+use revi_ui::{keys, Key};
 use std::collections::HashMap;
 
-type KeyMap = HashMap<Vec<Key>, Vec<Box<dyn Command>>>;
+type KeyMap = HashMap<Vec<Key>, Vec<BoxedCommand>>;
 
+#[derive(Debug)]
 pub struct Mapper {
     nmaps: KeyMap,
     imaps: KeyMap,
@@ -48,16 +50,11 @@ impl Mapper {
     }
 
     #[must_use]
-    pub fn get_mapping(&self, mode: Mode, event: &[Key]) -> Option<&Vec<Box<dyn Command>>> {
+    pub fn get_mapping(&self, mode: Mode, event: &[Key]) -> Option<&Vec<BoxedCommand>> {
         self.get_map(mode).get(event)
     }
     #[must_use]
-    pub fn with_mapping(
-        mut self,
-        mode: Mode,
-        keys: Vec<Key>,
-        commands: Vec<Box<dyn Command>>,
-    ) -> Self {
+    pub fn with_mapping(mut self, mode: Mode, keys: Vec<Key>, commands: Vec<BoxedCommand>) -> Self {
         self.get_map_mut(mode).insert(keys, commands);
         self
     }
@@ -66,156 +63,127 @@ impl Mapper {
         self.with_mapping(
             Mode::Normal,
             vec![Key::Esc],
-            vec![ChangeMode::new(Mode::Normal)],
+            commands![ChangeMode Mode::Normal],
         )
-        .with_mapping(Mode::Normal, vec![Key::LS, Key::Ctrl], vec![Save::new()])
-        .with_mapping(
-            Mode::Normal,
-            vec![Key::UZ, Key::UZ],
-            vec![Save::new(), Quit::new()],
-        )
-        .with_mapping(Mode::Normal, vec![Key::UZ, Key::UQ], vec![Quit::new()])
-        .with_mapping(Mode::Normal, vec![Key::LJ], vec![CursorDown::new()])
-        .with_mapping(Mode::Normal, vec![Key::Down], vec![CursorDown::new()])
-        .with_mapping(Mode::Normal, vec![Key::LK], vec![CursorUp::new()])
-        .with_mapping(Mode::Normal, vec![Key::Up], vec![CursorUp::new()])
-        .with_mapping(Mode::Normal, vec![Key::LH], vec![CursorLeft::new()])
-        .with_mapping(Mode::Normal, vec![Key::Left], vec![CursorLeft::new()])
-        .with_mapping(Mode::Normal, vec![Key::LL], vec![CursorRight::new()])
-        .with_mapping(Mode::Normal, vec![Key::Right], vec![CursorRight::new()])
-        .with_mapping(
-            Mode::Normal,
-            vec![Key::Colon],
-            vec![EnterCommandMode::new()],
-        )
-        .with_mapping(
-            Mode::Normal,
-            vec![Key::LI],
-            vec![ChangeMode::new(Mode::Insert)],
-        )
-        .with_mapping(Mode::Normal, vec![Key::LX], vec![DeleteChar::new()])
-        .with_mapping(Mode::Normal, vec![Key::Delete], vec![DeleteChar::new()])
+        .with_mapping(Mode::Normal, keys![LS, Ctrl], commands![Save])
+        .with_mapping(Mode::Normal, keys![UZ, UZ], commands![Save, Quit])
+        .with_mapping(Mode::Normal, keys![UZ, UQ], commands![Quit])
+        .with_mapping(Mode::Normal, keys![LJ], commands![CursorDown])
+        .with_mapping(Mode::Normal, keys![Down], commands![CursorDown])
+        .with_mapping(Mode::Normal, keys![LK], commands![CursorUp])
+        .with_mapping(Mode::Normal, keys![Up], commands![CursorUp])
+        .with_mapping(Mode::Normal, keys![LH], commands![CursorLeft])
+        .with_mapping(Mode::Normal, keys![Left], commands![CursorLeft])
+        .with_mapping(Mode::Normal, keys![LL], commands![CursorRight])
+        .with_mapping(Mode::Normal, keys![Right], commands![CursorRight])
+        .with_mapping(Mode::Normal, keys![Colon], commands![EnterCommandMode])
+        .with_mapping(Mode::Normal, keys![LI], commands![ChangeMode Mode::Insert])
+        .with_mapping(Mode::Normal, keys![LX], commands![DeleteChar])
+        .with_mapping(Mode::Normal, keys![Delete], commands![DeleteChar])
         .with_mapping(
             Mode::Normal,
             vec![Key::LD, Key::LD],
-            vec![DeleteLine::new(), CursorUp::new()],
+            commands![DeleteLine, CursorUp],
         )
-        .with_mapping(Mode::Normal, vec![Key::Home], vec![Home::new()])
-        .with_mapping(Mode::Normal, vec![Key::End], vec![End::new()])
-        .with_mapping(Mode::Normal, vec![Key::N0], vec![Home::new()])
-        .with_mapping(Mode::Normal, vec![Key::Char('$')], vec![End::new()])
+        .with_mapping(Mode::Normal, keys![Home], commands![Home])
+        .with_mapping(Mode::Normal, keys![End], commands![End])
+        .with_mapping(Mode::Normal, keys![N0], commands![Home])
+        .with_mapping(Mode::Normal, keys![Char('$')], commands![End])
         .with_mapping(
             Mode::Normal,
-            vec![Key::UA],
-            vec![
-                End::new(),
-                ChangeMode::new(Mode::Insert),
-                CursorRight::new(),
+            keys![UA],
+            commands![
+                End,
+                ChangeMode Mode::Insert,
+                CursorRight
             ],
         )
         .with_mapping(
             Mode::Normal,
-            vec![Key::LY, Key::Ctrl],
-            vec![ScrollUp::new(), CursorDown::new()],
+            keys![LY, Ctrl],
+            commands![ScrollUp, CursorDown],
         )
         .with_mapping(
             Mode::Normal,
-            vec![Key::LE, Key::Ctrl],
-            vec![ScrollDown::new(), CursorUp::new()],
+            keys![LE, Ctrl],
+            commands![ScrollDown, CursorUp],
         )
+        .with_mapping(Mode::Normal, keys![LU, Ctrl], commands![ScrollUp])
+        .with_mapping(Mode::Normal, keys![LD, Ctrl], commands![ScrollDown])
         .with_mapping(
             Mode::Normal,
-            vec![Key::LU, Key::Ctrl],
-            vec![ScrollUp::new()],
-        )
-        .with_mapping(
-            Mode::Normal,
-            vec![Key::LD, Key::Ctrl],
-            vec![ScrollDown::new()],
-        )
-        .with_mapping(
-            Mode::Normal,
-            vec![Key::LO],
-            vec![
-                End::new(),
-                ChangeMode::new(Mode::Insert),
-                CursorRight::new(),
-                NewLine::new(),
+            keys![LO],
+            commands![
+                End,
+                ChangeMode Mode::Insert,
+                CursorRight,
+                NewLine
             ],
         )
         .with_mapping(
             Mode::Normal,
-            vec![Key::UO],
-            vec![
-                Home::new(),
-                NewLine::new(),
-                ChangeMode::new(Mode::Insert),
-                CursorUp::new(),
+            keys![UO],
+            commands![
+                Home,
+                NewLine,
+                ChangeMode Mode::Insert,
+                CursorUp
             ],
         )
-        .with_mapping(Mode::Normal, vec![Key::Caret], vec![FirstCharInLine::new()])
+        .with_mapping(Mode::Normal, keys![Caret], commands![FirstCharInLine])
         .with_mapping(
             Mode::Normal,
-            vec![Key::UI],
-            vec![FirstCharInLine::new(), ChangeMode::new(Mode::Insert)],
+            keys![UI],
+            commands![
+                FirstCharInLine,
+                ChangeMode Mode::Insert
+            ],
         )
-        .with_mapping(Mode::Normal, vec![Key::LW], vec![MoveForwardByWord::new()])
-        .with_mapping(Mode::Normal, vec![Key::LB], vec![MoveBackwardByWord::new()])
+        .with_mapping(Mode::Normal, keys![LW], commands![MoveForwardByWord])
+        .with_mapping(Mode::Normal, keys![LB], commands![MoveBackwardByWord])
         .with_mapping(
             Mode::Normal,
-            vec![Key::LG, Key::LG],
-            vec![JumpToFirstLineBuffer::new()],
+            keys![LG, LG],
+            commands![JumpToFirstLineBuffer],
+        )
+        .with_mapping(Mode::Normal, keys![UG], commands![JumpToLastLineBuffer])
+        .with_mapping(
+            Mode::Normal,
+            keys![LW, Ctrl, LW, Ctrl],
+            commands![NextWindow],
         )
         .with_mapping(
             Mode::Normal,
-            vec![Key::UG],
-            vec![JumpToLastLineBuffer::new()],
+            keys![Enter],
+            commands![ExcuteCommandLine, ExitCommandMode],
         )
-        .with_mapping(
-            Mode::Normal,
-            vec![Key::LW, Key::Ctrl, Key::LW, Key::Ctrl],
-            vec![NextWindow::new()],
-        )
-        .with_mapping(
-            Mode::Normal,
-            vec![Key::Enter],
-            vec![ExcuteCommandLine::new(), ExitCommandMode::new()],
-        )
-        .with_mapping(Mode::Normal, vec![Key::LY, Key::LY], vec![YankLine::new()])
-        .with_mapping(Mode::Normal, vec![Key::LP], vec![Paste::new()])
-        .with_mapping(Mode::Normal, vec![Key::UP], vec![PasteBack::new()])
+        .with_mapping(Mode::Normal, keys![LY, LY], commands![YankLine])
+        .with_mapping(Mode::Normal, keys![LP], commands![Paste])
+        .with_mapping(Mode::Normal, keys![UP], commands![PasteBack])
     }
 
     fn build_insert(self) -> Self {
-        self.with_mapping(
-            Mode::Insert,
-            vec![Key::Esc],
-            vec![ChangeMode::new(Mode::Normal)],
-        )
-        .with_mapping(Mode::Insert, vec![Key::Backspace], vec![Backspace::new()])
-        .with_mapping(
-            Mode::Insert,
-            vec![Key::Enter],
-            vec![
-                NewLine::new(),
-                ExcuteCommandLine::new(),
-                ExitCommandMode::new(),
-            ],
-        )
-        .with_mapping(Mode::Insert, vec![Key::Home], vec![Home::new()])
-        .with_mapping(Mode::Insert, vec![Key::End], vec![End::new()])
-        .with_mapping(Mode::Insert, vec![Key::Down], vec![CursorDown::new()])
-        .with_mapping(Mode::Insert, vec![Key::Up], vec![CursorUp::new()])
-        .with_mapping(Mode::Insert, vec![Key::Left], vec![CursorLeft::new()])
-        .with_mapping(Mode::Insert, vec![Key::Right], vec![CursorRight::new()])
+        self.with_mapping(Mode::Insert, keys![Esc], commands![ChangeMode Mode::Normal])
+            .with_mapping(Mode::Insert, keys![Backspace], commands![Backspace])
+            .with_mapping(
+                Mode::Insert,
+                keys![Enter],
+                commands![NewLine, ExcuteCommandLine, ExitCommandMode],
+            )
+            .with_mapping(Mode::Insert, keys![Home], commands![Home])
+            .with_mapping(Mode::Insert, keys![End], commands![End])
+            .with_mapping(Mode::Insert, keys![Down], commands![CursorDown])
+            .with_mapping(Mode::Insert, keys![Up], commands![CursorUp])
+            .with_mapping(Mode::Insert, keys![Left], commands![CursorLeft])
+            .with_mapping(Mode::Insert, keys![Right], commands![CursorRight])
     }
 
     fn build_command(self) -> Self {
-        self.with_mapping(Mode::Command, vec![Key::Esc], vec![ExitCommandMode::new()])
+        self.with_mapping(Mode::Command, keys![Esc], commands![ExitCommandMode])
             .with_mapping(
                 Mode::Command,
-                vec![Key::Enter],
-                vec![ExcuteCommandLine::new(), ExitCommandMode::new()],
+                keys![Enter],
+                commands![ExcuteCommandLine, ExitCommandMode],
             )
     }
 }
