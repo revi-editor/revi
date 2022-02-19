@@ -222,6 +222,7 @@ impl Command for DeleteLine {
     fn call(&self, revi: &mut ReVi, _: usize) {
         let line = revi.focused_window_mut().delete_line();
         revi.queue.push(revi.focused);
+        revi.clipboard.clear();
         revi.clipboard.push_str(line.as_str());
     }
     fn id(&self) -> usize {
@@ -240,6 +241,7 @@ impl Command for YankLine {
             let buffer = revi.focused_window().buffer();
             yanked_line = buffer.line(line);
         }
+        revi.clipboard.clear();
         revi.clipboard.push_str(yanked_line.as_str());
         revi.queue.push(revi.focused);
     }

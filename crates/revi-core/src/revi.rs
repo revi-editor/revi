@@ -40,7 +40,7 @@ impl ReVi {
 
         let main_window = Window::new(w, h, Clone::clone(&buffers[1]))
             .with_status_bar(true)
-            .with_line_numbers(LineNumberKind::RelativeNumber);
+            .with_line_numbers(LineNumberKind::Both);
 
         let command_bar = Window::new(w, 1, cbuffer).with_position((0, h + 2).into());
 
