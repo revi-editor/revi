@@ -14,8 +14,8 @@ impl LineNumberKind {
     pub fn lines(&self, builder: LineNumberBuilder) -> LineNumber {
         match self {
             Self::AbsoluteNumber => absolute_line_numbers(builder),
-            Self::RelativeNumber => relative_line_numbers(builder),
-            Self::Both => Vec::new(),
+            Self::RelativeNumber => relative_line_numbers(builder, false),
+            Self::Both => relative_line_numbers(builder, true),
             Self::None => Vec::new(),
         }
     }
@@ -45,12 +45,32 @@ pub fn pad(w: usize, num_width: usize) -> String {
     (0..w.saturating_sub(num_width)).map(|_| " ").collect()
 }
 
-pub fn format_line_number(builder: LineNumberBuilder, offset: usize) -> impl Fn(usize) -> String {
+pub fn format_cursor(builder: LineNumberBuilder, offset: usize) -> impl Fn(usize) -> String {
     move |num| {
         format!(
             "{}{} ",
-            pad(builder.width, format!("{}", num + offset).len()),
+            pad(builder.width, format!("{} ", num + offset).len()),
             num + offset
+        )
+    }
+}
+pub fn format_line_number(
+    builder: LineNumberBuilder,
+    num: usize,
+    offset: usize,
+    rev: bool,
+) -> String {
+    if rev {
+        format!(
+            "{}{} ",
+            num + offset,
+            pad(builder.width, format!("{}", num + offset).len()),
+        )
+    } else {
+        format!(
+            "{}{} ",
+            pad(builder.width, format!("{}", num + offset).len()),
+            num + offset,
         )
     }
 }
@@ -67,7 +87,7 @@ pub fn format_blanks(builder: LineNumberBuilder) -> impl Fn(usize) -> String {
 
 pub fn absolute_line_numbers(builder: LineNumberBuilder) -> LineNumber {
     let mut numbers = (builder.top()..builder.bottom())
-        .map(format_line_number(builder.clone(), 0))
+        .map(|n| format_line_number(builder.clone(), n, 0, false))
         .collect::<Vec<_>>();
     let mut blanks = (0..builder.height.saturating_sub(numbers.len()))
         .map(format_blanks(builder.clone()))
@@ -77,18 +97,24 @@ pub fn absolute_line_numbers(builder: LineNumberBuilder) -> LineNumber {
     numbers
 }
 
-pub fn relative_line_numbers(builder: LineNumberBuilder) -> LineNumber {
+// TODO I would love to clean this up.
+pub fn relative_line_numbers(builder: LineNumberBuilder, line_num: bool) -> LineNumber {
     let mut above_cursor = (0..builder.cursor_pos.saturating_sub(builder.top()))
-        .map(format_line_number(builder.clone(), 1))
+        .map(|n| format_line_number(builder.clone(), n, 1, false))
         .rev()
         .collect::<Vec<_>>();
-    let cursor = format_line_number(builder.clone(), 0)(0);
+    let cursor = format_line_number(
+        builder.clone(),
+        if line_num { builder.cursor_pos } else { 0 },
+        0,
+        true,
+    );
     // CHANGED: made this 1..=builder
     let mut below_cursor = (0..builder
         .bottom()
         .saturating_sub(1)
         .saturating_sub(builder.cursor_pos))
-        .map(format_line_number(builder.clone(), 1))
+        .map(|n| format_line_number(builder.clone(), n, 1, false))
         .collect::<Vec<_>>();
     let mut blanks = (0..builder
         .height
@@ -151,9 +177,9 @@ mod test {
             window_offset: 0,
             blank_line: "~".into(),
         };
-        let left = relative_line_numbers(builder.clone());
+        let left = relative_line_numbers(builder.clone(), false);
         let right = vec![
-            "   5 ", "   4 ", "   3 ", "   2 ", "   1 ", "   0 ", "   1 ", "   2 ", "   3 ",
+            "   5 ", "   4 ", "   3 ", "   2 ", "   1 ", "0    ", "   1 ", "   2 ", "   3 ",
             "   4 ",
         ]
         .iter()
