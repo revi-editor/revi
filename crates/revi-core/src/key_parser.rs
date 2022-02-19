@@ -34,7 +34,6 @@ fn specal_keys<'a>(stream: &mut Peekable<Chars<'a>>) -> Vec<Key> {
     let _ = stream.next();
     if string.contains("-") {
         let lr = string.split("-").collect::<Vec<&str>>();
-        eprintln!("{:?}", lr);
         let modifier = lr[0].to_lowercase();
         let modifier = match modifier.as_str() {
             "c" => "ctrl",
