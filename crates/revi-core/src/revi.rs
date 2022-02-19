@@ -152,9 +152,7 @@ impl ReVi {
         self.focused = 0;
         *self.mode_mut() = Mode::Insert;
         let end = self.buffers[0].borrow().len_chars();
-        let last_char = dbg!(self.buffers[0]
-            .borrow()
-            .get_char(dbg!(end.saturating_sub(1))));
+        let last_char = self.buffers[0].borrow().get_char(end.saturating_sub(1));
         if last_char == Some('\n') || last_char.is_none() {
             self.buffers[0].borrow_mut().insert_char(end, ':');
         } else if last_char != Some(':') {
