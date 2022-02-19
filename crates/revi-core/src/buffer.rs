@@ -155,6 +155,10 @@ impl Buffer {
         self.dirty = true;
     }
 
+    pub fn get_char(&self, idx: usize) -> Option<char> {
+        self.inner.get_char(idx)
+    }
+
     pub fn remove(&mut self, range: Range<usize>) {
         self.inner.remove(range);
         self.dirty = true;

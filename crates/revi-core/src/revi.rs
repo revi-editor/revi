@@ -17,6 +17,7 @@ pub struct ReVi {
     pub focused: usize,
     pub last_focused: usize,
     pub clipboard: String,
+    pub command_history: Buffer,
 }
 
 impl ReVi {
@@ -59,6 +60,7 @@ impl ReVi {
             focused: 1,
             last_focused: 1,
             clipboard: String::new(),
+            command_history: Buffer::new(),
         };
         Rc::new(RefCell::new(revi))
     }
@@ -110,7 +112,10 @@ impl ReVi {
     }
 
     pub fn print(&mut self, msg: &str) {
-        self.buffers[0].borrow_mut().insert(0, msg);
+        let end = self.buffers[0].borrow().len_chars();
+        self.buffers[0].borrow_mut().insert(end, msg);
+        let y = self.buffers[0].borrow().len_lines().saturating_sub(1);
+        self.windows[0].goto(Position::new(1, y));
         self.queue.push(0);
     }
 
@@ -146,8 +151,17 @@ impl ReVi {
         self.last_focused = self.focused.max(1);
         self.focused = 0;
         *self.mode_mut() = Mode::Insert;
-        self.buffers[0].borrow_mut().clear();
-        self.buffers[0].borrow_mut().insert_char(0, ':');
+        let end = self.buffers[0].borrow().len_chars();
+        let last_char = dbg!(self.buffers[0]
+            .borrow()
+            .get_char(dbg!(end.saturating_sub(1))));
+        if last_char == Some('\n') || last_char.is_none() {
+            self.buffers[0].borrow_mut().insert_char(end, ':');
+        } else if last_char != Some(':') {
+            self.buffers[0].borrow_mut().insert(end, "\n:");
+        }
+        let y = self.buffers[0].borrow().len_lines().saturating_sub(1);
+        self.windows[0].goto(Position::new(1, y));
         self.windows[0].move_cursor_right(1);
     }
 
@@ -157,12 +171,14 @@ impl ReVi {
     }
 
     pub fn execute_command_line(&mut self) {
-        let string = self.focused_window().buffer().contents();
-        let new_buffer = Rc::new(RefCell::new(Buffer::new()));
-        self.buffers.remove(0);
-        self.buffers.insert(0, Clone::clone(&new_buffer));
-        self.focused_window_mut().set_buffer(new_buffer);
-        self.run_command_line(&string);
+        let end = self.buffers[0].borrow().len_lines().saturating_sub(1);
+        let mut command = self.buffers[0].borrow().line(end);
+        if !command.is_empty() {
+            command.remove(0);
+        }
+        let end = self.buffers[0].borrow().len_chars();
+        self.buffers[0].borrow_mut().insert_char(end, '\n');
+        self.run_command_line(&command);
     }
 
     pub fn execute(&mut self, count: usize, commands: &[BoxedCommand]) {
