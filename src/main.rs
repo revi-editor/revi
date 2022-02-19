@@ -13,7 +13,6 @@ use revi_core::{commands::*, Mapper, Mode, ReVi};
 use revi_ui::{Key, Tui};
 
 use mlua::prelude::*;
-// use ropey::Rope;
 
 #[allow(dead_code)]
 fn main() -> LuaResult<()> {
@@ -48,7 +47,9 @@ fn main() -> LuaResult<()> {
                     .as_chars()
                     .iter()
                     .filter(|c| **c != '\0')
-                    .map(|c| InsertChar::new_box(*c))
+                    .map(|c| BoxedCommand {
+                        command: Box::new(InsertChar(*c)),
+                    })
                     .collect::<Vec<BoxedCommand>>();
                 revi.borrow_mut()
                     .execute(input.number_usize(), &input_chars);

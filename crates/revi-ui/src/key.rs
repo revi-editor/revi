@@ -135,6 +135,43 @@ impl From<u8> for Key {
         }
     }
 }
+impl From<&str> for Key {
+    fn from(c: &str) -> Self {
+        match c.to_lowercase().as_str() {
+            "ctrl" => Key::Ctrl,
+            "alt" => Key::Alt,
+            "space" => Key::Space,
+            "esc" => Key::Esc,
+            "enter" => Key::Enter,
+            "backspace" => Key::Backspace,
+            "left" => Key::Left,
+            "right" => Key::Right,
+            "up" => Key::Up,
+            "down" => Key::Down,
+            "home" => Key::Home,
+            "end" => Key::End,
+            "pageup" => Key::PageUp,
+            "pagedown" => Key::PageDown,
+            "tab" => Key::Tab,
+            "backtab" => Key::BackTab,
+            "delete" => Key::Delete,
+            "insert" => Key::Insert,
+            "f1" => Self::from(1),
+            "f2" => Self::from(2),
+            "f3" => Self::from(3),
+            "f4" => Self::from(4),
+            "f5" => Self::from(5),
+            "f6" => Self::from(6),
+            "f7" => Self::from(7),
+            "f8" => Self::from(8),
+            "f9" => Self::from(9),
+            "f10" => Self::from(10),
+            "f11" => Self::from(11),
+            "f12" => Self::from(12),
+            _ => Key::Null,
+        }
+    }
+}
 impl From<char> for Key {
     fn from(c: char) -> Self {
         match c {
