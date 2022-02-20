@@ -9,24 +9,30 @@ Email: cowboy8625@protonmail.com
 ";
 
 mod commandline;
-use revi_core::{commands::*, Mapper, Mode, ReVi};
+use revi_core::{
+    commands::Command::{self, InsertChar},
+    Mapper, Mode, ReVi,
+};
 use revi_ui::{Key, Tui};
 
 use mlua::prelude::*;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 #[allow(dead_code)]
 fn main() -> LuaResult<()> {
     let files = commandline::args();
     let revi = ReVi::new(&files);
+    let keymapper = Rc::new(RefCell::new(Mapper::default()));
     let lua = Lua::new();
-
+    revi_core::initialize_lua_api(&lua)?;
     lua.globals().set("revi", revi.clone())?;
+    lua.globals().set("mapper", keymapper.clone())?;
     let init_lua = std::fs::read_to_string("init.lua");
     lua.load(init_lua.unwrap_or_else(|_| String::new()).as_str())
         .exec()?;
 
     let mut tui = Tui::default();
-    let keymapper = Mapper::default();
     let mut input = Input::default();
 
     input.clear();
@@ -38,7 +44,7 @@ fn main() -> LuaResult<()> {
             let keys = tui.get_key_press();
             input.input(mode, keys);
 
-            if let Some(commands) = keymapper.get_mapping(mode, &input.keys()) {
+            if let Some(commands) = keymapper.borrow().get(mode, &input.keys()) {
                 revi.borrow_mut().execute(input.number_usize(), commands);
                 tui.update(&mut *revi.borrow_mut());
                 input.clear();
@@ -47,10 +53,8 @@ fn main() -> LuaResult<()> {
                     .as_chars()
                     .iter()
                     .filter(|c| **c != '\0')
-                    .map(|c| BoxedCommand {
-                        command: Box::new(InsertChar(*c)),
-                    })
-                    .collect::<Vec<BoxedCommand>>();
+                    .map(|c| InsertChar(*c))
+                    .collect::<Vec<Command>>();
                 revi.borrow_mut()
                     .execute(input.number_usize(), &input_chars);
                 input.clear();
