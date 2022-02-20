@@ -41,8 +41,8 @@ fn specal_keys<'a>(stream: &mut Peekable<Chars<'a>>) -> Vec<Key> {
             m => m,
         };
         return vec![
-            Key::from(modifier),
             Key::from(lr[1].chars().collect::<Vec<char>>()[0]),
+            Key::from(modifier),
         ];
     }
     vec![Key::from(string.as_str())]

@@ -17,6 +17,7 @@ pub mod window;
 
 pub mod keymapper;
 
+pub use api::initialize_lua_api;
 pub use buffer::Buffer;
 pub use keymapper::Mapper;
 pub use mode::Mode;
