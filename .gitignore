@@ -2,4 +2,5 @@
 *.lock
 *.txt
 *.vim
+*.py
 todo.md
