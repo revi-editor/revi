@@ -6,6 +6,10 @@ pub fn clear(stdout: &mut std::io::Stdout) {
     .unwrap();
 }
 
+pub fn size() -> (u16, u16) {
+    crossterm::terminal::size().unwrap_or((0, 0))
+}
+
 pub trait Display<D: std::fmt::Display> {
     fn render(&mut self, func: impl FnMut(u16, u16, Vec<D>));
     fn cursor(&self, func: impl FnMut(u16, u16, Option<CursorShape>));
@@ -55,7 +59,7 @@ pub mod widget {
         pub fn draw(&self, stdout: &mut Stdout, bounds: Rect) {
             self.widget.draw(stdout, bounds);
         }
-        pub fn debug_name(&self) -> String {
+        pub fn _debug_name(&self) -> String {
             self.widget.debug_name()
         }
     }
@@ -82,7 +86,7 @@ pub mod container {
             }
         }
 
-        pub fn with_bounds(bounds: Rect) -> Self {
+        pub fn _with_bounds(bounds: Rect) -> Self {
             Self {
                 bounds,
                 stack: Stack::default(),
@@ -127,9 +131,9 @@ pub mod container {
             self.bounds.height()
         }
 
-        fn draw(&self, stdout: &mut Stdout, _bounds: Rect) {
-
+        fn draw(&self, stdout: &mut Stdout, bounds: Rect) {
             for (widget, wbounds) in self.children.iter().zip(generate_layout(
+                bounds,
                 self.bounds,
                 &self.children,
                 self.stack,
@@ -143,6 +147,7 @@ pub mod container {
     }
 
     fn generate_layout(
+        root: Rect,
         current: Rect,
         children: &[BoxWidget],
         stack: Stack,
@@ -150,12 +155,12 @@ pub mod container {
         children.iter().fold(vec![], |mut acc, child| {
             let last = acc.last().cloned().unwrap_or_default();
             let x = match stack {
-                Stack::Vertically => current.x() + child.x(),
-                Stack::Horizontally => current.x() + child.x() + last.width() + last.x(),
+                Stack::Vertically => current.x() + child.x() + root.x(),
+                Stack::Horizontally => current.x() + child.x() + last.width() + last.x() + root.x(),
             };
             let y = match stack {
-                Stack::Vertically => current.y() + child.y() + last.height() + last.y(),
-                Stack::Horizontally => current.y() + child.y(),
+                Stack::Vertically => current.y() + child.y() + last.height() + last.y() + root.y(),
+                Stack::Horizontally => current.y() + child.y() + root.y(),
             };
             let width = match stack {
                 Stack::Vertically => child.width().min(current.width()),
@@ -274,21 +279,21 @@ pub mod text {
 }
 
 pub mod layout {
-    #[derive(Debug, Clone)]
-    pub struct Layout {
-        bounds: Rect,
-        children: Vec<Rect>,
-    }
-
-    impl Layout {
-        pub fn new(bounds: Rect) -> Self {
-            Self::with_children(bounds, Vec::new())
-        }
-
-        pub fn with_children(bounds: Rect, children: Vec<Rect>) -> Self {
-            Self { bounds, children }
-        }
-    }
+    // #[derive(Debug, Clone)]
+    // pub struct Layout {
+    //     bounds: Rect,
+    //     children: Vec<Rect>,
+    // }
+    //
+    // impl Layout {
+    //     pub fn new(bounds: Rect) -> Self {
+    //         Self::with_children(bounds, Vec::new())
+    //     }
+    //
+    //     pub fn with_children(bounds: Rect, children: Vec<Rect>) -> Self {
+    //         Self { bounds, children }
+    //     }
+    // }
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     pub enum Stack {
