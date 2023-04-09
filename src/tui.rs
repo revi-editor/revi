@@ -237,6 +237,10 @@ pub mod text {
             self.height
         }
         fn draw(&self, stdout: &mut Stdout, bounds: Rect) {
+            queue!(
+                stdout,
+                cursor::Hide,
+            ).expect("failed to hide cursor");
             for (i, line) in self
                 .content
                 .lines()
@@ -250,9 +254,14 @@ pub mod text {
                 )
                 .expect("Failed to queue Text");
                 // TODO: move this out of for loop after debugging
-                stdout.flush().unwrap();
                 // std::thread::sleep(std::time::Duration::from_millis(300));
             }
+            stdout.flush().unwrap();
+            queue!(
+                stdout,
+                cursor::Show,
+            ).expect("failed to show cursor");
+            stdout.flush().unwrap();
             // stdout.flush().unwrap();
         }
         fn debug_name(&self) -> String {
@@ -264,7 +273,7 @@ pub mod text {
     /// Use this to keep text in side of bounds.
     fn format_line(line: &str, width: usize) -> String {
         // 9608 is the block char for debugging
-        let blank = std::char::from_u32(9608).unwrap_or('&');
+        let blank = ' ';// std::char::from_u32(9608).unwrap_or('&');
         line.chars()
             .chain(std::iter::repeat(blank))
             .take(width)
