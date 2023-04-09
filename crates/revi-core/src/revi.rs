@@ -253,7 +253,7 @@ impl revi_ui::Display<String> for ReVi {
     fn render(&mut self, mut func: impl FnMut(u16, u16, Vec<String>)) {
         for id in self.queued() {
             let window = &self.windows[id];
-            if let Some(((x, y), text)) = window.get_text_feild() {
+            if let Some(((x, y), text)) = window.get_text_field() {
                 func(x, y, text);
             }
             if let Some(((x, y), text)) = window.get_line_number() {

@@ -1,14 +1,3 @@
-#![allow(unused)]
-#![warn(clippy::all, clippy::pedantic)]
-mod key;
-mod ui;
-pub use crossterm::style::Stylize;
-pub use crossterm::{cursor, queue, style};
-pub use key::Key;
-pub use key::Keys;
-pub use ui::screen_size;
-pub use ui::Tui;
-
 pub fn clear(stdout: &mut std::io::Stdout) {
     crossterm::execute!(
         stdout,
@@ -31,6 +20,9 @@ pub mod widget {
         fn width(&self) -> u16;
         fn height(&self) -> u16;
         fn draw(&self, stdout: &mut Stdout, bounds: Rect);
+        fn debug_name(&self) -> String {
+            "DEFAULT".to_string()
+        }
     }
 
     #[derive(Debug)]
@@ -63,6 +55,9 @@ pub mod widget {
         pub fn draw(&self, stdout: &mut Stdout, bounds: Rect) {
             self.widget.draw(stdout, bounds);
         }
+        pub fn debug_name(&self) -> String {
+            self.widget.debug_name()
+        }
     }
 }
 pub mod container {
@@ -74,6 +69,7 @@ pub mod container {
         pub bounds: Rect,
         stack: Stack,
         children: Vec<BoxWidget>,
+        comment: Option<String>,
     }
 
     impl Container {
@@ -82,6 +78,7 @@ pub mod container {
                 bounds,
                 stack,
                 children: Vec::new(),
+                comment: None,
             }
         }
 
@@ -90,7 +87,13 @@ pub mod container {
                 bounds,
                 stack: Stack::default(),
                 children: Vec::new(),
+                comment: None,
             }
+        }
+
+        pub fn with_comment(mut self, comment: impl Into<String>) -> Self {
+            self.comment = Some(comment.into());
+            self
         }
 
         pub fn stack(mut self, stack: Stack) -> Self {
@@ -102,9 +105,6 @@ pub mod container {
         where
             W: Widget + 'static,
         {
-            // let width = widget.width().min(self.bounds.width());
-            // let height = widget.height().min(self.bounds.height());
-            // self.bounds = Rect::new(Size::new(width, height));
             self.children.push(BoxWidget::new(widget));
             self
         }
@@ -114,18 +114,22 @@ pub mod container {
         fn x(&self) -> u16 {
             self.bounds.x()
         }
+
         fn y(&self) -> u16 {
             self.bounds.y()
         }
+
         fn width(&self) -> u16 {
             self.bounds.width()
         }
+
         fn height(&self) -> u16 {
             self.bounds.height()
         }
-        fn draw(&self, stdout: &mut Stdout, bounds: Rect) {
+
+        fn draw(&self, stdout: &mut Stdout, _bounds: Rect) {
+
             for (widget, wbounds) in self.children.iter().zip(generate_layout(
-                bounds,
                 self.bounds,
                 &self.children,
                 self.stack,
@@ -133,81 +137,40 @@ pub mod container {
                 widget.draw(stdout, wbounds);
             }
         }
+        fn debug_name(&self) -> String {
+            self.comment.clone().unwrap_or_default()
+        }
     }
 
     fn generate_layout(
-        root: Rect,
         current: Rect,
         children: &[BoxWidget],
         stack: Stack,
     ) -> Vec<Rect> {
-        let x = root.x() + current.x();
-        let y = root.y() + current.y();
-        // println!("X: {}, root: {}, current: {}", x, root.x(), current.x());
-        // println!("Y: {}, root: {}, current: {}", y, root.y(), current.y());
-
-        let count = children.len() as u16;
-        // ?
-        let width = current.width(); // current.width().min(root.width());
-                                     // ?
-        let height = current.height(); // current.height().min(root.height());
-
-        let mut layout = vec![Rect::with_position(
-            Pos::new(x, y),
-            Size::new(width, height),
-        )];
-        for child in children.iter() {
-            if let Some(bounds) = layout.last().cloned() {
-                // FIXME: I think its messed up here.
-                let width = child.width().min(current.width());
-                let height = child.height().min(current.height());
-                let (x, y) = match stack {
-                    Stack::Vertically => {
-                        // println!(
-                        //     "child x: {}, height: {} + child y {}",
-                        //     child.x(),
-                        //     height,
-                        //     child.y()
-                        // );
-                        (child.x(), height + child.y())
-                    }
-                    Stack::Horizontally => {
-                        // println!(
-                        //     "width {} + child x: {}, child y {}",
-                        //     width,
-                        //     child.x(),
-                        //     child.y()
-                        // );
-                        (width + child.x(), child.y())
-                    }
-                };
-                // let (width, height) = match stack {
-                //     Stack::Vertically => (bounds.width(), root.height() / count as u16),
-                //     Stack::Horizontally => (root.width() / count as u16, bounds.height()),
-                // };
-
-                // dbg
-                // println!("gen: x: {x}, y: {y}");
-                layout.push(Rect::with_position(
-                    Pos::new(x, y),
-                    Size::new(width, height),
-                ));
-            }
-        }
-        layout
-    }
-
-    #[test]
-    fn check_generate_layout() {
-        use super::text::Text;
-        let root = Rect::with_position(Pos::new(0, 0), Size::new(20, 20));
-        let bounds = Rect::with_position(Pos::new(0, 0), Size::new(0, 0));
-        let status_bar = Text::new("Normal Mode, filename goes here").max_height(1);
-        let command_bar = Text::new("Command Bar, insert command here").max_height(1);
-        let children: Vec<BoxWidget> =
-            vec![BoxWidget::new(status_bar), BoxWidget::new(command_bar)];
-        let stack = Stack::Vertically;
-        assert_eq!(generate_layout(root, bounds, &children, stack), vec![]);
+        children.iter().fold(vec![], |mut acc, child| {
+            let last = acc.last().cloned().unwrap_or_default();
+            let x = match stack {
+                Stack::Vertically => current.x() + child.x(),
+                Stack::Horizontally => current.x() + child.x() + last.width() + last.x(),
+            };
+            let y = match stack {
+                Stack::Vertically => current.y() + child.y() + last.height() + last.y(),
+                Stack::Horizontally => current.y() + child.y(),
+            };
+            let width = match stack {
+                Stack::Vertically => child.width().min(current.width()),
+                Stack::Horizontally => child.width().min(current.width() - last.width()),
+            };
+            let height = match stack {
+                Stack::Vertically => child.height().min(current.height() - last.height()),
+                Stack::Horizontally => child.height().min(current.height()),
+            };
+            let size = Size::new(width, height);
+            let pos = Pos::new(x, y);
+            let rect = Rect::with_position(pos, size);
+            acc.push(rect);
+            acc
+        })
     }
 
     impl From<Container> for BoxWidget {
@@ -217,7 +180,7 @@ pub mod container {
     }
 }
 pub mod text {
-    use super::layout::{Pos, Rect, Size, Stack};
+    use super::layout::Rect;
     use super::widget::{BoxWidget, Widget};
     use crossterm::{cursor, queue, style};
     use std::io::{Stdout, Write};
@@ -226,6 +189,7 @@ pub mod text {
         content: String,
         width: u16,
         height: u16,
+        comment: Option<String>,
     }
 
     impl Text {
@@ -234,7 +198,13 @@ pub mod text {
                 content: content.into(),
                 width: content.lines().map(|x| x.len()).max().unwrap_or(0) as u16,
                 height: content.lines().count() as u16,
+                comment: None,
             }
+        }
+
+        pub fn with_comment(mut self, comment: impl Into<String>) -> Self {
+            self.comment = Some(comment.into());
+            self
         }
 
         pub fn max_height(mut self, height: u16) -> Self {
@@ -262,30 +232,26 @@ pub mod text {
             self.height
         }
         fn draw(&self, stdout: &mut Stdout, bounds: Rect) {
-            let width = self.width().min(bounds.width()) as usize;
-            let height = self.height().min(bounds.height()) as usize;
-            // eprintln!(
-            //     "w: {} {}, h: {} {}",
-            //     width,
-            //     height,
-            //     bounds.width(),
-            //     bounds.height()
-            // );
-            // eprintln!("x: {}, y: {}", bounds.x(), bounds.y(),);
-
-            for (i, line) in self.content.lines().enumerate().take(height) {
-                // eprintln!("      {i} x: {}, y: {}", bounds.x(), bounds.y() + i as u16);
+            for (i, line) in self
+                .content
+                .lines()
+                .enumerate()
+                .take(bounds.height() as usize)
+            {
                 queue!(
                     stdout,
                     cursor::MoveTo(bounds.x(), bounds.y() + i as u16),
-                    style::Print(format_line(line, width)),
+                    style::Print(format_line(line, bounds.width() as usize)),
                 )
                 .expect("Failed to queue Text");
-                // TODO move this out of for loop after debugging
+                // TODO: move this out of for loop after debugging
                 stdout.flush().unwrap();
-                std::thread::sleep(std::time::Duration::from_millis(100));
+                // std::thread::sleep(std::time::Duration::from_millis(300));
             }
             // stdout.flush().unwrap();
+        }
+        fn debug_name(&self) -> String {
+            self.comment.clone().unwrap_or_default()
         }
     }
 

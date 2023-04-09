@@ -1,5 +1,6 @@
 /* windows.rs
 */
+#![allow(unused)]
 
 use crate::buffer::Buffer;
 use crate::line_number::{LineNumberBuilder, LineNumberKind};
@@ -109,23 +110,13 @@ impl Window {
 
     pub fn goto(&mut self, pos: Position) {
         let width = self.text_width();
-        let height = self.height().saturating_sub(1);
+        let height = self.height().saturating_sub(1) as usize;
         let x = pos.as_usize_x().min(width);
         let y = pos.as_usize_y().min(height);
         let off_x = pos.as_usize_x().saturating_sub(width);
         let off_y = pos.as_usize_y().saturating_sub(height);
         self.scroll_offset = Position::new(off_x, off_y);
         self.set_cursor(Position::new(x, y));
-    }
-
-    #[must_use]
-    pub fn height(&self) -> usize {
-        self.dimensions.as_usize_y()
-    }
-
-    #[must_use]
-    pub fn width(&self) -> usize {
-        self.dimensions.as_usize_x()
     }
 
     #[must_use]
@@ -160,7 +151,7 @@ impl Window {
     }
 
     pub fn move_cursor_down(&mut self, lines: usize) {
-        if self.cursor.as_usize_y() >= self.height() - 1 {
+        if self.cursor.as_usize_y() >= (self.height() - 1) as usize {
             self.scroll_down(lines);
         } else if self.cursor_file().as_usize_y()
             < self.buffer.borrow().len_lines().saturating_sub(1)
@@ -308,7 +299,7 @@ impl Window {
         // Gets line count but screen is off by one so we subtract one.
         let total_y = self.buffer.borrow().len_lines().saturating_sub(1);
         // Gets screen height but it also is off by one so we subtract one.
-        let screen_y = (self.height() - 1).min(total_y);
+        let screen_y = (self.height() - 1).min(total_y as u16) as usize;
         // Finds Y offset into file but it is off by one as well for indexing so we
         // subtract one as well
         let offset_y = total_y.saturating_sub(screen_y).saturating_sub(1);
@@ -413,7 +404,7 @@ impl Window {
     pub fn get_status_bar(&self) -> Option<((u16, u16), Vec<String>)> {
         // FIXME: I hate this so much
         if self.status_bar_state {
-            let y = self.position().as_usize_y() + self.height();
+            let y = (self.position().as_u16_y() + self.height()) as usize;
             let pos = Position::new(self.position().as_usize_x(), y);
 
             let left = format!(
@@ -448,7 +439,7 @@ impl Window {
             let width = self.line_number_width().saturating_sub(1);
             let builder = LineNumberBuilder {
                 width,
-                height: self.height(),
+                height: self.height() as usize,
                 line_len: len_lines,
                 cursor_pos: cursor,
                 window_offset: scroll,
@@ -463,7 +454,7 @@ impl Window {
     }
 
     #[must_use]
-    pub fn get_text_feild(&self) -> Option<((u16, u16), Vec<String>)> {
+    pub fn get_text_field(&self) -> Option<((u16, u16), Vec<String>)> {
         // I removed this from in ui.
         // It is the responsibility of the window to clean up line of new lines.
         // .strip_suffix("\r\n").unwrap_or(line)
@@ -474,7 +465,7 @@ impl Window {
             &window,
             self.scroll_offset.as_usize_x(),
             self.text_width(),
-            self.height(),
+            self.height() as usize,
         );
         Some((
             self.offset().as_u16(),
@@ -494,5 +485,40 @@ impl Window {
             return 0;
         }
         self.buffer.borrow().len_lines().to_string().len().max(3) + 2
+    }
+}
+
+use revi_ui::{
+    cursor,
+    layout::{Rect, Size, Stack},
+    queue, style,
+    widget::{BoxWidget, Widget},
+};
+
+use std::io::Stdout;
+
+impl Widget for Window {
+    fn width(&self) -> u16 {
+        self.dimensions.as_u16_x()
+    }
+    fn height(&self) -> u16 {
+        self.dimensions.as_u16_y()
+    }
+    fn draw(&self, stdout: &mut Stdout, bounds: Rect) {
+        if let Some(((x, offset_y), text)) = self.get_text_field() {
+            let x = bounds.x();
+            let y = bounds.y();
+            for (idx, line) in text.iter().enumerate() {
+                let y = offset_y + idx as u16;
+                queue!(stdout, cursor::MoveTo(x, y), style::Print(line),)
+                    .expect("Drawing Window Failed.");
+            }
+        }
+    }
+}
+
+impl From<Window> for BoxWidget {
+    fn from(widget: Window) -> Self {
+        BoxWidget::new(widget)
     }
 }
