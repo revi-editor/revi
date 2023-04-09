@@ -65,6 +65,44 @@ impl ReVi {
         Rc::new(RefCell::new(revi))
     }
 
+    pub fn pop_up_window(&mut self, msg: impl Into<String>, pos: Position) {
+        let msg = msg.into();
+        let width = msg.lines().map(|line| line.chars().count()).max().unwrap_or(0) as u16;
+        let height = msg.lines().count() as u16;
+        // NOTE: for some reason adding ╭ fancy char
+        // cause the window to not render right.
+        const TLC: &str = "+";//"╭";
+        const BRC: &str = "+";//"╯";
+        const TRC: &str = "+";//"╮";
+        const BLC: &str = "+";//"╰";
+        const H: &str = "-";  //"⎼";
+        const V: &str = "|";  //"│";
+        let mut top = TLC.to_string();
+        top += &H.repeat(width as usize);
+        top += TRC;
+
+        let mut msg = msg.lines().fold(top, |acc, line| {
+            format!("{acc}\n{V}{}{V}", format_line(line, width as usize))
+        });
+        msg += "\n";
+        let mut bottom = BLC.to_string();
+        bottom += &H.repeat(width as usize);
+        bottom += BRC;
+        msg += &bottom;
+
+        let buffer = Rc::new(RefCell::new(Buffer::new_str(msg.trim())));
+        let window = Window::new(width+3,height+2,buffer).with_position(pos);
+        let id = self.windows.len();
+        self.queue.push(id);
+        self.windows.push(window);
+        self.focused = id;
+    }
+
+    #[must_use]
+    pub fn get_command_window_mut(&mut self) -> &mut Window {
+        &mut self.windows[0]
+    }
+
     #[must_use]
     pub fn cursor_position_u16(&self) -> (u16, u16) {
         self.windows[self.focused].cursor_screen().as_u16()
@@ -127,6 +165,32 @@ impl ReVi {
             ]
             .join(" "),
         );
+    }
+    pub fn list_buffers(&mut self) {
+        let list_of_windows = self.buffers
+            .iter()
+            .enumerate()
+            .skip(1)
+            .fold(String::new(), |acc, (i, b)| {
+            let name = b.borrow()
+                .name()
+                .clone()
+                .unwrap_or("no name(temp)".into());
+            format!("{acc}{i} {name}\n")
+        });
+        self.pop_up_window(list_of_windows, self.last_focused_window().cursor_screen());
+        let width = self.focused_window().width();
+        let height = self.focused_window().height();
+        let msg = format!("w: {}, h: {}", width, height);
+        self.print(&msg);
+    }
+
+    pub fn close_current_window(&mut self) {
+        if self.windows.len() <= 2 {
+            self.exit();
+        }
+        self.windows.remove(self.last_focused);
+        self.last_focused -= 1;
     }
 
     pub fn exit(&mut self) {
@@ -205,6 +269,7 @@ impl ReVi {
                 let pos = Position::new(x, y);
                 self.windows[self.last_focused].goto(pos);
             }
+            "pos" => self.print(&format!("pos: {}", self.last_focused_window().cursor_screen())),
             "line" => {
                 let line_number = self.windows[self.last_focused].cursor_file().as_usize_y();
                 let text = self.windows[self.last_focused].buffer().line(line_number);
@@ -215,7 +280,7 @@ impl ReVi {
                 let text = self.windows[self.last_focused].buffer().line(line_number);
                 self.print(text.len().to_string().as_str());
             }
-            "q" => self.exit(),
+            "q" => self.close_current_window(),
             "w" => self.windows[self.last_focused].save(),
             "wq" => {
                 self.windows[self.last_focused].save();
@@ -244,6 +309,10 @@ impl ReVi {
                 }
                 e => self.error_message(vec!["unknown command: ", e]),
             },
+            "help" => {
+                self.error_message(vec!["help command is not implemented just yet", "help"]);
+            }
+            "ls" => self.list_buffers(),
             e => self.error_message(vec!["unknown command: ", e]),
         }
     }
@@ -263,7 +332,7 @@ impl revi_ui::Display<String> for ReVi {
                 func(x, y, text);
             }
         }
-        assert_eq!(self.queue.len(), 0);
+        debug_assert_eq!(self.queue.len(), 0);
     }
 
     fn cursor(&self, mut func: impl FnMut(u16, u16, Option<revi_ui::CursorShape>)) {
@@ -272,3 +341,13 @@ impl revi_ui::Display<String> for ReVi {
         func(x, y, Some(window.mode.shape()));
     }
 }
+
+fn format_line(line: &str, width: usize) -> String {
+    // 9608 is the block char for debugging
+    let blank = ' ';// std::char::from_u32(9608).unwrap_or('&');
+    line.chars()
+        .chain(std::iter::repeat(blank))
+        .take(width)
+        .collect::<String>()
+}
+

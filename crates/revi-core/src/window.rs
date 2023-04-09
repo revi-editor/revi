@@ -128,6 +128,10 @@ impl Window {
         self.dimensions.as_usize_x()
     }
 
+    pub fn set_height(&mut self, height: usize) {
+        self.dimensions.set_y(height);
+    }
+
     #[must_use]
     pub fn text_width(&self) -> usize {
         self.dimensions
@@ -254,7 +258,15 @@ impl Window {
     }
 
     pub fn move_cursor_right(&mut self, cols: usize) {
-        if self.cursor.as_usize_x() >= self.text_width() - 1 {
+        let line_text_width = self.buffer
+            .borrow()
+            .line_len(self.cursor_file().as_usize_y());
+        if  self.cursor_file().as_usize_x() >= line_text_width {
+            return;
+        }
+        // if self.cursor.as_usize_x() >= self.text_width() - 1 {
+        let x = self.cursor.as_usize_x();
+        if x >= self.text_width() - 1 {
             self.scroll_right(cols)
         } else {
             self.cursor.add_to_x(cols);

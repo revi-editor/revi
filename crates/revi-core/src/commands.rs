@@ -400,6 +400,39 @@ impl Command for Quit {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub struct CloseWindow;
+impl Command for CloseWindow {
+    fn call(&self, revi: &mut ReVi, _: usize) {
+        revi.close_current_window();
+    }
+    fn id(&self) -> usize {
+        28
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct ListBuffers;
+impl Command for ListBuffers {
+    fn call(&self, revi: &mut ReVi, _: usize) {
+        revi.list_buffers();
+    }
+    fn id(&self) -> usize {
+        29
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct JumpListBack;
+impl Command for JumpListBack {
+    fn call(&self, _: &mut ReVi, _: usize) {
+        unimplemented!("JUMPLISTBACK")
+    }
+    fn id(&self) -> usize {
+        30
+    }
+}
+
 #[macro_export]
 macro_rules! commands {
     ( $( $x:ident $(($($args:expr),*))? ),* ) => {
