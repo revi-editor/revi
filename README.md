@@ -83,10 +83,10 @@
   <kbd>ZQ</kbd>|*Quit*|
   <kbd>p</kbd>|*Paste Below Cursor*|
   <kbd>P</kbd>|*Paste Above Cursor*|
-  <kbd><C-y></kbd>|*ScrollUp Cursor Keeps Line Number*|Not working 100% correct
-  <kbd><C-e></kbd>|*ScrollDown Cursor Keeps Line Number*|Not working 100% correct
-  <kbd><C-u></kbd>|*ScrollUp*|Not working 100% correct
-  <kbd><C-d></kbd>|*ScrollDown*|Not working 100% correct
+  <<kbd>C</kbd>-<kbd>y</kbd>>|*ScrollUp Cursor Keeps Line Number*|Not working 100% correct
+  <<kbd>C</kbd>-<kbd>e</kbd>>|*ScrollDown Cursor Keeps Line Number*|Not working 100% correct
+  <<kbd>C</kbd>-<kbd>u</kbd>>|*ScrollUp*|Not working 100% correct
+  <<kbd>C</kbd>-<kbd>d</kbd>>|*ScrollDown*|Not working 100% correct
   <kbd>j</kbd>|*CursorDown*|
   <kbd>Down</kbd>|*CursorDown*|
   <kbd>k</kbd>|*CursorUp*|
@@ -97,7 +97,7 @@
   <kbd>Right</kbd>|*CursorRight*|
   <kbd>w</kbd>|*Move Forwards by a Word*|
   <kbd>b</kbd>|*Move Backwards by a Word*|
-  <kbd>:<\kbd>|*CommandMode*|
+  <kbd>:</kbd>|*CommandMode*|
   <kbd>i</kbd>|*InsertMode*|
   <kbd>x</kbd>|*DeleteChar*|
   <kbd>Delete</kbd>|*DeleteChar*|
