@@ -25,7 +25,7 @@ pub(crate) fn format_screen(view: &str, offset: usize, width: usize, height: usi
 }
 
 fn fill_rest_of_screen(formated_text: &mut String, filler: char, width: usize, height: usize) {
-    for _ in 0..(height.saturating_sub(count_char(&formated_text, '\n'))) {
+    for _ in 0..(height.saturating_sub(count_char(formated_text, '\n'))) {
         formated_text.push_str(&vec![filler; width].iter().collect::<String>());
         formated_text.push_str("\r\n");
     }
@@ -36,11 +36,11 @@ fn format_line(line: &str, filler: char, offset: usize, width: usize) -> String 
     //     return format!("{}\r\n", remove_new_line(&s));
     let len = line.len();
     if let Some(s) = line.get(offset.min(len)..len.min(width.saturating_add(offset))) {
-        let new = remove_new_line(&s);
+        let new = remove_new_line(s);
         let space = vec![filler; width.saturating_sub(new.len())]
             .iter()
             .collect::<String>();
-        return format!("{}{}\r\n", new, space);
+        return format!("{new}{space}\r\n");
     }
     format!(
         "EMPTY{}\r\n",

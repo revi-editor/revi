@@ -1,7 +1,7 @@
 use ropey::Rope;
 use std::fs::OpenOptions;
 use std::io::BufReader;
-use std::ops::Range;
+use std::ops::RangeBounds;
 use unicode_width::UnicodeWidthStr;
 
 use crate::position::Position;
@@ -161,7 +161,7 @@ impl Buffer {
         self.inner.get_char(idx)
     }
 
-    pub fn remove(&mut self, range: Range<usize>) {
+    pub fn remove(&mut self, range: impl RangeBounds<usize>) {
         self.inner.remove(range);
         self.dirty = true;
     }

@@ -24,7 +24,7 @@ impl fmt::Display for Mode {
             Self::Command => "Command",
             Self::Insert => "Insert",
         };
-        write!(f, "{}", mode)
+        write!(f, "{mode}")
     }
 }
 

@@ -21,11 +21,11 @@ impl Position {
     }
 
     pub fn set_x(&mut self, x: usize) {
-        self.x = x
+        self.x = x;
     }
 
     pub fn set_y(&mut self, y: usize) {
-        self.y = y
+        self.y = y;
     }
 
     pub fn add_to_x(&mut self, x: usize) {

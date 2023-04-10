@@ -160,7 +160,7 @@ impl Window {
 
     pub fn scroll_up(&mut self, lines: usize) {
         self.scroll_offset.sub_to_y(lines);
-        self.adjust_cursor_x()
+        self.adjust_cursor_x();
     }
 
     pub fn move_cursor_down(&mut self, lines: usize) {
@@ -171,7 +171,7 @@ impl Window {
         {
             self.cursor.add_to_y(lines);
             self.cursor.set_x(self.max_cursor.as_usize_x());
-            self.adjust_cursor_x()
+            self.adjust_cursor_x();
         }
     }
 
@@ -181,7 +181,7 @@ impl Window {
         } else {
             self.cursor.sub_to_y(lines);
             self.cursor.set_x(self.max_cursor.as_usize_x());
-            self.adjust_cursor_x()
+            self.adjust_cursor_x();
         }
     }
 
@@ -264,10 +264,9 @@ impl Window {
         if  self.cursor_file().as_usize_x() >= line_text_width {
             return;
         }
-        // if self.cursor.as_usize_x() >= self.text_width() - 1 {
         let x = self.cursor.as_usize_x();
         if x >= self.text_width() - 1 {
-            self.scroll_right(cols)
+            self.scroll_right(cols);
         } else {
             self.cursor.add_to_x(cols);
             self.max_cursor.set_x(self.cursor.as_usize_x());
@@ -277,21 +276,11 @@ impl Window {
 
     pub fn scroll_right(&mut self, cols: usize) {
         self.scroll_offset.add_to_x(cols);
-        self.adjust_cursor_x()
-        // if cols + self.scroll_offset.as_usize_x() + self.cursor.as_usize_x()
-        //     < self
-        //         .buffer
-        //         .borrow()
-        //         .line_len(self.cursor_file().as_usize_y())
-        // {
-        //     self.scroll_offset.add_to_x(cols);
-        //     // self.adjust_cursor_x()
-        // }
+        self.adjust_cursor_x();
     }
 
     pub fn insert_newline(&mut self) {
         self.insert_char('\n');
-        // self.move_cursor_down(1);
         self.cursor.add_to_y(1);
         self.cursor.set_x(self.max_cursor.as_usize_x());
         self.cursor.set_x(0);
@@ -313,7 +302,7 @@ impl Window {
     pub fn jump_to_first_line_buffer(&mut self) {
         self.cursor.set_y(0);
         self.scroll_offset.set_y(0);
-        self.adjust_cursor_x()
+        self.adjust_cursor_x();
     }
 
     pub fn jump_to_last_line_buffer(&mut self) {
@@ -326,7 +315,7 @@ impl Window {
         let offset_y = total_y.saturating_sub(screen_y).saturating_sub(1);
         self.cursor.set_y(screen_y);
         self.scroll_offset.set_y(offset_y);
-        self.adjust_cursor_x()
+        self.adjust_cursor_x();
     }
 
     pub fn backspace(&mut self) {
@@ -339,7 +328,7 @@ impl Window {
             .borrow()
             .line_to_char(self.cursor_file().as_usize_y());
         let index = line_index + self.cursor_file().as_usize_x() - 1;
-        self.buffer.borrow_mut().remove(index..index + 1);
+        self.buffer.borrow_mut().remove(index..=index);
 
         let new_line = self.buffer.borrow().char_to_line(index);
         if new_line != self.cursor_file().as_usize_y() {
@@ -359,7 +348,7 @@ impl Window {
             .line_to_char(self.cursor_file().as_usize_y())
             + self.cursor_file().as_usize_x();
         if index < self.buffer.borrow().len_chars() {
-            self.buffer.borrow_mut().remove(index..index + 1);
+            self.buffer.borrow_mut().remove(index..=index);
         }
         self.adjust_cursor_x();
     }
@@ -445,7 +434,7 @@ impl Window {
             let middle = (0..(self.text_width().saturating_sub(left.len() + right.len())))
                 .map(|_| ' ')
                 .collect::<String>();
-            return Some((pos.as_u16(), vec![format!("{}{}{}", left, middle, right)]));
+            return Some((pos.as_u16(), vec![format!("{left}{middle}{right}")]));
         }
         None
     }

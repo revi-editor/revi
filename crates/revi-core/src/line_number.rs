@@ -98,6 +98,7 @@ pub fn absolute_line_numbers(builder: LineNumberBuilder) -> LineNumber {
 }
 
 // TODO I would love to clean this up.
+#[must_use]
 pub fn relative_line_numbers(builder: LineNumberBuilder, line_num: bool) -> LineNumber {
     let mut above_cursor = (0..builder.cursor_pos.saturating_sub(builder.top()))
         .map(|n| format_line_number(builder.clone(), n, 1, false))
@@ -119,7 +120,7 @@ pub fn relative_line_numbers(builder: LineNumberBuilder, line_num: bool) -> Line
     let mut blanks = (0..builder
         .height
         .saturating_sub(above_cursor.len() + 1 + below_cursor.len()))
-        .map(format_blanks(builder.clone()))
+        .map(format_blanks(builder))
         .collect::<Vec<_>>();
     above_cursor.push(cursor);
     above_cursor.append(&mut below_cursor);

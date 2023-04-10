@@ -164,7 +164,7 @@ impl ReVi {
         self.queue.push(0);
     }
 
-    pub fn error_message(&mut self, msgs: Vec<&str>) {
+    pub fn error_message(&mut self, msgs: &[&str]) {
         self.print(
             &vec![
                 msgs[0].black().on_red().to_string(),
@@ -186,10 +186,6 @@ impl ReVi {
             format!("{acc}{i} {name}\n")
         });
         self.pop_up_window(list_of_windows, Some(self.last_focused_window().cursor_screen()));
-        let width = self.focused_window().width();
-        let height = self.focused_window().height();
-        let msg = format!("w: {}, h: {}", width, height);
-        self.print(&msg);
     }
 
     pub fn close_current_window(&mut self) {
@@ -306,8 +302,8 @@ impl ReVi {
                 self.exit();
             }
             "b" if !items.is_empty() => {
-                if let Some(i) = items.get(0).and_then(|i| i.parse::<usize>().ok()) {
-                    let buffer = self.buffers.get(i).map(|rc| Clone::clone(rc));
+                if let Some(i) = items.first().and_then(|i| i.parse::<usize>().ok()) {
+                    let buffer = self.buffers.get(i).map(Clone::clone);
                     if let Some(b) = buffer {
                         // self.focused = self.last_focused;
                         self.last_focused_window_mut().set_buffer(b);
@@ -316,23 +312,23 @@ impl ReVi {
             }
             "clipboard" => self.print(self.clipboard.clone().as_str()),
             "print" => self.print(&items.join(" ")),
-            "set" if !items.is_empty() => match items.get(0).copied().unwrap_or_default() {
+            "set" if !items.is_empty() => match items.first().copied().unwrap_or_default() {
                 "number" => {
-                    self.windows[self.last_focused].set_number(LineNumberKind::AbsoluteNumber)
+                    self.windows[self.last_focused].set_number(LineNumberKind::AbsoluteNumber);
                 }
                 "relativenumber" => {
-                    self.windows[self.last_focused].set_number(LineNumberKind::RelativeNumber)
+                    self.windows[self.last_focused].set_number(LineNumberKind::RelativeNumber);
                 }
                 "nonumber" | "norelativenumber" => {
-                    self.windows[self.last_focused].set_number(LineNumberKind::None)
+                    self.windows[self.last_focused].set_number(LineNumberKind::None);
                 }
-                e => self.error_message(vec!["unknown command: ", e]),
+                e => self.error_message(&["unknown command: ", e]),
             },
             "help" => {
-                self.error_message(vec!["help command is not implemented just yet", "help"]);
+                self.error_message(&["help command is not implemented just yet", "help"]);
             }
             "ls" => self.list_buffers(),
-            e => self.error_message(vec!["unknown command: ", e]),
+            e => self.error_message(&["unknown command: ", e]),
         }
     }
 }
