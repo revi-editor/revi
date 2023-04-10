@@ -9,7 +9,7 @@ Email: cowboy8625@protonmail.com
 ";
 
 mod commandline;
-use revi_core::{commands::*, Mapper, Mode, ReVi};
+use revi_core::{commands::{BoxedCommand, InsertChar}, Mapper, Mode, ReVi};
 use revi_ui::{Key, Tui};
 
 use mlua::prelude::*;
@@ -38,7 +38,7 @@ fn main() -> LuaResult<()> {
             let keys = tui.get_key_press();
             input.input(mode, keys);
 
-            if let Some(commands) = keymapper.get_mapping(mode, &input.keys()) {
+            if let Some(commands) = keymapper.get_mapping(mode, input.keys()) {
                 revi.borrow_mut().execute(input.number_usize(), commands);
                 tui.update(&mut *revi.borrow_mut());
                 input.clear();
