@@ -200,6 +200,20 @@ impl ReVi {
         self.is_running = false;
     }
 
+    pub fn add_buffer(&mut self, name: impl Into<String>) {
+        let buffer = Buffer::from_path(name.into().as_str());
+        let idx = self.buffers.len();
+        self.buffers.push(Rc::new(RefCell::new(buffer)));
+        self.switch_buffers_by_index(idx);
+    }
+
+    pub fn switch_buffers_by_index(&mut self, idx: usize) {
+        let buffer = self.buffers.get(idx).map(Clone::clone);
+        if let Some(b) = buffer {
+            self.last_focused_window_mut().set_buffer(b);
+        }
+    }
+
     pub fn next_window(&mut self) {
         self.focused = if self.focused < self.windows.len().saturating_sub(1) {
             self.focused + 1
@@ -295,6 +309,7 @@ impl ReVi {
                 let text = self.windows[self.last_focused].buffer().line(line_number);
                 self.print(text.len().to_string().as_str());
             }
+            "e" => self.add_buffer(items.join(" ")),
             "q" => self.close_current_window(),
             "w" => self.windows[self.last_focused].save(),
             "wq" => {
@@ -302,12 +317,8 @@ impl ReVi {
                 self.exit();
             }
             "b" if !items.is_empty() => {
-                if let Some(i) = items.first().and_then(|i| i.parse::<usize>().ok()) {
-                    let buffer = self.buffers.get(i).map(Clone::clone);
-                    if let Some(b) = buffer {
-                        // self.focused = self.last_focused;
-                        self.last_focused_window_mut().set_buffer(b);
-                    }
+                if let Some(idx) = items.first().and_then(|i| i.parse::<usize>().ok()) {
+                    self.switch_buffers_by_index(idx)
                 }
             }
             "clipboard" => self.print(self.clipboard.clone().as_str()),
