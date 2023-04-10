@@ -78,58 +78,58 @@
 
   |'Key'|*Command*|Note
   |:---|:---:|---:
-  `Esc`|*NormalMode*|
-  `ZZ`|*Save Quit*|
-  `ZQ`|*Quit*|
-  `p`|*Paste Below Cursor*|
-  `P`|*Paste Above Cursor*|
-  `<C-y>`|*ScrollUp Cursor Keeps Line Number*|Not working 100% correct
-  `<C-e>`|*ScrollDown Cursor Keeps Line Number*|Not working 100% correct
-  `<C-u>`|*ScrollUp*|Not working 100% correct
-  `<C-d>`|*ScrollDown*|Not working 100% correct
-  `j`|*CursorDown*|
-  `Down`|*CursorDown*|
-  `k`|*CursorUp*|
-  `Up`|*CursorUp*|
-  `h`|*CursorLeft*|
-  `Left`|*CursorLeft*|
-  `l`|*CursorRight*|
-  `Right`|*CursorRight*|
-  `w`|*Move Forwards by a Word*|
-  `b`|*Move Backwards by a Word*|
-  `:`|*CommandMode*|
-  `i`|*InsertMode*|
-  `x`|*DeleteChar*|
-  `Delete`|*DeleteChar*|
-  `d`|*DeleteLine*|
-  `Home`|*Home*|
-  `End`|*End*|
-  `0`|*Home*|
-  `$`|*End*|
-  `A`|*End InsertMode CursorLeft*|
-  `gg`|*JumpToFirstLine*
-  `G`|*JumpToLastLine*
+  <kbd>Esc</kbd>|*NormalMode*|
+  <kbd>ZZ</kbd>|*Save Quit*|
+  <kbd>ZQ</kbd>|*Quit*|
+  <kbd>p</kbd>|*Paste Below Cursor*|
+  <kbd>P</kbd>|*Paste Above Cursor*|
+  <kbd><C-y></kbd>|*ScrollUp Cursor Keeps Line Number*|Not working 100% correct
+  <kbd><C-e></kbd>|*ScrollDown Cursor Keeps Line Number*|Not working 100% correct
+  <kbd><C-u></kbd>|*ScrollUp*|Not working 100% correct
+  <kbd><C-d></kbd>|*ScrollDown*|Not working 100% correct
+  <kbd>j</kbd>|*CursorDown*|
+  <kbd>Down</kbd>|*CursorDown*|
+  <kbd>k</kbd>|*CursorUp*|
+  <kbd>Up</kbd>|*CursorUp*|
+  <kbd>h</kbd>|*CursorLeft*|
+  <kbd>Left</kbd>|*CursorLeft*|
+  <kbd>l</kbd>|*CursorRight*|
+  <kbd>Right</kbd>|*CursorRight*|
+  <kbd>w</kbd>|*Move Forwards by a Word*|
+  <kbd>b</kbd>|*Move Backwards by a Word*|
+  <kbd>:<\kbd>|*CommandMode*|
+  <kbd>i</kbd>|*InsertMode*|
+  <kbd>x</kbd>|*DeleteChar*|
+  <kbd>Delete</kbd>|*DeleteChar*|
+  <kbd>d</kbd>|*DeleteLine*|
+  <kbd>Home</kbd>|*Home*|
+  <kbd>End</kbd>|*End*|
+  <kbd>0<kbd>|*Home*|
+  <kbd>$<kbd>|*End*|
+  <kbd>A</kbd>|*End InsertMode CursorLeft*|
+  <kbd>gg</kbd>|*JumpToFirstLine*
+  <kbd>G</kbd>|*JumpToLastLine*
 
 ### **Insert Mode**
 
   |'Key'|*Command*|Note
   |:---|:---:|---:
-  `Esc`|*Normal*|
-  `Backspace`|*Backspace*|
-  `Enter`|*NewLine*|
-  `Home`|*Home*|
-  `End`|*End*|
-  `Down`|*CursorDown*|
-  `Up`|*CursorUp*|
-  `Left`|*CursorLeft*|
-  `Right`|*CursorRight*|
+  <kbd>Esc</kbd>|*Normal*|
+  <kbd>Backspace</kbd>|*Backspace*|
+  <kbd>Enter</kbd>|*NewLine*|
+  <kbd>Home</kbd>|*Home*|
+  <kbd>End</kbd>|*End*|
+  <kbd>Down</kbd>|*CursorDown*|
+  <kbd>Up</kbd>|*CursorUp*|
+  <kbd>Left</kbd>|*CursorLeft*|
+  <kbd>Right</kbd>|*CursorRight*|
 
 ### **Command Mode**
 
   |'Key'|*Command*|Note
   |:---|:---:|---:
-  `Esc`|*Normal*|
-  `Enter`|*Normal*|
+  <kbd>Esc</kbd>|*Normal*|
+  <kbd>Enter</kdb>|*Normal*|
 
 ### **Commands**
   *All Commands will change in further versions*
@@ -137,9 +137,10 @@
   |:---|:---:|---:
   `q`|*QUIT*|
   `quit`|*QUIT*|
-  `[number]`|*Goto LineNumber*
   `qw`|*SAVE QUIT*|
   `exit`|*QUIT*|
+  `[number]`|*Goto LineNumber*
+  `e[filename]`|*Opens or Creates a new file and swaps window*|
   `b[buffer number]`|*Sets Buffer*|
   `set number`|*Sets line numbers to AbsoluteNumber*|
   `set relativenumber`|*Sets line numbers to RelativeNumber*|
