@@ -65,7 +65,7 @@ impl ReVi {
         Rc::new(RefCell::new(revi))
     }
 
-    pub fn pop_up_window(&mut self, msg: impl Into<String>, pos: Position) {
+    pub fn pop_up_window(&mut self, msg: impl Into<String>, pos: Option<Position>) {
         let msg = msg.into();
         let width = msg.lines().map(|line| line.chars().count()).max().unwrap_or(0) as u16;
         let height = msg.lines().count() as u16;
@@ -89,6 +89,13 @@ impl ReVi {
         bottom += &H.repeat(width as usize);
         bottom += BRC;
         msg += &bottom;
+
+        let pos = pos.unwrap_or({
+            let y = self.last_focused_window().height()
+                .saturating_sub(height as usize)
+                .saturating_sub(1);
+            Position::new(0, y)
+        });
 
         let buffer = Rc::new(RefCell::new(Buffer::new_str(msg.trim())));
         let window = Window::new(width+3,height+2,buffer).with_position(pos);
@@ -178,7 +185,7 @@ impl ReVi {
                 .unwrap_or("no name(temp)".into());
             format!("{acc}{i} {name}\n")
         });
-        self.pop_up_window(list_of_windows, self.last_focused_window().cursor_screen());
+        self.pop_up_window(list_of_windows, Some(self.last_focused_window().cursor_screen()));
         let width = self.focused_window().width();
         let height = self.focused_window().height();
         let msg = format!("w: {}, h: {}", width, height);
@@ -268,6 +275,18 @@ impl ReVi {
                 let y = std::cmp::min(max_y, num.parse::<usize>().unwrap());
                 let pos = Position::new(x, y);
                 self.windows[self.last_focused].goto(pos);
+            }
+            c if c.starts_with('!') => {
+                let command = c[1..].to_string();
+                use std::process::Command;
+                let output = Command::new(command)
+                    .args(items)
+                    .output()
+                    .expect("failed to run terminal command from revi editor");
+                let msgerr = String::from_utf8(output.stderr).expect("failed to turn stderr into a string");
+                let msgout = String::from_utf8(output.stdout).expect("failed to turn stdout into a string");
+                let msg = format!("{msgerr}{msgout}");
+                self.pop_up_window(msg, None);
             }
             "pos" => self.print(&format!("pos: {}", self.last_focused_window().cursor_screen())),
             "line" => {
