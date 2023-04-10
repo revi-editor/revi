@@ -423,13 +423,49 @@ impl Command for ListBuffers {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct InsertTab;
+impl Command for InsertTab {
+    fn call(&self, revi: &mut ReVi, _: usize) {
+        for _ in 0..revi.tab_width {
+            revi.focused_window_mut().insert_char(' ');
+        }
+        revi.queue.push(revi.focused);
+    }
+    fn id(&self) -> usize {
+        30
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub struct JumpListBack;
 impl Command for JumpListBack {
     fn call(&self, _: &mut ReVi, _: usize) {
         unimplemented!("JUMPLISTBACK")
     }
     fn id(&self) -> usize {
-        30
+        31
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct JumpListForward;
+impl Command for JumpListForward {
+    fn call(&self, _: &mut ReVi, _: usize) {
+        unimplemented!("JUMPLISTForward")
+    }
+    fn id(&self) -> usize {
+        32
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Undo;
+impl Command for Undo {
+    fn call(&self, _: &mut ReVi, _: usize) {
+        unimplemented!("Undo")
+    }
+    fn id(&self) -> usize {
+        33
     }
 }
 

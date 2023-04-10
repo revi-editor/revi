@@ -17,7 +17,7 @@ pub struct ReVi {
     pub focused: usize,
     pub last_focused: usize,
     pub clipboard: String,
-    pub command_history: Buffer,
+    pub tab_width: usize,
 }
 
 impl ReVi {
@@ -60,7 +60,7 @@ impl ReVi {
             focused: 1,
             last_focused: 1,
             clipboard: String::new(),
-            command_history: Buffer::new(),
+            tab_width: 4,
         };
         Rc::new(RefCell::new(revi))
     }

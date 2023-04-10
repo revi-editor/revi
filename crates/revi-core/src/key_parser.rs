@@ -90,6 +90,13 @@ mod test {
     }
 
     #[test]
+    fn parse_tab() {
+        let string = "<tab>";
+        eprintln!("{:?}", string);
+        assert_eq!(vec![Key::Tab], string_to_key(string));
+    }
+
+    #[test]
     fn parse_esc() {
         let string = "<esc>";
         eprintln!("{:?}", string);
