@@ -1,20 +1,46 @@
+use std::rc::Rc;
 use crate::mode::Mode;
 use crate::revi::ReVi;
 use std::fmt;
+
+#[macro_export]
+macro_rules! commands {
+    ( $( $x:ident $(($($args:expr),*))? ),* ) => {
+        vec![$(BoxedCommand { command: std::rc::Rc::new($x $(($($args),*))?) }),*]
+    }
+
+}
+
+macro_rules! build_command {
+    ($name:ident, $counter:expr $(, $ty:ty)?; $caller:expr) => {
+        #[derive(Debug, PartialEq)]
+        pub struct $name $((pub $ty))?;
+        impl Command for $name {
+            fn call(&self, revi: &mut ReVi, count: usize) {
+                $caller(&self, revi, count);
+            }
+            fn id(&self) -> usize {
+                $counter
+            }
+        }
+        impl From<$name> for BoxedCommand {
+            fn from(value: $name) -> Self {
+                Self {
+                    command: std::rc::Rc::new(value),
+                }
+            }
+        }
+    };
+}
 
 pub trait Command: fmt::Debug {
     fn call(&self, revi: &mut ReVi, count: usize);
     fn id(&self) -> usize;
 }
 
+#[derive(Debug, Clone)]
 pub struct BoxedCommand {
-    pub command: Box<dyn Command>,
-}
-
-impl std::fmt::Debug for BoxedCommand {
-    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        write!(fmt, "BoxedCommand {{ {:?} }}", self.command)
-    }
+    pub command: Rc<dyn Command>,
 }
 
 impl PartialEq for BoxedCommand {
@@ -23,217 +49,157 @@ impl PartialEq for BoxedCommand {
     }
 }
 
-#[derive(Debug, PartialEq)]
-pub struct CursorUp;
-impl Command for CursorUp {
-    fn call(&self, revi: &mut ReVi, count: usize) {
+build_command!(
+    CursorUp,
+    0;
+    |_: &CursorUp, revi: &mut ReVi, count: usize| {
         revi.focused_window_mut().move_cursor_up(count);
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        0
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct CursorDown;
-impl Command for CursorDown {
-    fn call(&self, revi: &mut ReVi, count: usize) {
+);
+build_command!(
+    CursorDown,
+    1;
+    |_: &CursorDown, revi: &mut ReVi, count: usize| {
         revi.focused_window_mut().move_cursor_down(count);
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        1
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct CursorLeft;
-impl Command for CursorLeft {
-    fn call(&self, revi: &mut ReVi, count: usize) {
+);
+build_command!(
+    CursorLeft,
+    2;
+    |_: &CursorLeft, revi: &mut ReVi, count: usize| {
         revi.focused_window_mut().move_cursor_left(count);
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        2
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct CursorRight;
-impl Command for CursorRight {
-    fn call(&self, revi: &mut ReVi, count: usize) {
+);
+build_command!(
+    CursorRight,
+    3;
+    |_: &CursorRight, revi: &mut ReVi, count: usize| {
         revi.focused_window_mut().move_cursor_right(count);
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        3
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct ScrollUp;
-impl Command for ScrollUp {
-    fn call(&self, revi: &mut ReVi, count: usize) {
+);
+build_command!(
+    ScrollUp,
+    4;
+    |_: &ScrollUp, revi: &mut ReVi, count: usize| {
         revi.focused_window_mut().scroll_up(count);
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        4
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct ScrollDown;
-impl Command for ScrollDown {
-    fn call(&self, revi: &mut ReVi, count: usize) {
-        revi.focused_window_mut().scroll_down(count);
+);
+build_command!(
+    ScrollDown,
+    5;
+    |_: &ScrollDown, revi: &mut ReVi, count: usize| {
+        revi.focused_window_mut().scroll_up(count);
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        5
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Home;
-impl Command for Home {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+);
+build_command!(
+    Home,
+    6;
+    |_: &Home, revi: &mut ReVi, _: usize| {
         revi.focused_window_mut().home();
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        6
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub struct End;
-impl Command for End {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+);
+build_command!(
+    End,
+    7;
+    |_: &End, revi: &mut ReVi, _: usize| {
         revi.focused_window_mut().end();
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        7
-    }
-}
-#[derive(Debug, PartialEq)]
-pub struct MoveForwardByWord;
-impl Command for MoveForwardByWord {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+);
+build_command!(
+    MoveForwardByWord,
+    8;
+    |_: &MoveForwardByWord, revi: &mut ReVi, _: usize| {
         revi.focused_window_mut().move_forward_by_word();
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        8
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct MoveBackwardByWord;
-impl Command for MoveBackwardByWord {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+build_command!(
+    MoveBackwardByWord,
+    9;
+    |_: &MoveBackwardByWord, revi: &mut ReVi, _: usize| {
         revi.focused_window_mut().move_backward_by_word();
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        9
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct JumpToFirstLineBuffer;
-impl Command for JumpToFirstLineBuffer {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+build_command!(
+    JumpToFirstLineBuffer,
+    10;
+    |_: &JumpToFirstLineBuffer, revi: &mut ReVi, _: usize| {
         revi.focused_window_mut().jump_to_first_line_buffer();
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        10
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct JumpToLastLineBuffer;
-impl Command for JumpToLastLineBuffer {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+build_command!(
+    JumpToLastLineBuffer,
+    11;
+    |_: &JumpToLastLineBuffer, revi: &mut ReVi, _: usize| {
         revi.focused_window_mut().jump_to_last_line_buffer();
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        11
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct Backspace;
-impl Command for Backspace {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+build_command!(
+    Backspace,
+    12;
+    |_: &Backspace, revi: &mut ReVi, _: usize| {
         revi.focused_window_mut().backspace();
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        12
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct NewLine;
-impl Command for NewLine {
-    fn call(&self, revi: &mut ReVi, _: usize) {
-        if revi.focused != 0 {
-            revi.focused_window_mut().insert_newline();
-            revi.queue.push(revi.focused);
-        }
+build_command!(
+    NewLine,
+    13;
+    |_: &NewLine, revi: &mut ReVi, _: usize| {
+        revi.focused_window_mut().insert_newline();
+        revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        13
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct FirstCharInLine;
-impl Command for FirstCharInLine {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+build_command!(
+    FirstCharInLine,
+    14;
+    |_: &FirstCharInLine, revi: &mut ReVi, _: usize| {
         revi.focused_window_mut().first_char_in_line();
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        14
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct DeleteChar;
-impl Command for DeleteChar {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+build_command!(
+    DeleteChar,
+    15;
+    |_: &DeleteChar, revi: &mut ReVi, _: usize| {
         revi.focused_window_mut().delete();
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        15
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct DeleteLine;
-impl Command for DeleteLine {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+build_command!(
+    DeleteLine,
+    16;
+    |_: &DeleteLine, revi: &mut ReVi, _: usize| {
         let line = revi.focused_window_mut().delete_line();
         revi.queue.push(revi.focused);
         revi.clipboard.clear();
         revi.clipboard.push_str(line.as_str());
     }
-    fn id(&self) -> usize {
-        16
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct YankLine;
-impl Command for YankLine {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+build_command!(
+    YankLine,
+    17;
+    |_: &YankLine, revi: &mut ReVi, _: usize| {
         let yanked_line;
         {
             let cursor = revi.focused_window().cursor_file();
@@ -245,15 +211,12 @@ impl Command for YankLine {
         revi.clipboard.push_str(yanked_line.as_str());
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        17
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct Paste;
-impl Command for Paste {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+build_command!(
+    Paste,
+    18;
+    |_: &Paste, revi: &mut ReVi, _: usize| {
         revi.queue.push(revi.focused);
         // TODO: Fix this cloning.
         let clipboard = revi.clipboard.clone();
@@ -265,15 +228,12 @@ impl Command for Paste {
         }
         revi.focused_window_mut().move_cursor_down(1);
     }
-    fn id(&self) -> usize {
-        18
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct PasteBack;
-impl Command for PasteBack {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+build_command!(
+    PasteBack,
+    19;
+    |_: &PasteBack, revi: &mut ReVi, _: usize| {
         revi.queue.push(revi.focused);
         // TODO: Fix this cloning.
         let clipboard = revi.clipboard.clone();
@@ -283,196 +243,143 @@ impl Command for PasteBack {
             let mut buffer = window.buffer_mut();
             buffer.insert_line(line_idx + 1, &clipboard);
         }
-        revi.focused_window_mut().move_cursor_down(1);
     }
-    fn id(&self) -> usize {
-        19
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct InsertChar(pub char);
-impl Command for InsertChar {
-    fn call(&self, revi: &mut ReVi, _: usize) {
-        revi.focused_window_mut().insert_char(self.0);
+build_command!(
+    InsertChar,
+    20,
+    char;
+    |insert_char: &InsertChar, revi: &mut ReVi, _: usize| {
+        revi.focused_window_mut().insert_char(insert_char.0);
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        20
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct ChangeMode(pub Mode);
-impl Command for ChangeMode {
-    fn call(&self, revi: &mut ReVi, _: usize) {
-        revi.change_modes(self.0);
+build_command!(
+    ChangeMode,
+    21,
+    Mode;
+    |change_mode: &ChangeMode, revi: &mut ReVi, _: usize| {
+        revi.change_modes(change_mode.0);
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        21
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct EnterCommandMode;
-impl Command for EnterCommandMode {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+build_command!(
+    EnterCommandMode,
+    22;
+    |_: &EnterCommandMode, revi: &mut ReVi, _: usize| {
         revi.enter_command_mode();
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        22
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct ExitCommandMode;
-impl Command for ExitCommandMode {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+build_command!(
+    ExitCommandMode,
+    23;
+    |_: &ExitCommandMode, revi: &mut ReVi, _: usize| {
         if revi.focused == 0 {
             revi.exit_command_mode();
             revi.queue.push(revi.focused);
         }
     }
-    fn id(&self) -> usize {
-        23
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct ExcuteCommandLine;
-impl Command for ExcuteCommandLine {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+build_command!(
+    ExcuteCommandLine,
+    24;
+    |_: &ExcuteCommandLine, revi: &mut ReVi, _: usize| {
         if revi.focused == 0 {
+            eprintln!("executing command");
             revi.execute_command_line();
         }
     }
-    fn id(&self) -> usize {
-        24
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct NextWindow;
-impl Command for NextWindow {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+build_command!(
+    NextWindow,
+    25;
+    |_: &NextWindow, revi: &mut ReVi, _: usize| {
         revi.next_window();
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        25
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct Print(String);
-impl Command for Print {
-    fn call(&self, revi: &mut ReVi, _: usize) {
-        revi.print(&self.0);
+build_command!(
+    Print,
+    26,
+    String;
+    |p: &Print, revi: &mut ReVi, _: usize| {
+        revi.print(&p.0);
         revi.queue.push(0);
     }
-    fn id(&self) -> usize {
-        26
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct Save;
-impl Command for Save {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+build_command!(
+    Save,
+    27;
+    |_: &Save, revi: &mut ReVi, _: usize| {
         revi.focused_window().save();
         revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        27
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct Quit;
-impl Command for Quit {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+build_command!(
+    Quit,
+    28;
+    |_: &Quit, revi: &mut ReVi, _: usize| {
         revi.exit();
     }
-    fn id(&self) -> usize {
-        28
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct CloseWindow;
-impl Command for CloseWindow {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+build_command!(
+    CloseWindow,
+    29;
+    |_: &CloseWindow, revi: &mut ReVi, _: usize| {
         revi.close_current_window();
     }
-    fn id(&self) -> usize {
-        28
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct ListBuffers;
-impl Command for ListBuffers {
-    fn call(&self, revi: &mut ReVi, _: usize) {
+build_command!(
+    ListBuffers,
+    30;
+    |_: &ListBuffers, revi: &mut ReVi, _: usize| {
         revi.list_buffers();
     }
-    fn id(&self) -> usize {
-        29
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct InsertTab;
-impl Command for InsertTab {
-    fn call(&self, revi: &mut ReVi, _: usize) {
-        for _ in 0..revi.tab_width {
+build_command!(
+    InsertTab,
+    31;
+    |_: &InsertTab, revi: &mut ReVi, count: usize| {
+        for _ in 0..revi.tab_width+count {
             revi.focused_window_mut().insert_char(' ');
         }
-        revi.queue.push(revi.focused);
     }
-    fn id(&self) -> usize {
-        30
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct JumpListBack;
-impl Command for JumpListBack {
-    fn call(&self, _: &mut ReVi, _: usize) {
-        unimplemented!("JUMPLISTBACK")
+build_command!(
+    JumpListBack,
+    32;
+    |_: &JumpListBack, _revi: &mut ReVi, _: usize| {
+        unimplemented!("JumpListBack");
     }
-    fn id(&self) -> usize {
-        31
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct JumpListForward;
-impl Command for JumpListForward {
-    fn call(&self, _: &mut ReVi, _: usize) {
-        unimplemented!("JUMPLISTForward")
+build_command!(
+    JumpListForward,
+    33;
+    |_: &JumpListForward, _revi: &mut ReVi, _: usize| {
+        unimplemented!("JumpListForward");
     }
-    fn id(&self) -> usize {
-        32
-    }
-}
+);
 
-#[derive(Debug, PartialEq)]
-pub struct Undo;
-impl Command for Undo {
-    fn call(&self, _: &mut ReVi, _: usize) {
-        unimplemented!("Undo")
+build_command!(
+    Undo,
+    34;
+    |_: &Undo, _revi: &mut ReVi, _: usize| {
+        unimplemented!("Undo");
     }
-    fn id(&self) -> usize {
-        33
-    }
-}
+);
 
-#[macro_export]
-macro_rules! commands {
-    ( $( $x:ident $(($($args:expr),*))? ),* ) => {
-            vec![$(BoxedCommand { command: Box::new($x $(($($args),*))?) }),*]
-    }
-
-}
