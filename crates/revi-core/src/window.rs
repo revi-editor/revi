@@ -318,6 +318,12 @@ impl Window {
         self.adjust_cursor_x();
     }
 
+    pub fn is_on_last_line(&self) -> bool {
+        let y = self.cursor_file().as_usize_y();
+        let line_count = self.buffer().len_lines().saturating_sub(1);
+        line_count == y
+    }
+
     pub fn backspace(&mut self) {
         if self.cursor_file().as_u16() == (0, 0) {
             return;
@@ -408,6 +414,11 @@ impl Window {
                 .write_to(buff)
                 .expect("Failed to write to file.");
         }
+    }
+
+    pub fn get_current_line(&self) -> String {
+        let y = self.cursor_file().as_usize_y();
+        self.buffer().line(y.saturating_sub(1))
     }
 
     #[must_use]

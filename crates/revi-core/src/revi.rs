@@ -18,6 +18,7 @@ pub struct ReVi {
     pub last_focused: usize,
     pub clipboard: String,
     pub tab_width: usize,
+    pub executed_commands: Vec<BoxedCommand>,
 }
 
 impl ReVi {
@@ -61,6 +62,7 @@ impl ReVi {
             last_focused: 1,
             clipboard: String::new(),
             tab_width: 4,
+            executed_commands: vec![],
         };
         Rc::new(RefCell::new(revi))
     }
@@ -103,6 +105,11 @@ impl ReVi {
         self.queue.push(id);
         self.windows.push(window);
         self.focused = id;
+    }
+
+    #[must_use]
+    pub fn get_command_window(&mut self) -> &Window {
+        &self.windows[0]
     }
 
     #[must_use]
@@ -228,20 +235,23 @@ impl ReVi {
     }
 
     pub fn enter_command_mode(&mut self) {
+        // TODO: Create a new Window type that is able to reflex the Command bar better.
+        // Maybe a trait would be much better suited for the Window struct.
+        // This would enable the the creation of BoarderedWindow struct that impl Window
+        // trait Window: revi_ui::Display { }
         *self.mode_mut() = Mode::Command;
         self.last_focused = self.focused.max(1);
         self.focused = 0;
         *self.mode_mut() = Mode::Insert;
-        let end = self.buffers[0].borrow().len_chars();
-        let last_char = self.buffers[0].borrow().get_char(end.saturating_sub(1));
-        if last_char == Some('\n') || last_char.is_none() {
-            self.buffers[0].borrow_mut().insert_char(end, ':');
-        } else if last_char != Some(':') {
-            self.buffers[0].borrow_mut().insert(end, "\n:");
+        // New
+        let window = self.get_command_window_mut();
+        // Checks to see if the ':' needs to be inserted or not
+        let on_last_line = window.is_on_last_line();
+        window.jump_to_last_line_buffer();
+        window.move_cursor_down(1);
+        if on_last_line {
+            window.insert_char(':');
         }
-        let y = self.buffers[0].borrow().len_lines().saturating_sub(1);
-        self.windows[0].goto(Position::new(1, y));
-        self.windows[0].move_cursor_right(1);
     }
 
     pub fn exit_command_mode(&mut self) {
@@ -250,19 +260,18 @@ impl ReVi {
     }
 
     pub fn execute_command_line(&mut self) {
-        let end = self.buffers[0].borrow().len_lines().saturating_sub(1);
-        let mut command = self.buffers[0].borrow().line(end);
-        if !command.is_empty() {
-            command.remove(0);
+        let window = self.get_command_window_mut();
+        let mut line = window.get_current_line();
+        if !line.is_empty() {
+            line.remove(0);
         }
-        let end = self.buffers[0].borrow().len_chars();
-        self.buffers[0].borrow_mut().insert_char(end, '\n');
-        self.run_command_line(&command);
+        self.run_command_line(line.trim());
     }
 
     pub fn execute(&mut self, count: usize, commands: &[BoxedCommand]) {
         for boxed in commands {
             boxed.command.call(self, count);
+            // self.executed_commands.push(boxed.clone());
         }
     }
 
@@ -300,6 +309,7 @@ impl ReVi {
             }
             "pos" => self.print(&format!("pos: {}", self.last_focused_window().cursor_screen())),
             "line" => {
+
                 let line_number = self.windows[self.last_focused].cursor_file().as_usize_y();
                 let text = self.windows[self.last_focused].buffer().line(line_number);
                 self.print(text.as_str());

@@ -47,9 +47,7 @@ fn main() -> LuaResult<()> {
                     .as_chars()
                     .iter()
                     .filter(|c| **c != '\0')
-                    .map(|c| BoxedCommand {
-                        command: Box::new(InsertChar(*c)),
-                    })
+                    .map(|c| InsertChar(*c).into())
                     .collect::<Vec<BoxedCommand>>();
                 revi.borrow_mut()
                     .execute(input.number_usize(), &input_chars);
