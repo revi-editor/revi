@@ -109,6 +109,7 @@
   <kbd>A</kbd>|*End InsertMode CursorLeft*|
   <kbd>gg</kbd>|*JumpToFirstLine*
   <kbd>G</kbd>|*JumpToLastLine*
+  <kbd>u</kbd>|*Undo*
 
 ### **Insert Mode**
 
