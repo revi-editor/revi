@@ -3,7 +3,7 @@ use crate::commands::{
     Backspace, BoxedCommand, ChangeMode, CursorDown, CursorLeft, CursorRight, CursorUp, DeleteChar,
     DeleteLine, End, EnterCommandMode, ExcuteCommandLine, ExitCommandMode, FirstCharInLine, Home,
     JumpToFirstLineBuffer, JumpToLastLineBuffer, MoveBackwardByWord, MoveForwardByWord, NewLine,
-    NextWindow, Paste, PasteBack, Quit, Save, ScrollDown, ScrollUp, YankLine, InsertTab,
+    NextWindow, Paste, PasteBack, Quit, Save, ScrollDown, ScrollUp, YankLine, InsertTab, Undo
 };
 use crate::key_parser::string_to_key;
 use crate::mode::Mode;
@@ -120,6 +120,7 @@ impl Mapper {
             .with_mapping(Mode::Normal, "yy", commands![YankLine])
             .with_mapping(Mode::Normal, "p", commands![Paste])
             .with_mapping(Mode::Normal, "P", commands![PasteBack])
+            .with_mapping(Mode::Normal, "u", commands![Undo])
     }
 
     fn build_insert(self) -> Self {

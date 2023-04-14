@@ -1,1 +1,1 @@
-revi:cursor(0,0)
+settings:set_line_number(settings.LineNumberKindBoth)

@@ -9,21 +9,32 @@ Email: cowboy8625@protonmail.com
 ";
 
 mod commandline;
-use revi_core::{commands::{BoxedCommand, InsertChar}, Mapper, Mode, ReVi};
+use revi_core::{commands::{BoxedCommand, InsertChar}, Mapper, Mode, ReVi, Settings};
 use revi_ui::{Key, Tui};
 
 use mlua::prelude::*;
+// use mlua::chunk;
+use std::rc::Rc;
+use std::cell::RefCell;
+fn execute(revi: Rc<RefCell<ReVi>>, count: usize, commands: &[BoxedCommand], lua: &Lua) {
+    for boxed in commands {
+        boxed.command.call(revi.clone(), count, lua);
+    }
+}
 
-#[allow(dead_code)]
+
 fn main() -> LuaResult<()> {
     let files = commandline::args();
-    let revi = ReVi::new(&files);
-    let lua = Lua::new();
 
-    lua.globals().set("revi", revi.clone())?;
-    let init_lua = std::fs::read_to_string("init.lua");
-    lua.load(init_lua.unwrap_or_else(|_| String::new()).as_str())
-        .exec()?;
+    let lua = Lua::new();
+    let globals = lua.globals();
+
+    let settings = Rc::new(RefCell::new(Settings::default()));
+    globals.set("settings", settings.clone())?;
+    lua.load(dbg!(include_str!("../init.lua"))).eval()?;
+
+    let revi = ReVi::new(settings.take(), &files);
+    globals.set("revi", revi.clone())?;
 
     let mut tui = Tui::default();
     let keymapper = Mapper::default();
@@ -39,7 +50,7 @@ fn main() -> LuaResult<()> {
             input.input(mode, keys);
 
             if let Some(commands) = keymapper.get_mapping(mode, input.keys()) {
-                revi.borrow_mut().execute(input.number_usize(), commands);
+                execute(revi.clone(), input.number_usize(), &commands, &lua);
                 tui.update(&mut *revi.borrow_mut());
                 input.clear();
             } else if mode == Mode::Insert {
@@ -49,8 +60,7 @@ fn main() -> LuaResult<()> {
                     .filter(|c| **c != '\0')
                     .map(|c| InsertChar(*c).into())
                     .collect::<Vec<BoxedCommand>>();
-                revi.borrow_mut()
-                    .execute(input.number_usize(), &input_chars);
+                execute(revi.clone(), input.number_usize(), &input_chars, &lua);
                 input.clear();
                 tui.update(&mut *revi.borrow_mut());
             }

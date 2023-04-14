@@ -1,6 +1,6 @@
 // This hole file SUCKS.
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)]
 pub enum LineNumberKind {
     AbsoluteNumber,

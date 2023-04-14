@@ -1,3 +1,7 @@
+// TODO: turn pop_up_window into its own method and make a new method called
+// message_window that works more like vim's message window.
+// TODO: implement Undo
+// TODO: implement Redo
 use crate::buffer::Buffer;
 use crate::commands::BoxedCommand;
 use crate::line_number::LineNumberKind;
@@ -9,6 +13,21 @@ use revi_ui::Stylize;
 use std::{cell::RefCell, rc::Rc};
 
 #[derive(Debug)]
+pub struct Settings {
+    pub tab_width: usize,
+    pub line_number_kind: LineNumberKind,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            tab_width: 4,
+            line_number_kind: LineNumberKind::None,
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct ReVi {
     pub is_running: bool,
     pub windows: Vec<Window>,
@@ -17,13 +36,13 @@ pub struct ReVi {
     pub focused: usize,
     pub last_focused: usize,
     pub clipboard: String,
-    pub tab_width: usize,
     pub executed_commands: Vec<BoxedCommand>,
+    pub settings: Settings,
 }
 
 impl ReVi {
     #[must_use]
-    pub fn new(files: &[String]) -> Rc<RefCell<Self>> {
+    pub fn new(settings: Settings, files: &[String]) -> Rc<RefCell<Self>> {
         let mut buffers: Vec<Rc<RefCell<Buffer>>> = files
             .iter()
             .map(|f| Rc::new(RefCell::new(Buffer::from_path(f.as_str()))))
@@ -42,7 +61,7 @@ impl ReVi {
 
         let main_window = Window::new(w, h, Clone::clone(&buffers[1]))
             .with_status_bar(true)
-            .with_line_numbers(LineNumberKind::Both);
+            .with_line_numbers(settings.line_number_kind);
 
         let command_bar = Window::new(w, 1, cbuffer).with_position((0, h + 2).into());
 
@@ -61,10 +80,28 @@ impl ReVi {
             focused: 1,
             last_focused: 1,
             clipboard: String::new(),
-            tab_width: 4,
             executed_commands: vec![],
+            settings,
         };
         Rc::new(RefCell::new(revi))
+    }
+
+    pub fn output_message(&mut self, msg: impl Into<String>) {
+        let msg = msg.into();
+        let win_width = self.focused_window().width() as u16;
+        let width = msg.lines().map(|line| line.chars().count()).max().unwrap_or(0) as u16;
+        let height = msg.lines().count() as u16 + 3;
+        let top = "-".repeat(width.max(win_width) as usize);
+        let msg = format!("{top}\nMessage Output\n{top}\n{msg}");
+        let y = self.last_focused_window().height()
+            .saturating_sub(height as usize);
+        let pos = Position::new(0, y);
+        let buffer = Rc::new(RefCell::new(Buffer::new_str(msg.trim())));
+        let window = Window::new(width.max(win_width),height,buffer).with_position(pos);
+        let id = self.windows.len();
+        self.queue.push(id);
+        self.windows.push(window);
+        self.focused = id;
     }
 
     pub fn pop_up_window(&mut self, msg: impl Into<String>, pos: Option<Position>) {
@@ -268,25 +305,13 @@ impl ReVi {
         self.run_command_line(line.trim());
     }
 
-    pub fn execute(&mut self, count: usize, commands: &[BoxedCommand]) {
-        for boxed in commands {
-            boxed.command.call(self, count);
-            // self.executed_commands.push(boxed.clone());
-        }
-    }
 
-    // TODO: Make a lexer and parser for this.
-    fn run_command_line(&mut self, command: &str) {
-        let command: String = if let Some(collon) = command.get(0..1) {
-            if collon == ":" {
-                command[1..].to_string()
-            } else {
-                command.to_string()
-            }
-        } else {
-            command.to_string()
-        };
-        let mut items: Vec<&str> = command.split(' ').collect();
+    /// command arg needs to be not have the ':' prefex
+    pub fn run_command_line(&mut self, command: &str) {
+        // TODO: Make a lexer and parser for this.
+        assert!(!command.starts_with(':'));
+
+        let mut items: Vec<&str> = command.trim().split(' ').collect();
         match items.remove(0) {
             num if num.parse::<usize>().ok().is_some() => {
                 let x = self.windows[self.last_focused].cursor_file().as_usize_x();
@@ -335,13 +360,13 @@ impl ReVi {
             "print" => self.print(&items.join(" ")),
             "set" if !items.is_empty() => match items.first().copied().unwrap_or_default() {
                 "number" => {
-                    self.windows[self.last_focused].set_number(LineNumberKind::AbsoluteNumber);
+                    self.focused_window_mut().set_number(LineNumberKind::AbsoluteNumber);
                 }
                 "relativenumber" => {
-                    self.windows[self.last_focused].set_number(LineNumberKind::RelativeNumber);
+                    self.focused_window_mut().set_number(LineNumberKind::RelativeNumber);
                 }
                 "nonumber" | "norelativenumber" => {
-                    self.windows[self.last_focused].set_number(LineNumberKind::None);
+                    self.focused_window_mut().set_number(LineNumberKind::None);
                 }
                 e => self.error_message(&["unknown command: ", e]),
             },
