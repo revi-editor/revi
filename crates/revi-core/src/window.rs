@@ -30,6 +30,7 @@ pub struct Window {
     line_number_type: LineNumberKind,
     /// This needs to be removed
     status_bar_state: bool,
+    // read_only: bool,
 }
 
 impl Window {

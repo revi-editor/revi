@@ -337,23 +337,16 @@ build_command!(
     23;
     |_: &ExitCommandMode, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
         let mut revi = revi_rc.borrow_mut();
-        if revi.focused == 0 {
-            revi.exit_command_mode();
-        let focused_window = revi.focused;
-        revi.queue.push(focused_window);
-        }
+        revi.exit_command_mode();
     }
 );
 
 build_command!(
-    ExcuteCommandLine,
+    ExecuteCommandLine,
     24;
-    |_: &ExcuteCommandLine, revi_rc: Rc<RefCell<ReVi>>, _: usize, lua: &mlua::Lua| {
+    |_: &ExecuteCommandLine, revi_rc: Rc<RefCell<ReVi>>, _: usize, lua: &mlua::Lua| {
         let line = {
             let mut revi = revi_rc.borrow_mut();
-            if revi.focused != 0 {
-                return;
-            }
             let window = revi.get_command_window_mut();
             let mut line = window.get_current_line();
             if !line.is_empty() {
@@ -371,7 +364,7 @@ build_command!(
             };
             let result = lua.load(line.trim()).exec();
             if let Err(e) = result {
-                revi_rc.borrow_mut().output_message(e.to_string());
+                revi_rc.borrow_mut().create_message_window(e.to_string());
             }
             return;
         }

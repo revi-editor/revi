@@ -1,7 +1,7 @@
 use crate::commands;
 use crate::commands::{
     Backspace, BoxedCommand, ChangeMode, CursorDown, CursorLeft, CursorRight, CursorUp, DeleteChar,
-    DeleteLine, End, EnterCommandMode, ExcuteCommandLine, ExitCommandMode, FirstCharInLine, Home,
+    DeleteLine, End, EnterCommandMode, ExecuteCommandLine, ExitCommandMode, FirstCharInLine, Home,
     JumpToFirstLineBuffer, JumpToLastLineBuffer, MoveBackwardByWord, MoveForwardByWord, NewLine,
     NextWindow, Paste, PasteBack, Quit, Save, ScrollDown, ScrollUp, YankLine, InsertTab, Undo
 };
@@ -115,7 +115,7 @@ impl Mapper {
             .with_mapping(
                 Mode::Normal,
                 "<enter>",
-                commands![ExcuteCommandLine, ExitCommandMode],
+                commands![ExecuteCommandLine, ExitCommandMode],
             )
             .with_mapping(Mode::Normal, "yy", commands![YankLine])
             .with_mapping(Mode::Normal, "p", commands![Paste])
@@ -129,7 +129,7 @@ impl Mapper {
             .with_mapping(
                 Mode::Insert,
                 "<enter>",
-                commands![NewLine, ExcuteCommandLine, ExitCommandMode],
+                commands![NewLine, ExecuteCommandLine, ExitCommandMode],
             )
             .with_mapping(Mode::Insert, "<home>", commands![Home])
             .with_mapping(Mode::Insert, "<end>", commands![End])
@@ -145,7 +145,7 @@ impl Mapper {
             .with_mapping(
                 Mode::Command,
                 "enter",
-                commands![ExcuteCommandLine, ExitCommandMode],
+                commands![ExecuteCommandLine, ExitCommandMode],
             )
     }
 }
