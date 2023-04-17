@@ -4,7 +4,7 @@
 // ▌ ▖▌ ▌▐▐▐ ▌ ▌▌ ▌▚▄▌▌ ▌▌ ▌▗▘ ▖ ▌
 // ▝▀ ▝▀  ▘▘ ▀▀ ▝▀ ▗▄▘▝▀ ▝▀ ▀▀▘▝▀
 
-mod api;
+pub mod api;
 pub mod buffer;
 pub mod commands;
 mod key_parser;
@@ -21,4 +21,4 @@ pub use buffer::Buffer;
 pub use keymapper::Mapper;
 pub use mode::Mode;
 pub use position::Position;
-pub use revi::{Settings, ReVi};
+pub use revi::{ReVi, Settings};

@@ -1,13 +1,13 @@
 extern crate revi_core;
 use revi_core::line_number::LineNumberKind;
 use revi_core::mode::Mode;
-use revi_core::{Settings, ReVi};
+use revi_core::{ReVi, Settings};
 
 #[test]
 fn test_cursor_position_with_lines() {
     let settings = Settings {
-        line_number_kind:LineNumberKind::None,
-        tab_width:4,
+        line_number_kind: LineNumberKind::None,
+        tab_width: 4,
     };
     let files = vec![String::from("test.txt")];
     let revi = ReVi::new(settings, &files);
@@ -17,8 +17,8 @@ fn test_cursor_position_with_lines() {
 #[test]
 fn test_set_cursor_position_with_lines() {
     let settings = Settings {
-        line_number_kind:LineNumberKind::None,
-        tab_width:4,
+        line_number_kind: LineNumberKind::None,
+        tab_width: 4,
     };
     let files = vec![String::from("test.txt")];
     let revi = ReVi::new(settings, &files);
@@ -29,8 +29,8 @@ fn test_set_cursor_position_with_lines() {
 #[test]
 fn test_getting_mode_and_setting_mode() {
     let settings = Settings {
-        line_number_kind:LineNumberKind::None,
-        tab_width:4,
+        line_number_kind: LineNumberKind::None,
+        tab_width: 4,
     };
     let files = vec![String::from("test.txt")];
     let revi = ReVi::new(settings, &files);
@@ -44,8 +44,8 @@ fn test_getting_mode_and_setting_mode() {
 #[test]
 fn test_start_queued() {
     let settings = Settings {
-        line_number_kind:LineNumberKind::None,
-        tab_width:4,
+        line_number_kind: LineNumberKind::None,
+        tab_width: 4,
     };
     let files = vec![String::from("test.txt")];
     let revi = ReVi::new(settings, &files);
@@ -55,8 +55,8 @@ fn test_start_queued() {
 #[test]
 fn test_is_running_and_exit() {
     let settings = Settings {
-        line_number_kind:LineNumberKind::None,
-        tab_width:4,
+        line_number_kind: LineNumberKind::None,
+        tab_width: 4,
     };
     let files = vec![String::from("test.txt")];
     let revi = ReVi::new(settings, &files);

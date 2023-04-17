@@ -1,8 +1,8 @@
-use std::rc::Rc;
-use std::cell::RefCell;
 use crate::mode::Mode;
 use crate::revi::ReVi;
+use std::cell::RefCell;
 use std::fmt;
+use std::rc::Rc;
 
 #[macro_export]
 macro_rules! commands {
@@ -39,9 +39,15 @@ pub trait Command: fmt::Debug {
     fn id(&self) -> usize;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct BoxedCommand {
     pub command: Rc<dyn Command>,
+}
+
+impl std::fmt::Debug for BoxedCommand {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self.command)
+    }
 }
 
 impl mlua::UserData for BoxedCommand {}
@@ -469,3 +475,25 @@ build_command!(
     }
 );
 
+#[derive(Debug, PartialEq)]
+pub struct LuaCommand(pub String);
+impl Command for LuaCommand {
+    fn call(&self, _revi_rc: Rc<RefCell<ReVi>>, _count: usize, lua: &mlua::Lua) {
+        let func: mlua::Function = lua
+            .globals()
+            .get(self.0.as_str())
+            .expect(&format!("failed to get custom LuaCommand '{}'", self.0));
+        func.call::<_, ()>(())
+            .expect(&format!("failed to run custom LuaCommand '{}'", self.0));
+    }
+    fn id(&self) -> usize {
+        35
+    }
+}
+impl From<LuaCommand> for BoxedCommand {
+    fn from(value: LuaCommand) -> Self {
+        Self {
+            command: std::rc::Rc::new(value),
+        }
+    }
+}

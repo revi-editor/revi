@@ -8,61 +8,83 @@ const AUTHOR: &str = "
 Email: cowboy8625@protonmail.com
 ";
 
+const LINUX_CONFIG_PATH: &str = "/.config/revi/init.lua";
+
 mod commandline;
-use revi_core::{commands::{BoxedCommand, InsertChar}, Mapper, Mode, ReVi, Settings};
+use revi_core::{
+    api::create_api,
+    commands::{BoxedCommand, InsertChar},
+    Mapper, Mode, ReVi, Settings,
+};
 use revi_ui::{Key, Tui};
 
 use mlua::prelude::*;
-// use mlua::chunk;
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::{
+    rc::Rc,
+    time::{Duration, Instant},
+};
 fn execute(revi: Rc<RefCell<ReVi>>, count: usize, commands: &[BoxedCommand], lua: &Lua) {
     for boxed in commands {
         boxed.command.call(revi.clone(), count, lua);
     }
 }
 
+fn insert_chars(tui: &mut Tui, input: &mut Input, revi: Rc<RefCell<ReVi>>, lua: &Lua) {
+    let input_chars = input
+        .as_chars()
+        .iter()
+        .filter(|c| **c != '\0')
+        .map(|c| InsertChar(*c).into())
+        .collect::<Vec<BoxedCommand>>();
+    execute(revi.clone(), input.number_usize(), &input_chars, &lua);
+    input.clear();
+    tui.update(&mut *revi.borrow_mut());
+}
 
 fn main() -> LuaResult<()> {
+    let config_file_path = env!("HOME").to_string();
+    let config_file = std::fs::read_to_string(format!("{config_file_path}{LINUX_CONFIG_PATH}"))
+        .expect(&format!(
+            "failed to read in config file at path '{config_file_path}{LINUX_CONFIG_PATH}'"
+        ));
     let files = commandline::args();
 
     let lua = Lua::new();
+    create_api(&lua);
     let globals = lua.globals();
 
     let settings = Rc::new(RefCell::new(Settings::default()));
-    globals.set("settings", settings.clone())?;
-    lua.load(dbg!(include_str!("../init.lua"))).eval()?;
-
+    let mapper = Rc::new(RefCell::new(Mapper::default()));
     let revi = ReVi::new(settings.take(), &files);
+    globals.set("settings", settings.clone())?;
+    globals.set("mapper", mapper.clone())?;
     globals.set("revi", revi.clone())?;
+    lua.load(&config_file).eval()?;
 
     let mut tui = Tui::default();
-    let keymapper = Mapper::default();
+    let keymapper = mapper.take();
     let mut input = Input::default();
 
     input.clear();
     tui.update(&mut *revi.borrow_mut());
 
     while revi.borrow().is_running {
+        let mode = *revi.borrow().mode();
         if tui.poll_read(std::time::Duration::from_millis(50)) {
-            let mode = *revi.borrow().mode();
             let keys = tui.get_key_press();
             input.input(mode, keys);
-
-            if let Some(commands) = keymapper.get_mapping(mode, input.keys()) {
-                execute(revi.clone(), input.number_usize(), &commands, &lua);
-                tui.update(&mut *revi.borrow_mut());
-                input.clear();
-            } else if mode == Mode::Insert {
-                let input_chars = input
-                    .as_chars()
-                    .iter()
-                    .filter(|c| **c != '\0')
-                    .map(|c| InsertChar(*c).into())
-                    .collect::<Vec<BoxedCommand>>();
-                execute(revi.clone(), input.number_usize(), &input_chars, &lua);
-                input.clear();
-                tui.update(&mut *revi.borrow_mut());
+            let commands = keymapper.get_mapping(mode, input.keys());
+            match (mode, commands) {
+                (_, Some(cmd)) => {
+                    execute(revi.clone(), input.number_usize(), &cmd, &lua);
+                    tui.update(&mut *revi.borrow_mut());
+                    input.clear();
+                }
+                (Mode::Insert, None) => {
+                    insert_chars(&mut tui, &mut input, revi.clone(), &lua);
+                }
+                _ => {}
             }
         }
     }

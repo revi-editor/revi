@@ -45,28 +45,30 @@ pub struct ReVi {
 impl ReVi {
     #[must_use]
     pub fn new(settings: Settings, files: &[String]) -> Rc<RefCell<Self>> {
-        let mut buffers: Vec<Rc<RefCell<Buffer>>> = files
+        let mut windows = vec![];
+        let buffers: Vec<Rc<RefCell<Buffer>>> = files
             .iter()
             .map(|f| Rc::new(RefCell::new(Buffer::from_path(f.as_str()))))
             .collect();
-        if buffers.is_empty() {
-            buffers.push(Rc::new(RefCell::new(Buffer::new())));
-        }
 
         let (w, h) = screen_size();
 
         // We subtract 1 from the height here to count for the command bar.
         let h = h.saturating_sub(1);
 
-        let main_window = Window::new(w, h, Clone::clone(&buffers[0]))
-            .with_status_bar(true)
-            .with_line_numbers(settings.line_number_kind);
+        if !buffers.is_empty() {
+            eprintln!("LineNumberKind::{:?}", settings.line_number_kind);
+            windows.push(
+                Window::new(w, h, Clone::clone(&buffers[0]))
+                    .with_status_bar(true)
+                    .with_line_numbers(settings.line_number_kind),
+            )
+        }
 
         let cbuffer = Rc::new(RefCell::new(Buffer::new()));
         let command_window = Window::new(w, 1, cbuffer).with_position((0, h + 2).into());
         let command_bar = (true, command_window);
 
-        let windows = vec![main_window];
         let queue = windows
             .iter()
             .enumerate()
@@ -107,7 +109,7 @@ impl ReVi {
         let y = self.height().saturating_sub(height) as usize;
         let pos = Position::new(0, y);
         let buffer = Rc::new(RefCell::new(Buffer::new_str(msg.trim())));
-        let window = Window::new(width,height,buffer).with_position(pos);
+        let window = Window::new(width, height, buffer).with_position(pos);
         let id = self.windows.len();
         self.queue.push(id);
         self.windows.push(window);
@@ -116,16 +118,20 @@ impl ReVi {
 
     pub fn pop_up_window(&mut self, msg: impl Into<String>, pos: Option<Position>) {
         let msg = msg.into();
-        let width = msg.lines().map(|line| line.chars().count()).max().unwrap_or(0) as u16;
+        let width = msg
+            .lines()
+            .map(|line| line.chars().count())
+            .max()
+            .unwrap_or(0) as u16;
         let height = msg.lines().count() as u16;
         // NOTE: for some reason adding ╭ fancy char
         // cause the window to not render right.
-        const TLC: &str = "+";//"╭";
-        const BRC: &str = "+";//"╯";
-        const TRC: &str = "+";//"╮";
-        const BLC: &str = "+";//"╰";
-        const H: &str = "-";  //"⎼";
-        const V: &str = "|";  //"│";
+        const TLC: &str = "+"; //"╭";
+        const BRC: &str = "+"; //"╯";
+        const TRC: &str = "+"; //"╮";
+        const BLC: &str = "+"; //"╰";
+        const H: &str = "-"; //"⎼";
+        const V: &str = "|"; //"│";
         let mut top = TLC.to_string();
         top += &H.repeat(width as usize);
         top += TRC;
@@ -140,14 +146,16 @@ impl ReVi {
         msg += &bottom;
 
         let pos = pos.unwrap_or({
-            let y = self.focused_window().height()
+            let y = self
+                .focused_window()
+                .height()
                 .saturating_sub(height as usize)
                 .saturating_sub(1);
             Position::new(0, y)
         });
 
         let buffer = Rc::new(RefCell::new(Buffer::new_str(msg.trim())));
-        let window = Window::new(width+3,height+2,buffer).with_position(pos);
+        let window = Window::new(width + 3, height + 2, buffer).with_position(pos);
         let id = self.windows.len();
         self.queue.push(id);
         self.windows.push(window);
@@ -228,17 +236,19 @@ impl ReVi {
         );
     }
     pub fn list_buffers(&mut self) {
-        let list_of_buffers = self.buffers
+        let list_of_buffers = self
+            .buffers
             .iter()
             .enumerate()
             .fold(String::new(), |acc, (i, b)| {
-            let name = b.as_ref()
-                .borrow()
-                .name()
-                .clone()
-                .unwrap_or("no name(temp)".into());
-            format!("{acc}{i} {name}\n")
-        });
+                let name = b
+                    .as_ref()
+                    .borrow()
+                    .name()
+                    .clone()
+                    .unwrap_or("no name(temp)".into());
+                format!("{acc}{i} {name}\n")
+            });
         self.create_message_window(list_of_buffers);
         // self.pop_up_window(list_of_buffers, Some(self.focused_window().cursor_screen()));
     }
@@ -322,7 +332,6 @@ impl ReVi {
         }
         self.run_command_line(line.trim());
     }
-
 
     /// command arg needs to be not have the ':' prefex
     pub fn run_command_line(&mut self, command: &str) {
@@ -430,10 +439,9 @@ impl revi_ui::Display<String> for ReVi {
 
 fn format_line(line: &str, width: usize) -> String {
     // 9608 is the block char for debugging
-    let blank = ' ';// std::char::from_u32(9608).unwrap_or('&');
+    let blank = ' '; // std::char::from_u32(9608).unwrap_or('&');
     line.chars()
         .chain(std::iter::repeat(blank))
         .take(width)
         .collect::<String>()
 }
-

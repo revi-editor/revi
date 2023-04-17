@@ -117,8 +117,11 @@ impl Buffer {
     pub fn line_len(&self, y: usize) -> usize {
         // let line = self.inner.line(y).chars().collect::<String>();
         // UnicodeWidthStr::width(line.as_str())
-        self.inner.line(y).as_str().map(
-        UnicodeWidthStr::width).unwrap_or(0)
+        self.inner
+            .line(y)
+            .as_str()
+            .map(UnicodeWidthStr::width)
+            .unwrap_or(0)
     }
 
     #[must_use]

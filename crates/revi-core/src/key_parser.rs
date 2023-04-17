@@ -1,31 +1,39 @@
-// noun (adjective) verb
-// w    d
-// word delete
+use revi_ui::Key;
+use std::{iter::Peekable, str::Chars};
+// use revi_ui::Keys;
+// struct KeyParser {
+//     text: Vec<char>,
+//     keys: Vec<Keys>,
+//     numbers: Vec<u16>,
+//     ip: usize,
+// }
 //
-//    w
-//  -------
-// ↓       ↓
-// commands can be terminator type or extender
+// fn strip_it(key: &str) -> Option<&str> {
+//     key.strip_prefix('<')
+//         .and_then(|n| n.strip_suffix('>'))
+// }
 //
+// fn decode_mod_keys<'a>(key: &str) -> Keys {
+//     strip_it(key)
+//         .and_then(|n| n.split_once('-'))
+//         .and_then(|(m, k)| {
+//             let key = Key::from(k);
+//             let modk = Key::from(lookup_mod_key(m));
+//             Some(Keys::KeyAndMod { key, modk })
 //
-// verb (adjective) noun
-// d     i          w
-#![allow(unused)]
-// use revi_core::commands::{
-//     Backspace, BoxedCommand, ChangeMode, Command, CursorDown, CursorLeft, CursorRight, CursorUp,
-//     DeleteChar, DeleteLine, End, EnterCommandMode, ExcuteCommandLine, ExitCommandMode,
-//     FirstCharInLine, Home, JumpToFirstLineBuffer, JumpToLastLineBuffer, MoveBackwardByWord,
-//     MoveForwardByWord, NewLine, NextWindow, Paste, PasteBack, Quit, Save, ScrollDown, ScrollUp,
-//     YankLine,
-// };
-// use revi_core::{Mapper, Mode};
-use revi_ui::{Key, Keys};
-
-// pub fn keys_parser<'a>(map: &'a Mapper, mode: Mode, keys: &[Key]) -> Option<&'a Vec<BoxedCommand>> {
-//     map.get_mapping(mode, keys)
+//         })
+//         .or(strip_it(key).map(|k| Keys::Key(Key::from(k))))
+//         .unwrap_or( Keys::Key(Key::from(key)))
+// }
+//
+// fn lookup_mod_key(modk: &str) -> &str {
+//     match modk {
+//         "c" => "ctrl",
+//         "a" => "alt",
+//         _ => modk,
+//     }
 // }
 
-use std::{iter::Peekable, str::Chars};
 fn specal_keys<'a>(stream: &mut Peekable<Chars<'a>>) -> Vec<Key> {
     let mut string = String::new();
     while let Some(c) = stream.next_if(|c| c != &'>') {
@@ -63,23 +71,37 @@ pub fn string_to_key(keys_string: &str) -> Vec<Key> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use revi_ui::Keys;
+    // #[test]
+    // fn test_decode_mod_keys() {
+    //     let keys = decode_mod_keys("<c-a>");
+    //     assert_eq!(keys, Keys::KeyAndMod{key:Key::LA, modk:Key::Ctrl});
+    // }
+
     #[test]
     fn specal_keys_parser() {
         let string = "esc>";
-        eprintln!("{:?}", string);
         assert_eq!(vec![Key::Esc], specal_keys(&mut string.chars().peekable()));
+
+        // let string = "<esc>";
+        // assert_eq!(Keys::Key(Key::Esc), decode_mod_keys(string));
+
         let string = "space>";
-        eprintln!("{:?}", string);
         assert_eq!(
             vec![Key::Space],
             specal_keys(&mut string.chars().peekable())
         );
+
         let string = "C-c>";
-        eprintln!("{:?}", string);
         assert_eq!(
             vec![Key::Ctrl, Key::LC],
             specal_keys(&mut string.chars().peekable())
         );
+    }
+    #[test]
+    fn test_parse_string_space_a() {
+        let string = "<space>a";
+        assert_eq!(vec![Key::Space, Key::LA], string_to_key(string));
     }
 
     #[test]

@@ -2,8 +2,8 @@ use crate::commands;
 use crate::commands::{
     Backspace, BoxedCommand, ChangeMode, CursorDown, CursorLeft, CursorRight, CursorUp, DeleteChar,
     DeleteLine, End, EnterCommandMode, ExecuteCommandLine, ExitCommandMode, FirstCharInLine, Home,
-    JumpToFirstLineBuffer, JumpToLastLineBuffer, MoveBackwardByWord, MoveForwardByWord, NewLine,
-    NextWindow, Paste, PasteBack, Quit, Save, ScrollDown, ScrollUp, YankLine, InsertTab, Undo
+    InsertTab, JumpToFirstLineBuffer, JumpToLastLineBuffer, MoveBackwardByWord, MoveForwardByWord,
+    NewLine, NextWindow, Paste, PasteBack, Quit, Save, ScrollDown, ScrollUp, Undo, YankLine,
 };
 use crate::key_parser::string_to_key;
 use crate::mode::Mode;
@@ -48,6 +48,11 @@ impl Mapper {
             Mode::Insert => &mut self.imaps,
             Mode::Command => &mut self.cmaps,
         }
+    }
+
+    #[must_use]
+    pub fn is_mapping(&self, mode: Mode, event: &[Key]) -> bool {
+        self.get_map(mode).contains_key(event)
     }
 
     #[must_use]
@@ -121,6 +126,7 @@ impl Mapper {
             .with_mapping(Mode::Normal, "p", commands![Paste])
             .with_mapping(Mode::Normal, "P", commands![PasteBack])
             .with_mapping(Mode::Normal, "u", commands![Undo])
+            .with_mapping(Mode::Normal, "<space>a", commands![CursorRight])
     }
 
     fn build_insert(self) -> Self {
@@ -147,5 +153,12 @@ impl Mapper {
                 "enter",
                 commands![ExecuteCommandLine, ExitCommandMode],
             )
+    }
+}
+
+impl Mapper {
+    pub fn normal_insert(&mut self, keys: &str, commands: Vec<BoxedCommand>) {
+        self.get_map_mut(Mode::Normal)
+            .insert(string_to_key(keys), commands);
     }
 }

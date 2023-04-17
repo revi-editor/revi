@@ -11,7 +11,7 @@ use std::cmp::{max, min};
 use std::io::BufWriter;
 use std::rc::Rc;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Window {
     pub mode: Mode,
     /// Size Of Window
@@ -259,10 +259,11 @@ impl Window {
     }
 
     pub fn move_cursor_right(&mut self, cols: usize) {
-        let line_text_width = self.buffer
+        let line_text_width = self
+            .buffer
             .borrow()
             .line_len(self.cursor_file().as_usize_y());
-        if  self.cursor_file().as_usize_x() >= line_text_width {
+        if self.cursor_file().as_usize_x() >= line_text_width {
             return;
         }
         let x = self.cursor.as_usize_x();

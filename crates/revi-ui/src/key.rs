@@ -168,7 +168,12 @@ impl From<&str> for Key {
             "f10" => Self::from(10),
             "f11" => Self::from(11),
             "f12" => Self::from(12),
-            _ => Key::Null,
+            c => {
+                if c.len() == 1 {
+                    return Self::from(c.chars().collect::<Vec<_>>()[0]);
+                }
+                Key::Null
+            }
         }
     }
 }

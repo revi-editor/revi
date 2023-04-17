@@ -13,7 +13,8 @@ categories = ["text-editors", "text-processing", "command-line-utilities", "comm
 [dependencies]
 revi-ui = { path = "./crates/revi-ui", version="0.0.0-beta-2" }
 revi-core = { path = "./crates/revi-core", version="0.0.0-beta-2" }
-mlua = { version = "0.6.1", features = ["lua53", "vendored"] }
+mlua = { version = "0.8", features = ["macros", "lua54", "vendored"] }
+
 clap = "2.33.3"
 
 [workspace]

@@ -1,8 +1,19 @@
 # Changelog
 
 ## ------------- **Version 0.0.0-beta-3** -------------------------------------------
+    This update we cleaned up the code base a bit.  There is a lot more to clean up
+    but its a work in progress.  Take a look at all the cool new this that have been
+    added to revi, well basic things really.  The editor is getting closer and closer
+    to being really useable, baby steps.
 
 ### Added
+  - Undo command
+  - Redo command
+  - Tab key inserts a predefined 4 spaces
+  - `e <file path>` command to open new files in editor
+  - '!' command followed by a terminal command will display the results in a message window
+    to the user.
+  - Floating windows kinda.......
 
 ### Fixed
   - [Fixed rendering bug with line numbers]()
