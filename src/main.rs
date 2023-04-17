@@ -8,41 +8,36 @@ const AUTHOR: &str = "
 Email: cowboy8625@protonmail.com
 ";
 
-const LINUX_CONFIG_PATH: &str = "/.config/revi/init.lua";
+const LINUX_CONFIG_PATH: &str = "/.config/revi/init.rhai";
 
 mod commandline;
 use revi_core::{
-    api::create_api,
     commands::{BoxedCommand, InsertChar},
     Mapper, Mode, ReVi, Settings,
 };
 use revi_ui::{Key, Tui};
 
-use mlua::prelude::*;
 use std::cell::RefCell;
-use std::{
-    rc::Rc,
-    time::{Duration, Instant},
-};
-fn execute(revi: Rc<RefCell<ReVi>>, count: usize, commands: &[BoxedCommand], lua: &Lua) {
+use std::rc::Rc;
+fn execute(revi: Rc<RefCell<ReVi>>, count: usize, commands: &[BoxedCommand]) {
     for boxed in commands {
-        boxed.command.call(revi.clone(), count, lua);
+        boxed.command.call(revi.clone(), count);
     }
 }
 
-fn insert_chars(tui: &mut Tui, input: &mut Input, revi: Rc<RefCell<ReVi>>, lua: &Lua) {
+fn insert_chars(tui: &mut Tui, input: &mut Input, revi: Rc<RefCell<ReVi>>) {
     let input_chars = input
         .as_chars()
         .iter()
         .filter(|c| **c != '\0')
         .map(|c| InsertChar(*c).into())
         .collect::<Vec<BoxedCommand>>();
-    execute(revi.clone(), input.number_usize(), &input_chars, &lua);
+    execute(revi.clone(), input.number_usize(), &input_chars);
     input.clear();
     tui.update(&mut *revi.borrow_mut());
 }
 
-fn main() -> LuaResult<()> {
+fn main() {
     let config_file_path = env!("HOME").to_string();
     let config_file = std::fs::read_to_string(format!("{config_file_path}{LINUX_CONFIG_PATH}"))
         .expect(&format!(
@@ -50,20 +45,11 @@ fn main() -> LuaResult<()> {
         ));
     let files = commandline::args();
 
-    let lua = Lua::new();
-    create_api(&lua);
-    let globals = lua.globals();
-
-    let settings = Rc::new(RefCell::new(Settings::default()));
-    let mapper = Rc::new(RefCell::new(Mapper::default()));
-    let revi = ReVi::new(settings.take(), &files);
-    globals.set("settings", settings.clone())?;
-    globals.set("mapper", mapper.clone())?;
-    globals.set("revi", revi.clone())?;
-    lua.load(&config_file).eval()?;
+    let settings = Settings::default();
+    let keymapper = Mapper::default();
+    let revi = ReVi::new(settings, &files);
 
     let mut tui = Tui::default();
-    let keymapper = mapper.take();
     let mut input = Input::default();
 
     input.clear();
@@ -77,18 +63,15 @@ fn main() -> LuaResult<()> {
             let commands = keymapper.get_mapping(mode, input.keys());
             match (mode, commands) {
                 (_, Some(cmd)) => {
-                    execute(revi.clone(), input.number_usize(), &cmd, &lua);
+                    execute(revi.clone(), input.number_usize(), &cmd);
                     tui.update(&mut *revi.borrow_mut());
                     input.clear();
                 }
-                (Mode::Insert, None) => {
-                    insert_chars(&mut tui, &mut input, revi.clone(), &lua);
-                }
+                (Mode::Insert, None) => insert_chars(&mut tui, &mut input, revi.clone()),
                 _ => {}
             }
         }
     }
-    Ok(())
 }
 
 #[derive(Debug, Clone, Default)]

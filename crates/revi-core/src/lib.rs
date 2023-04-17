@@ -4,7 +4,7 @@
 // ▌ ▖▌ ▌▐▐▐ ▌ ▌▌ ▌▚▄▌▌ ▌▌ ▌▗▘ ▖ ▌
 // ▝▀ ▝▀  ▘▘ ▀▀ ▝▀ ▗▄▘▝▀ ▝▀ ▀▀▘▝▀
 
-pub mod api;
+// pub mod api;
 pub mod buffer;
 pub mod commands;
 mod key_parser;
