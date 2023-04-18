@@ -71,7 +71,7 @@ pub fn string_to_key(keys_string: &str) -> Vec<Key> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use revi_ui::Keys;
+    // use revi_ui::Keys;
     // #[test]
     // fn test_decode_mod_keys() {
     //     let keys = decode_mod_keys("<c-a>");

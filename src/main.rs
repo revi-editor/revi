@@ -38,16 +38,19 @@ fn insert_chars(tui: &mut Tui, input: &mut Input, revi: Rc<RefCell<ReVi>>) {
 }
 
 fn main() {
-    let config_file_path = env!("HOME").to_string();
-    let config_file = std::fs::read_to_string(format!("{config_file_path}{LINUX_CONFIG_PATH}"))
-        .expect(&format!(
-            "failed to read in config file at path '{config_file_path}{LINUX_CONFIG_PATH}'"
-        ));
+    let home_path = env!("HOME").to_string();
+    let config_file_path = format!("{home_path}{LINUX_CONFIG_PATH}");
+    // let _config_file = std::fs::read_to_string()
+    //     .expect(&format!(
+    //         "failed to read in config file at path '{config_file_path}{LINUX_CONFIG_PATH}'"
+    //     ));
     let files = commandline::args();
 
     let settings = Settings::default();
     let keymapper = Mapper::default();
     let revi = ReVi::new(settings, &files);
+    let (engine, mut scope) = revi_core::api::init_api(revi.clone()).expect("failed to init api");
+    engine.eval_file_with_scope::<()>(&mut scope, config_file_path.into()).expect("failed to eval init file");
 
     let mut tui = Tui::default();
     let mut input = Input::default();
