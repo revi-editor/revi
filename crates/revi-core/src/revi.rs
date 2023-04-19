@@ -27,7 +27,7 @@ impl Default for Settings {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ReVi {
     pub size: (u16, u16),
     pub is_running: bool,
