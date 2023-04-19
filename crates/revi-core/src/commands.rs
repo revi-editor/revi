@@ -17,8 +17,8 @@ macro_rules! build_command {
         #[derive(Debug, PartialEq)]
         pub struct $name $((pub $ty))?;
         impl Command for $name {
-            fn call(&self, revi_rc: Rc<RefCell<ReVi>>, count: usize, lua: &mlua::Lua) {
-                $caller(&self, revi_rc, count, lua);
+            fn call(&self, revi_rc: Rc<RefCell<ReVi>>, count: usize) {
+                $caller(&self, revi_rc, count);
             }
             fn id(&self) -> usize {
                 $counter
@@ -35,7 +35,7 @@ macro_rules! build_command {
 }
 
 pub trait Command: fmt::Debug {
-    fn call(&self, revi_rc: Rc<RefCell<ReVi>>, count: usize, lua: &mlua::Lua);
+    fn call(&self, revi_rc: Rc<RefCell<ReVi>>, count: usize);
     fn id(&self) -> usize;
 }
 
@@ -49,8 +49,6 @@ impl std::fmt::Debug for BoxedCommand {
         write!(f, "{:?}", self.command)
     }
 }
-
-impl mlua::UserData for BoxedCommand {}
 
 impl BoxedCommand {
     pub fn new(command: impl Command + 'static) -> Self {
@@ -69,7 +67,7 @@ impl PartialEq for BoxedCommand {
 build_command!(
     CursorUp,
     0;
-    |_: &CursorUp, revi_rc: Rc<RefCell<ReVi>>, count: usize, _: &mlua::Lua| {
+    |_: &CursorUp, revi_rc: Rc<RefCell<ReVi>>, count: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.focused_window_mut().move_cursor_up(count);
         let focused_window = revi.focused;
@@ -79,7 +77,7 @@ build_command!(
 build_command!(
     CursorDown,
     1;
-    |_: &CursorDown, revi_rc: Rc<RefCell<ReVi>>, count: usize, _: &mlua::Lua| {
+    |_: &CursorDown, revi_rc: Rc<RefCell<ReVi>>, count: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.focused_window_mut().move_cursor_down(count);
         let focused_window = revi.focused;
@@ -89,7 +87,7 @@ build_command!(
 build_command!(
     CursorLeft,
     2;
-    |_: &CursorLeft, revi_rc: Rc<RefCell<ReVi>>, count: usize, _: &mlua::Lua| {
+    |_: &CursorLeft, revi_rc: Rc<RefCell<ReVi>>, count: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.focused_window_mut().move_cursor_left(count);
         let focused_window = revi.focused;
@@ -99,7 +97,7 @@ build_command!(
 build_command!(
     CursorRight,
     3;
-    |_: &CursorRight, revi_rc: Rc<RefCell<ReVi>>, count: usize, _: &mlua::Lua| {
+    |_: &CursorRight, revi_rc: Rc<RefCell<ReVi>>, count: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.focused_window_mut().move_cursor_right(count);
         let focused_window = revi.focused;
@@ -109,7 +107,7 @@ build_command!(
 build_command!(
     ScrollUp,
     4;
-    |_: &ScrollUp, revi_rc: Rc<RefCell<ReVi>>, count: usize, _: &mlua::Lua| {
+    |_: &ScrollUp, revi_rc: Rc<RefCell<ReVi>>, count: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.focused_window_mut().scroll_up(count);
         let focused_window = revi.focused;
@@ -119,7 +117,7 @@ build_command!(
 build_command!(
     ScrollDown,
     5;
-    |_: &ScrollDown, revi_rc: Rc<RefCell<ReVi>>, count: usize, _: &mlua::Lua| {
+    |_: &ScrollDown, revi_rc: Rc<RefCell<ReVi>>, count: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.focused_window_mut().scroll_up(count);
         let focused_window = revi.focused;
@@ -129,7 +127,7 @@ build_command!(
 build_command!(
     Home,
     6;
-    |_: &Home, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &Home, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.focused_window_mut().home();
         let focused_window = revi.focused;
@@ -139,7 +137,7 @@ build_command!(
 build_command!(
     End,
     7;
-    |_: &End, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &End, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.focused_window_mut().end();
         let focused_window = revi.focused;
@@ -149,7 +147,7 @@ build_command!(
 build_command!(
     MoveForwardByWord,
     8;
-    |_: &MoveForwardByWord, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &MoveForwardByWord, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.focused_window_mut().move_forward_by_word();
         let focused_window = revi.focused;
@@ -160,7 +158,7 @@ build_command!(
 build_command!(
     MoveBackwardByWord,
     9;
-    |_: &MoveBackwardByWord, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &MoveBackwardByWord, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.focused_window_mut().move_backward_by_word();
         let focused_window = revi.focused;
@@ -171,7 +169,7 @@ build_command!(
 build_command!(
     JumpToFirstLineBuffer,
     10;
-    |_: &JumpToFirstLineBuffer, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &JumpToFirstLineBuffer, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.focused_window_mut().jump_to_first_line_buffer();
         let focused_window = revi.focused;
@@ -182,7 +180,7 @@ build_command!(
 build_command!(
     JumpToLastLineBuffer,
     11;
-    |_: &JumpToLastLineBuffer, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &JumpToLastLineBuffer, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.focused_window_mut().jump_to_last_line_buffer();
         let focused_window = revi.focused;
@@ -193,7 +191,7 @@ build_command!(
 build_command!(
     Backspace,
     12;
-    |_: &Backspace, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &Backspace, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.focused_window_mut().backspace();
         let focused_window = revi.focused;
@@ -204,7 +202,7 @@ build_command!(
 build_command!(
     NewLine,
     13;
-    |_: &NewLine, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &NewLine, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.focused_window_mut().insert_newline();
         let focused_window = revi.focused;
@@ -215,7 +213,7 @@ build_command!(
 build_command!(
     FirstCharInLine,
     14;
-    |_: &FirstCharInLine, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &FirstCharInLine, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.focused_window_mut().first_char_in_line();
         let focused_window = revi.focused;
@@ -226,7 +224,7 @@ build_command!(
 build_command!(
     DeleteChar,
     15;
-    |_: &DeleteChar, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &DeleteChar, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.focused_window_mut().delete();
         let focused_window = revi.focused;
@@ -237,7 +235,7 @@ build_command!(
 build_command!(
     DeleteLine,
     16;
-    |_: &DeleteLine, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &DeleteLine, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         let line = revi.focused_window_mut().delete_line();
         let focused_window = revi.focused;
@@ -250,7 +248,7 @@ build_command!(
 build_command!(
     YankLine,
     17;
-    |_: &YankLine, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &YankLine, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         let yanked_line;
         {
@@ -269,7 +267,7 @@ build_command!(
 build_command!(
     Paste,
     18;
-    |_: &Paste, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &Paste, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         let focused_window = revi.focused;
         revi.queue.push(focused_window);
@@ -288,7 +286,7 @@ build_command!(
 build_command!(
     PasteBack,
     19;
-    |_: &PasteBack, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &PasteBack, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         let focused_window = revi.focused;
         revi.queue.push(focused_window);
@@ -307,7 +305,7 @@ build_command!(
     InsertChar,
     20,
     char;
-    |insert_char: &InsertChar, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |insert_char: &InsertChar, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.focused_window_mut().insert_char(insert_char.0);
         let focused_window = revi.focused;
@@ -319,7 +317,7 @@ build_command!(
     ChangeMode,
     21,
     Mode;
-    |change_mode: &ChangeMode, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |change_mode: &ChangeMode, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.change_modes(change_mode.0);
         let focused_window = revi.focused;
@@ -330,7 +328,7 @@ build_command!(
 build_command!(
     EnterCommandMode,
     22;
-    |_: &EnterCommandMode, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &EnterCommandMode, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.enter_command_mode();
         let focused_window = revi.focused;
@@ -341,7 +339,7 @@ build_command!(
 build_command!(
     ExitCommandMode,
     23;
-    |_: &ExitCommandMode, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &ExitCommandMode, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.exit_command_mode();
     }
@@ -350,7 +348,7 @@ build_command!(
 build_command!(
     ExecuteCommandLine,
     24;
-    |_: &ExecuteCommandLine, revi_rc: Rc<RefCell<ReVi>>, _: usize, lua: &mlua::Lua| {
+    |_: &ExecuteCommandLine, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let line = {
             let mut revi = revi_rc.borrow_mut();
             let window = revi.get_command_window_mut();
@@ -361,19 +359,19 @@ build_command!(
             line
         };
         // run lua code
-        if line.starts_with("lua") {
-            let Some((_, line)) = line.split_once(' ') else {
-                revi_rc
-                    .borrow_mut()
-                    .error_message(&[line.as_str(), "lua command takes an argument expr"]);
-                return;
-            };
-            let result = lua.load(line.trim()).exec();
-            if let Err(e) = result {
-                revi_rc.borrow_mut().create_message_window(e.to_string());
-            }
-            return;
-        }
+        // if line.starts_with("lua") {
+        //     let Some((_, line)) = line.split_once(' ') else {
+        //         revi_rc
+        //             .borrow_mut()
+        //             .error_message(&[line.as_str(), "lua command takes an argument expr"]);
+        //         return;
+        //     };
+        //     let result = lua.load(line.trim()).exec();
+        //     if let Err(e) = result {
+        //         revi_rc.borrow_mut().create_message_window(e.to_string());
+        //     }
+        //     return;
+        // }
         // built in command
         revi_rc.borrow_mut().run_command_line(&line);
     }
@@ -382,7 +380,7 @@ build_command!(
 build_command!(
     NextWindow,
     25;
-    |_: &NextWindow, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &NextWindow, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.next_window();
         let focused_window = revi.focused;
@@ -394,7 +392,7 @@ build_command!(
     Print,
     26,
     String;
-    |p: &Print, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |p: &Print, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.print(&p.0);
         let focused_window = revi.focused;
@@ -405,7 +403,7 @@ build_command!(
 build_command!(
     Save,
     27;
-    |_: &Save, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &Save, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.focused_window().save();
         let focused_window = revi.focused;
@@ -416,7 +414,7 @@ build_command!(
 build_command!(
     Quit,
     28;
-    |_: &Quit, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &Quit, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.exit();
     }
@@ -425,7 +423,7 @@ build_command!(
 build_command!(
     CloseWindow,
     29;
-    |_: &CloseWindow, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &CloseWindow, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.close_current_window();
     }
@@ -434,7 +432,7 @@ build_command!(
 build_command!(
     ListBuffers,
     30;
-    |_: &ListBuffers, revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &ListBuffers, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         let mut revi = revi_rc.borrow_mut();
         revi.list_buffers();
     }
@@ -443,7 +441,7 @@ build_command!(
 build_command!(
     InsertTab,
     31;
-    |_: &InsertTab, revi_rc: Rc<RefCell<ReVi>>, count: usize, _: &mlua::Lua| {
+    |_: &InsertTab, revi_rc: Rc<RefCell<ReVi>>, count: usize| {
         let mut revi = revi_rc.borrow_mut();
         for _ in 0..revi.settings.tab_width+count {
             revi.focused_window_mut().insert_char(' ');
@@ -454,7 +452,7 @@ build_command!(
 build_command!(
     JumpListBack,
     32;
-    |_: &JumpListBack, _revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &JumpListBack, _revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         unimplemented!("JumpListBack");
     }
 );
@@ -462,7 +460,7 @@ build_command!(
 build_command!(
     JumpListForward,
     33;
-    |_: &JumpListForward, _revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &JumpListForward, _revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         unimplemented!("JumpListForward");
     }
 );
@@ -470,30 +468,7 @@ build_command!(
 build_command!(
     Undo,
     34;
-    |_: &Undo, _revi_rc: Rc<RefCell<ReVi>>, _: usize, _: &mlua::Lua| {
+    |_: &Undo, _revi_rc: Rc<RefCell<ReVi>>, _: usize| {
         unimplemented!("Undo");
     }
 );
-
-#[derive(Debug, PartialEq)]
-pub struct LuaCommand(pub String);
-impl Command for LuaCommand {
-    fn call(&self, _revi_rc: Rc<RefCell<ReVi>>, _count: usize, lua: &mlua::Lua) {
-        let func: mlua::Function = lua
-            .globals()
-            .get(self.0.as_str())
-            .expect(&format!("failed to get custom LuaCommand '{}'", self.0));
-        func.call::<_, ()>(())
-            .expect(&format!("failed to run custom LuaCommand '{}'", self.0));
-    }
-    fn id(&self) -> usize {
-        35
-    }
-}
-impl From<LuaCommand> for BoxedCommand {
-    fn from(value: LuaCommand) -> Self {
-        Self {
-            command: std::rc::Rc::new(value),
-        }
-    }
-}

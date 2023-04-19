@@ -18,8 +18,6 @@
 <a><img alt="lines" src="https://img.shields.io/tokei/lines/github/revi-editor/revi"></a>
 </p>
 <p align="center">
-<a><img alt="RUST" src="https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white"></a>
-<a><img alt="LUA" src="https://img.shields.io/badge/Lua-2C2D72?style=for-the-badge&logo=lua&logoColor=white"></a>
 </p>
 
 # Table Of Contents:

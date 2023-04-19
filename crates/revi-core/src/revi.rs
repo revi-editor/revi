@@ -12,7 +12,7 @@ use revi_ui::screen_size;
 use revi_ui::Stylize;
 use std::{cell::RefCell, rc::Rc};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Settings {
     pub tab_width: usize,
     pub line_number_kind: LineNumberKind,

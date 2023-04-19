@@ -25,7 +25,7 @@ pub struct Window {
     /// Furthest from 0 the cursor has been.
     max_cursor: Position,
     /// Text File Data
-    buffer: Rc<RefCell<Buffer>>,
+    pub buffer: Rc<RefCell<Buffer>>,
     /// Line Number Type.
     line_number_type: LineNumberKind,
     /// This needs to be removed
