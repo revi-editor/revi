@@ -1,7 +1,7 @@
 if revi.buffer_count() == 0 {
   let width = revi.width;
   let height = revi.height;
-  let msg = "welcome to revi text editor\nnewline";
+  let msg = "welcome to revi text editor";
   let buffer = new_buffer();
   for i in 0..height/2 {
     buffer.insert(i, "\n");
