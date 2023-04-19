@@ -34,14 +34,14 @@ use std::{iter::Peekable, str::Chars};
 //     }
 // }
 
-fn specal_keys<'a>(stream: &mut Peekable<Chars<'a>>) -> Vec<Key> {
+fn specal_keys(stream: &mut Peekable<Chars<'_>>) -> Vec<Key> {
     let mut string = String::new();
     while let Some(c) = stream.next_if(|c| c != &'>') {
         string.push(c);
     }
     let _ = stream.next();
-    if string.contains("-") {
-        let lr = string.split("-").collect::<Vec<&str>>();
+    if string.contains('-') {
+        let lr = string.split('-').collect::<Vec<&str>>();
         let modifier = lr[0].to_lowercase();
         let modifier = match modifier.as_str() {
             "c" => "ctrl",

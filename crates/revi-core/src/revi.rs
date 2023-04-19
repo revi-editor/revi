@@ -62,7 +62,7 @@ impl ReVi {
                 Window::new(w, h, Clone::clone(&buffers[0]))
                     .with_status_bar(true)
                     .with_line_numbers(settings.line_number_kind),
-            )
+            );
         }
 
         let cbuffer = Rc::new(RefCell::new(Buffer::new()));
@@ -91,10 +91,12 @@ impl ReVi {
         Rc::new(RefCell::new(revi))
     }
 
+    #[must_use]
     pub fn width(&self) -> u16 {
         self.size.0
     }
 
+    #[must_use]
     pub fn height(&self) -> u16 {
         self.size.1
     }
@@ -336,7 +338,6 @@ impl ReVi {
     /// command arg needs to be not have the ':' prefex
     pub fn run_command_line(&mut self, command: &str) {
         // TODO: Make a lexer and parser for this.
-        assert!(!command.starts_with(':'));
 
         let mut items: Vec<&str> = command.trim().split(' ').collect();
         match items.remove(0) {

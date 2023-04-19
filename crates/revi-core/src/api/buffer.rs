@@ -10,8 +10,8 @@ impl BufferRhaiApi {
     fn new() -> Self {
         Self(Rc::new(RefCell::new(Buffer::new())))
     }
-    fn insert(&mut self, idx: rhai::INT, txt: rhai::ImmutableString) {
-        self.0.borrow_mut().insert(idx as usize, &txt);
+    fn insert(&mut self, idx: rhai::INT, txt: &rhai::ImmutableString) {
+        self.0.borrow_mut().insert(idx as usize, txt);
     }
 }
 impl CustomType for BufferRhaiApi {

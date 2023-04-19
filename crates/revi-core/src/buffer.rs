@@ -120,8 +120,7 @@ impl Buffer {
         self.inner
             .line(y)
             .as_str()
-            .map(UnicodeWidthStr::width)
-            .unwrap_or(0)
+            .map_or(0, UnicodeWidthStr::width)
     }
 
     #[must_use]
@@ -160,6 +159,7 @@ impl Buffer {
         self.dirty = true;
     }
 
+    #[must_use]
     pub fn get_char(&self, idx: usize) -> Option<char> {
         self.inner.get_char(idx)
     }
@@ -224,10 +224,10 @@ impl Buffer {
             .map(|(i, c)| (i, c.into()))
             .collect();
         let possible_jumps = word_indices(&result);
-        let idx = possible_jumps
+        let idx = usize::from(possible_jumps
             .get(0)
             .and_then(|w| w.last())
-            .map_or(false, |(_, i)| i == &CharType::WhiteSpace) as usize;
+            .map_or(false, |(_, i)| i == &CharType::WhiteSpace));
         possible_jumps
             .get(idx)
             .and_then(|w| w.last())

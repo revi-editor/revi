@@ -9,7 +9,7 @@ use std::cell::RefCell;
 
 use self::{revi::ReViRhaiApi, window::WindowRhaiApi, buffer::BufferRhaiApi};
 
-pub fn init_api<'a>(revi: Rc<RefCell<ReVi>>) -> Result<(Engine, Scope<'a>), Box<EvalAltResult>> {
+pub fn init<'a>(revi: Rc<RefCell<ReVi>>) -> Result<(Engine, Scope<'a>), Box<EvalAltResult>> {
     let mut engine = Engine::new();
     engine.build_type::<ReViRhaiApi>();
     engine.build_type::<WindowRhaiApi>();

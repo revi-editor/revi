@@ -320,6 +320,7 @@ impl Window {
         self.adjust_cursor_x();
     }
 
+    #[must_use]
     pub fn is_on_last_line(&self) -> bool {
         let y = self.cursor_file().as_usize_y();
         let line_count = self.buffer().len_lines().saturating_sub(1);
@@ -418,6 +419,7 @@ impl Window {
         }
     }
 
+    #[must_use]
     pub fn get_current_line(&self) -> String {
         let y = self.cursor_file().as_usize_y();
         self.buffer().line(y.saturating_sub(1))
@@ -470,7 +472,7 @@ impl Window {
             };
             return Some((
                 self.position().as_u16(),
-                self.line_number_type.lines(builder),
+                self.line_number_type.lines(&builder),
             ));
         }
         None

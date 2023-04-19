@@ -49,7 +49,7 @@ fn main() {
     let settings = Settings::default();
     let keymapper = Mapper::default();
     let revi = ReVi::new(settings, &files);
-    let (engine, mut scope) = revi_core::api::init_api(revi.clone()).expect("failed to init api");
+    let (engine, mut scope) = revi_core::api::init(revi.clone()).expect("failed to init api");
     engine.eval_file_with_scope::<()>(&mut scope, config_file_path.into()).expect("failed to eval init file");
 
     let mut tui = Tui::default();
@@ -66,7 +66,7 @@ fn main() {
             let commands = keymapper.get_mapping(mode, input.keys());
             match (mode, commands) {
                 (_, Some(cmd)) => {
-                    execute(revi.clone(), input.number_usize(), &cmd);
+                    execute(revi.clone(), input.number_usize(), cmd);
                     tui.update(&mut *revi.borrow_mut());
                     input.clear();
                 }
