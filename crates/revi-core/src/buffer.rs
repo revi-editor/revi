@@ -55,6 +55,7 @@ pub struct Buffer {
     inner: Rope,
     name: Option<String>,
     dirty: bool,
+    pub read_only: bool,
 }
 
 impl Buffer {
@@ -65,6 +66,7 @@ impl Buffer {
             inner: Rope::new(),
             name: None,
             dirty: false,
+            read_only: false,
         }
     }
 
@@ -76,6 +78,7 @@ impl Buffer {
             inner: rope,
             name: Some(filename.to_string()),
             dirty: false,
+            read_only: false,
         }
     }
 
@@ -86,6 +89,7 @@ impl Buffer {
             inner: Rope::from(text),
             name: None,
             dirty: false,
+            read_only: false,
         }
     }
     #[must_use]
@@ -94,8 +98,8 @@ impl Buffer {
     }
 
     #[must_use]
-    pub fn name(&self) -> &Option<String> {
-        &self.name
+    pub fn name(&self) -> Option<&str> {
+        self.name.as_ref().map(|i| i.as_str())
     }
 
     #[must_use]
@@ -283,11 +287,4 @@ fn word_indices(items: &[(usize, CharType)]) -> Vec<Vec<(usize, CharType)>> {
         }
     }
     word_loc
-}
-
-#[test]
-fn test_buffer_len() {
-    use ropey::Rope;
-    let rope = Rope::from("0\n1\n2\n3\n4\n5\n"); // 7 lines
-    assert_eq!(rope.len_lines(), 7);
 }

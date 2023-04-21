@@ -2,7 +2,7 @@
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Keys {
     Key(Key),
-    KeyAndMod { key: Key, modk: Key },
+    KeyAndMod(Key, Key),
 }
 
 impl From<crossterm::event::KeyEvent> for Keys {
@@ -12,7 +12,7 @@ impl From<crossterm::event::KeyEvent> for Keys {
         if let (_, Key::Null) = (key, modk) {
             return Self::Key(key);
         }
-        Self::KeyAndMod { key, modk }
+        Self::KeyAndMod(key, modk)
     }
 }
 

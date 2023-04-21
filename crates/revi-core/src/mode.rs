@@ -28,6 +28,12 @@ impl fmt::Display for Mode {
     }
 }
 
+impl Default for Mode {
+    fn default() -> Self {
+        Self::Normal
+    }
+}
+
 // trait Scroll {
 //     fn scroll_up(&mut self);
 //     fn scroll_down(&mut self);
