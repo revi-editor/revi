@@ -3,7 +3,7 @@ use revi_ui::{
     Keys,
 };
 
-pub trait Pane: std::fmt::Debug + CursorMovement {
+pub trait Pane: std::fmt::Debug + CursorMovement + Scrollable {
     fn view(&self) -> BoxWidget;
     fn update(&mut self, keys: Keys);
 }
@@ -75,7 +75,7 @@ pub trait CursorMovement {
     }
 }
 
-pub trait Scrollable {
+pub trait Scrollable: CursorMovement {
     fn scroll_up(&mut self) {}
     fn scroll_down(&mut self) {}
     fn scroll_left(&mut self) {}

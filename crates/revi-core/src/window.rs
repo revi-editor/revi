@@ -7,7 +7,7 @@ use revi_ui::tui::{
     widget::Widget,
 };
 
-use crate::{pane::{Cursor, CursorMovement}, Buffer, Pane};
+use crate::{pane::{Cursor, CursorMovement, Scrollable}, Buffer, Pane};
 
 #[derive(Debug)]
 pub struct Window {
@@ -138,3 +138,5 @@ impl CursorMovement for Window {
         Some(self.create_cursor_bounds(self.cursor.pos.y + 1))
     }
 }
+
+impl Scrollable for Window {}

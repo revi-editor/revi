@@ -1,7 +1,5 @@
-use crate::mode::Mode;
-// use crate::revi::ReVi;
+// use crate::mode::Mode;
 use crate::context::Context;
-use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 

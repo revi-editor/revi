@@ -105,7 +105,7 @@ impl App for Revi {
 
     fn cursor(&self) -> Option<Pos> {
         let id = self.context.focused_pane;
-        self.context.panes[id].borrow().get_cursor_pos().map(|c| c.pos).clone()
+        self.context.panes[id].borrow().get_cursor_pos().map(|c| c.pos)
     }
 }
 

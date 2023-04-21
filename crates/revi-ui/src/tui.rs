@@ -6,6 +6,7 @@ pub fn clear(stdout: &mut std::io::Stdout) {
     .unwrap();
 }
 
+#[must_use]
 pub fn size() -> (u16, u16) {
     crossterm::terminal::size().unwrap_or((0, 0))
 }
@@ -44,21 +45,31 @@ pub mod widget {
             }
         }
 
+        #[must_use]
         pub fn x(&self) -> u16 {
             self.widget.x()
         }
+
+        #[must_use]
         pub fn y(&self) -> u16 {
             self.widget.y()
         }
+
+        #[must_use]
         pub fn width(&self) -> u16 {
             self.widget.width()
         }
+
+        #[must_use]
         pub fn height(&self) -> u16 {
             self.widget.height()
         }
+
         pub fn draw(&self, stdout: &mut Stdout, bounds: Rect) {
             self.widget.draw(stdout, bounds);
         }
+
+        #[must_use]
         pub fn _debug_name(&self) -> String {
             self.widget.debug_name()
         }
