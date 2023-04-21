@@ -1,4 +1,3 @@
-
 pub fn clear(stdout: &mut std::io::Stdout) {
     crossterm::execute!(
         stdout,
@@ -11,10 +10,10 @@ pub fn size() -> (u16, u16) {
     crossterm::terminal::size().unwrap_or((0, 0))
 }
 
-pub trait Display<D: std::fmt::Display> {
-    fn render(&mut self, func: impl FnMut(u16, u16, Vec<D>));
-    fn cursor(&self, func: impl FnMut(u16, u16, Option<CursorShape>));
-}
+// pub trait Display<D: std::fmt::Display> {
+//     fn render(&mut self, func: impl FnMut(u16, u16, Vec<D>));
+//     fn cursor(&self, func: impl FnMut(u16, u16, Option<CursorShape>));
+// }
 
 pub mod widget {
     use super::layout::Rect;
@@ -64,7 +63,6 @@ pub mod widget {
             self.widget.debug_name()
         }
     }
-
 }
 pub mod container {
     use super::layout::{Pos, Rect, Size, Stack};
@@ -104,6 +102,11 @@ pub mod container {
 
         pub fn stack(mut self, stack: Stack) -> Self {
             self.stack = stack;
+            self
+        }
+
+        pub fn push_box(mut self, boxed_widget: BoxWidget) -> Self {
+            self.children.push(boxed_widget);
             self
         }
 
@@ -165,12 +168,12 @@ pub mod container {
                 Stack::Horizontally => current.y() + child.y() + root.y(),
             };
             let width = match stack {
-                Stack::Vertically => child.width().min(current.width()),
-                Stack::Horizontally => child.width().min(current.width() - last.width()),
+                Stack::Vertically => child.width().min(current.width()).min(root.width()),
+                Stack::Horizontally => child.width().min(current.width() - last.width()).min(root.width()),
             };
             let height = match stack {
-                Stack::Vertically => child.height().min(current.height() - last.height()),
-                Stack::Horizontally => child.height().min(current.height()),
+                Stack::Vertically => child.height().min(current.height() - last.height()).min(root.height()),
+                Stack::Horizontally => child.height().min(current.height()).min(root.height()),
             };
             let size = Size::new(width, height);
             let pos = Pos::new(x, y);
@@ -251,8 +254,6 @@ pub mod text {
                     style::Print(format_line(line, bounds.width() as usize)),
                 )
                 .expect("Failed to queue Text");
-                // TODO: move this out of for loop after debugging
-                // std::thread::sleep(std::time::Duration::from_millis(300));
             }
         }
         fn debug_name(&self) -> String {
@@ -264,7 +265,7 @@ pub mod text {
     /// Use this to keep text in side of bounds.
     fn format_line(line: &str, width: usize) -> String {
         // 9608 is the block char for debugging
-        let blank = ' ';// std::char::from_u32(9608).unwrap_or('&');
+        let blank = ' '; // std::char::from_u32(9608).unwrap_or('&');
         line.chars()
             .chain(std::iter::repeat(blank))
             .take(width)
@@ -307,12 +308,12 @@ pub mod layout {
         }
     }
 
-    #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+    #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
     pub struct Rect {
-        x: u16,
-        y: u16,
-        width: u16,
-        height: u16,
+        pub x: u16,
+        pub y: u16,
+        pub width: u16,
+        pub height: u16,
     }
 
     impl Rect {
@@ -341,7 +342,7 @@ pub mod layout {
         }
     }
 
-    #[derive(Debug, Default, Clone, Copy)]
+    #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     pub struct Pos {
         pub x: u16,
         pub y: u16,
@@ -353,7 +354,7 @@ pub mod layout {
         }
     }
 
-    #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+    #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
     pub struct Size {
         pub width: u16,
         pub height: u16,
@@ -367,7 +368,7 @@ pub mod layout {
 }
 
 pub mod application {
-    use super::{widget::BoxWidget, layout::Pos};
+    use super::{layout::Pos, widget::BoxWidget};
     use crate::key::Keys;
     pub trait App: Sized {
         type Settings;
@@ -387,78 +388,98 @@ pub mod application {
 }
 
 mod runtime {
-    use super::application::App;
-    use super::{clear, size};
-    use super::layout::{Pos, Size, Rect};
-    use std::{io::Write, time::Duration};
-    use crate::key::{Keys, Key};
-    use crossterm::
-    {
-        event::{
-            poll,
-            read,
-            Event,
-        },
-        terminal::enable_raw_mode,
-        terminal::disable_raw_mode,
-        execute,
+    use super::{
+        application::App,
+        layout::{Pos, Rect, Size},
     };
+    use super::clear;
+    use crate::key;
+    use crossterm::{
+        cursor,
+        event,
+        execute, queue, terminal,
+    };
+    use std::io::Stdout;
+    use std::{io::Write, time::Duration};
 
-    pub fn run<A>(app: &mut A) where A: App{
+    fn enable_raw_mode() {
+        terminal::enable_raw_mode().expect("failed to enter in raw mode");
+    }
+    fn disable_raw_mode() {
+        terminal::disable_raw_mode().expect("failed to disable raw mode");
+    }
+    fn enter_alternate_screen(w: &mut Stdout) {
+        execute!(w, terminal::EnterAlternateScreen).expect("failure to enter alternate screen.");
+    }
+
+    fn leave_alternate_screen(w: &mut Stdout) {
+        execute!(w, cursor::Show, terminal::LeaveAlternateScreen).expect("failure to leave alternate screen.");
+    }
+
+    fn queue_cursor(w: &mut Stdout, Pos { x, y }: Pos) {
+        queue!(
+            w,
+            // RestorePosition,
+            cursor::MoveTo(x, y),
+            cursor::SetCursorShape(cursor::CursorShape::Block) // SavePosition,
+        )
+        .expect("failed to hide cursor");
+    }
+    fn queue_save_hide_cursor(w: &mut Stdout) {
+        queue!(w, cursor::SavePosition, cursor::Hide,).expect("failed to hide cursor");
+    }
+    fn queue_restore_show_cursor(w: &mut Stdout) {
+        queue!(w, cursor::RestorePosition, cursor::Show,).expect("failed to show cursor");
+    }
+
+    fn render_app<A>(w: &mut Stdout, app: &mut A)
+    where
+        A: App,
+    {
+        if let Some(pos) = app.cursor() {
+            queue_cursor(w, pos);
+        }
+        let widgets = app.view();
+        let width = widgets.width();
+        let height = widgets.height();
+        let app_size = Size { width, height };
+        let app_pos = Pos { x: 0, y: 0 };
+        queue_save_hide_cursor(w);
+        widgets.draw(w, Rect::with_position(app_pos, app_size));
+        queue_restore_show_cursor(w);
+        w.flush().expect("failed to flush");
+    }
+
+    pub fn run<A>(app: &mut A)
+    where
+        A: App,
+    {
         let mut writer = std::io::stdout();
         clear(&mut writer);
-        let (width, height) = size();
-        enable_raw_mode().expect("failed to enter in raw mode");
+        enable_raw_mode();
+        enter_alternate_screen(&mut writer);
+
+        render_app(&mut writer, app);
         while app.quit() {
             // HACK: this is temporary untill other events need to be handled.
-            let keys = if poll(Duration::from_millis(0)).unwrap_or(false) {
-                let event = read().expect("failed to read from stdin");
+            let keys = if event::poll(Duration::from_millis(50)).unwrap_or(false) {
+                let event = event::read().expect("failed to read from stdin");
                 match event {
-                    Event::Key(key_event) => Keys::from(key_event),
-                    _ => {
-                        Keys::Key(Key::Null)
-                    }
+                    event::Event::Key(key_event) => key::Keys::from(key_event),
+                    _ => key::Keys::Key(key::Key::Null),
                 }
-
             } else {
-                Keys::Key(Key::Null)
+                key::Keys::Key(key::Key::Null)
             };
 
-
             app.update(keys);
-            let widgets = app.view();
-            crossterm::queue!(
-                &mut writer,
-                crossterm::cursor::Hide,
-            ).expect("failed to hide cursor");
-            widgets.draw(
-                &mut writer,
-                Rect::with_position(Pos::new(0, 0), Size::new(width, height)),
-            );
-            writer.flush().unwrap();
+            // Update cursor pos on screen after update
+            if !matches!(keys, key::Keys::Key(key::Key::Null)) {
+                render_app(&mut writer, app);
+            }
         }
-        disable_raw_mode().expect("failed to exit raw mode");
-        execute!(
-            &mut writer,
-            crossterm::cursor::Show,
-        ).expect("failed to hide cursor");
-    }
-}
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CursorShape {
-    UnderScore,
-    Line,
-    Block,
-}
-
-impl From<CursorShape> for crossterm::cursor::CursorShape {
-    fn from(cs: CursorShape) -> Self {
-        use crossterm::cursor::CursorShape::{Block, Line, UnderScore};
-        match cs {
-            CursorShape::UnderScore => UnderScore,
-            CursorShape::Line => Line,
-            CursorShape::Block => Block,
-        }
+        leave_alternate_screen(&mut writer);
+        disable_raw_mode();
     }
 }

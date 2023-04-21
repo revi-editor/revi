@@ -69,42 +69,30 @@ build_command!(
     CursorUp,
     0;
     |_: &CursorUp, ctx: Context| {
-        // let mut state = ctx.state.borrow_mut();
-        // revi.focused_window_mut().move_cursor_up(count);
-        // let focused_window = revi.focused;
-        // revi.queue.push(focused_window);
+        ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_up();
     }
 );
-// build_command!(
-//     CursorDown,
-//     1;
-//     |_: &CursorDown, revi_rc: Rc<RefCell<ReVi>>, count: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.focused_window_mut().move_cursor_down(count);
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
-//     }
-// );
-// build_command!(
-//     CursorLeft,
-//     2;
-//     |_: &CursorLeft, revi_rc: Rc<RefCell<ReVi>>, count: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.focused_window_mut().move_cursor_left(count);
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
-//     }
-// );
-// build_command!(
-//     CursorRight,
-//     3;
-//     |_: &CursorRight, revi_rc: Rc<RefCell<ReVi>>, count: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.focused_window_mut().move_cursor_right(count);
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
-//     }
-// );
+build_command!(
+    CursorDown,
+    1;
+    |_: &CursorDown, ctx: Context| {
+        ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_down();
+    }
+);
+build_command!(
+    CursorLeft,
+    2;
+    |_: &CursorLeft, ctx: Context| {
+        ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_left();
+    }
+);
+build_command!(
+    CursorRight,
+    3;
+    |_: &CursorRight, ctx: Context| {
+        ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_right();
+    }
+);
 // build_command!(
 //     ScrollUp,
 //     4;

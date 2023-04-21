@@ -9,32 +9,19 @@ Email: cowboy8625@protonmail.com
 
 mod commandline;
 
-
+use revi_core::{commands::BoxedCommand, Buffer, Context, Input, Mapper, Mode, Settings, Window, ContextBuilder};
 use revi_ui::{
-    Keys,
-    Key,
     tui::{
-        layout::{Size, Pos},
-        widget::BoxWidget,
         application::App,
+        layout::{Rect, Pos, Size, Stack},
         size,
-    }
-};
-use revi_core::{
-    Mode,
-    Mapper,
-    commands::BoxedCommand,
-    Buffer,
-    Settings,
-    Input,
-    Context,
-    Window,
+        widget::BoxWidget, container::Container,
+        text::Text,
+    },
+    Key, Keys,
 };
 
-use std::{
-    cell::RefCell,
-    rc::Rc,
-};
+use std::{cell::RefCell, rc::Rc};
 fn execute(context: Context, commands: &[BoxedCommand]) {
     for boxed in commands {
         boxed.command.call(context.clone());
@@ -50,25 +37,29 @@ struct Revi {
     keymapper: Mapper,
 }
 
-impl Revi {
-}
-
 impl App for Revi {
     type Settings = Settings;
     fn new(settings: Self::Settings) -> Self {
         let (width, height) = size();
-        let buffers = settings.files.into_iter().map(|filename| {
-                Rc::new(RefCell::new(Buffer::from_path(filename.as_str())))
-            }).collect::<Vec<Rc<RefCell<Buffer>>>>();
-        let pane = Rc::new(Window::new(Pos::default(), Size {width, height}, buffers[0].clone()));
-        let context = Context {
-            buffers,
-            panes: vec![pane],
-            focused_pane: 0,
-            on_screan: vec![0],
-            count: 0,
-            window_size: Size::new(width, height),
-        };
+        let buffers = settings
+            .files
+            .into_iter()
+            .map(|filename| Rc::new(RefCell::new(Buffer::from_path(filename.as_str()))))
+            .collect::<Vec<Rc<RefCell<Buffer>>>>();
+        let pane = Rc::new(RefCell::new(Window::new(
+            Pos::default(),
+            Size { width, height: height - 1 },
+            buffers[0].clone(),
+        ).with_status_bar(true)));
+// .with_status_bar(true).with_line_numbers(true)
+        let context = ContextBuilder::default()
+            .with_buffers(buffers)
+            .with_panes(vec![pane])
+            .with_focused_pane(0)
+            .with_on_screen(vec![0])
+            .with_window_size(Size::new(width, height))
+            .with_show_command_bar(true)
+            .build();
         Self {
             context,
             is_running: true,
@@ -79,7 +70,8 @@ impl App for Revi {
     fn update(&mut self, keys: Keys) {
         match &keys {
             Keys::KeyAndMod(Key::LC, Key::Ctrl) => self.is_running = false,
-            _ => {},
+            Keys::Key(Key::Esc) => self.is_running = false,
+            _ => {}
         }
         let event = match keys {
             Keys::Key(key) => (key, Key::Null),
@@ -92,7 +84,7 @@ impl App for Revi {
                 execute(self.context.clone(), cmd);
                 self.input.clear();
             }
-            (Mode::Insert, None) => {},//insert_chars(&mut tui, &mut input, revi.clone()),
+            (Mode::Insert, None) => {} //insert_chars(&mut tui, &mut input, revi.clone()),
             _ => {}
         }
     }
@@ -103,19 +95,25 @@ impl App for Revi {
 
     fn view(&self) -> BoxWidget {
         let id = self.context.focused_pane;
-        self.context.panes[id].view()
+        let main_window = self.context.panes[id].borrow().view();
+        let wsize = self.context.main_window_size();
+        Container::new(Rect::new(wsize), Stack::Vertically)
+            .push_box(main_window)
+            .push(Text::new("Command Bar").max_height(1))
+            .into()
+    }
+
+    fn cursor(&self) -> Option<Pos> {
+        let id = self.context.focused_pane;
+        self.context.panes[id].borrow().get_cursor_pos().map(|c| c.pos).clone()
     }
 }
 
 fn main() {
     let files = commandline::args();
-    let settings = Settings {
-        files,
-    };
+    let settings = Settings { files };
     Revi::new(settings).run();
 }
-
-
 
 // const LINUX_CONFIG_PATH: &str = "/.config/revi/init.rhai";
 //

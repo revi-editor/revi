@@ -1,7 +1,7 @@
 #![warn(clippy::all, clippy::pedantic)]
 mod key;
-mod ui;
 pub mod tui;
+mod ui;
 pub use crossterm::style::Stylize;
 pub use key::Key;
 pub use key::Keys;

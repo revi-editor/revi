@@ -150,7 +150,7 @@ mod test {
     #[test]
     fn test_absolute_line_numbers() {
         let builder = _builder_for_curor_line_0();
-        let left = absolute_line_numbers(builder.clone());
+        let left = absolute_line_numbers(&builder);
         let right = vec![
             "   0 ", "   1 ", "   ~ ", "   ~ ", "   ~ ", "   ~ ", "   ~ ", "   ~ ", "   ~ ",
             "   ~ ",
@@ -163,7 +163,7 @@ mod test {
     #[test]
     fn test_relative_line_numbers_0() {
         let builder = _builder_for_curor_line_0();
-        let left = absolute_line_numbers(builder.clone());
+        let left = absolute_line_numbers(&builder);
         let right = vec![
             "   0 ", "   1 ", "   ~ ", "   ~ ", "   ~ ", "   ~ ", "   ~ ", "   ~ ", "   ~ ",
             "   ~ ",
@@ -183,7 +183,7 @@ mod test {
             window_offset: 0,
             blank_line: "~".into(),
         };
-        let left = relative_line_numbers(builder.clone(), false);
+        let left = relative_line_numbers(&builder, false);
         let right = vec![
             "   5 ", "   4 ", "   3 ", "   2 ", "   1 ", "0    ", "   1 ", "   2 ", "   3 ",
             "   4 ",

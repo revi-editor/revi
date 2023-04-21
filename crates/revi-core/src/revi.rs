@@ -104,18 +104,23 @@ impl ReVi {
     pub fn create_message_window(&mut self, msg: impl Into<String>) {
         let msg = msg.into();
         let width = self.width();
-        let height = msg.lines().count() as u16 + 3;
+        let has_status_bar = self.get_current_window().has_status_bar();
+        let height = (msg.lines().count() as u16 + 2) + u16::from(has_status_bar);
         let header = " ".repeat(width as usize).on_grey();
         let reset = "".reset();
         let msg = format!("{header}{reset}\n{msg}");
         let y = self.height().saturating_sub(height) as usize;
         let pos = Position::new(0, y);
-        let buffer = Rc::new(RefCell::new(Buffer::new_str(msg.trim())));
-        let window = Window::new(width, height, buffer).with_position(pos);
+        let mut buffer = Buffer::new_str(msg.trim());
+        buffer.read_only = true;
+        let buffer = Rc::new(RefCell::new(buffer));
+        let mut window = Window::new(width, height, buffer).with_position(pos);
+        window.mode = Mode::Command;
         let id = self.windows.len();
         self.queue.push(id);
         self.windows.push(window);
-        self.focused = id;
+        // self.focused = id;
+        self.message_window = true;
     }
 
     pub fn pop_up_window(&mut self, msg: impl Into<String>, pos: Option<Position>) {
@@ -174,6 +179,18 @@ impl ReVi {
         &mut self.command_bar.1
     }
 
+    // gets current &Window
+    #[must_use]
+    pub fn get_current_window(&self) -> &Window {
+        &self.windows[self.focused]
+    }
+
+    // gets current &mut Window
+    #[must_use]
+    pub fn get_current_window_mut(&mut self) -> &mut Window {
+        &mut self.windows[self.focused]
+    }
+
     #[must_use]
     pub fn cursor_position_u16(&self) -> (u16, u16) {
         self.windows[self.focused].cursor_screen().as_u16()
@@ -183,31 +200,24 @@ impl ReVi {
         self.windows[self.focused].set_cursor(Position::new_u16(x, y));
     }
 
-    #[must_use]
-    pub fn mode(&self) -> &Mode {
-        &self.focused_window().mode
-    }
-
-    #[must_use]
-    pub fn mode_mut(&mut self) -> &mut Mode {
-        &mut self.focused_window_mut().mode
-    }
-
+    /// gets the current focused &Window or command line
     #[must_use]
     pub fn focused_window(&self) -> &Window {
-        let mode = self.windows[self.focused].mode;
+        let mode = self.get_current_window().mode;
+        eprintln!("focused window: {mode}");
         match mode {
             Mode::Command => &self.command_bar.1,
-            _ => &self.windows[self.focused],
+            _ => self.get_current_window(),
         }
     }
 
+    /// gets the current focused &mut Window or command line
     #[must_use]
     pub fn focused_window_mut(&mut self) -> &mut Window {
-        let mode = self.windows[self.focused].mode;
+        let mode = self.get_current_window().mode;
         match mode {
             Mode::Command => &mut self.command_bar.1,
-            _ => &mut self.windows[self.focused],
+            _ => self.get_current_window_mut(),
         }
     }
 
@@ -218,24 +228,11 @@ impl ReVi {
         queue
     }
 
-    pub fn print(&mut self, msg: &str) {
-        self.create_message_window(msg);
-        // let window = self.get_command_window_mut();
-        // let end = window.buffer().len_chars();
-        // self.buffers[0].borrow_mut().insert(end, msg);
-        // let y = self.buffers[0].borrow().len_lines().saturating_sub(1);
-        // self.windows[0].goto(Position::new(1, y));
-        // self.queue.push(0);
-    }
-
-    pub fn error_message(&mut self, msgs: &[&str]) {
-        self.print(
-            &vec![
-                msgs[0].black().on_red().to_string(),
-                msgs[1].reset().to_string(),
-            ]
-            .join(" "),
-        );
+    pub fn error_message(&mut self, msgs: &str) {
+        let reset = "".reset();
+        let msg = msgs.black().on_red();
+        let msg = format!("{msg}{reset}\n");
+        self.create_message_window(&msg);
     }
     pub fn list_buffers(&mut self) {
         let list_of_buffers = self
@@ -252,25 +249,23 @@ impl ReVi {
                 format!("{acc}{i} {name}\n")
             });
         self.create_message_window(list_of_buffers);
-        // self.pop_up_window(list_of_buffers, Some(self.focused_window().cursor_screen()));
     }
 
     pub fn close_message_window(&mut self) {
         self.windows.pop();
-        self.message_window = false;
+        // self.focused = self.focused.saturating_sub(1);
+        self.queue.push(self.focused + 1);
+        // HACK: Not what i wanted to do but eh.
+        // self.message_window = false;
     }
 
     pub fn close_current_window(&mut self) {
-        if self.message_window {
-            self.close_message_window();
-            return;
-        }
         if self.windows.len() == 1 {
             self.exit();
             return;
         }
         self.windows.remove(self.focused);
-        self.focused -= 1;
+        self.focused = self.focused.saturating_sub(1);
     }
 
     pub fn exit(&mut self) {
@@ -300,7 +295,14 @@ impl ReVi {
     }
 
     pub fn change_modes(&mut self, mode: Mode) {
-        *self.mode_mut() = mode;
+        let read_only = self.focused_window().is_read_only();
+        let wread_only = self.get_current_window().is_read_only();
+        eprintln!("command bar is_read_only: {read_only}, window is read only: {wread_only}");
+        if read_only && mode == Mode::Insert {
+            self.error_message("file is in read only mode");
+            return;
+        }
+        self.focused_window_mut().mode = mode;
         self.focused_window_mut().adjust_cursor_x();
     }
 
@@ -309,8 +311,8 @@ impl ReVi {
         // Maybe a trait would be much better suited for the Window struct.
         // This would enable the the creation of BoarderedWindow struct that impl Window
         // trait Window: revi_ui::Display { }
-        *self.mode_mut() = Mode::Command;
-        *self.mode_mut() = Mode::Insert;
+        self.get_current_window_mut().mode = Mode::Command;
+        self.get_command_window_mut().mode = Mode::Insert;
         let window = self.get_command_window_mut();
         // Checks to see if the ':' needs to be inserted or not
         let on_last_line = window.is_on_last_line();
@@ -322,7 +324,7 @@ impl ReVi {
     }
 
     pub fn exit_command_mode(&mut self) {
-        self.windows[self.focused].mode = Mode::Normal;
+        self.focused_window_mut().mode = Mode::Normal;
         self.queue.push(self.focused);
     }
 
@@ -337,72 +339,42 @@ impl ReVi {
 
     /// command arg needs to be not have the ':' prefex
     pub fn run_command_line(&mut self, command: &str) {
-        // TODO: Make a lexer and parser for this.
-
         let mut items: Vec<&str> = command.trim().split(' ').collect();
         match items.remove(0) {
-            // num if num.parse::<usize>().ok().is_some() => {
-            //     let x = self.windows[self.last_focused].cursor_file().as_usize_x();
-            //     let max_y = self.windows[self.last_focused].buffer().len_lines();
-            //     let y = std::cmp::min(max_y, num.parse::<usize>().unwrap());
-            //     let pos = Position::new(x, y);
-            //     self.windows[self.last_focused].goto(pos);
-            // }
-            // c if c.starts_with('!') => {
-            //     let command = c[1..].to_string();
-            //     use std::process::Command;
-            //     let output = Command::new(command)
-            //         .args(items)
-            //         .output()
-            //         .expect("failed to run terminal command from revi editor");
-            //     let msgerr = String::from_utf8(output.stderr).expect("failed to turn stderr into a string");
-            //     let msgout = String::from_utf8(output.stdout).expect("failed to turn stdout into a string");
-            //     let msg = format!("{msgerr}{msgout}");
-            //     self.pop_up_window(msg, None);
-            // }
-            // "pos" => self.print(&format!("pos: {}", self.focused_window().cursor_screen())),
-            // "line" => {
-            //
-            //     let line_number = self.windows[self.last_focused].cursor_file().as_usize_y();
-            //     let text = self.windows[self.last_focused].buffer().line(line_number);
-            //     self.print(text.as_str());
-            // }
-            // "len" => {
-            //     let line_number = self.windows[self.last_focused].cursor_file().as_usize_y();
-            //     let text = self.windows[self.last_focused].buffer().line(line_number);
-            //     self.print(text.len().to_string().as_str());
-            // }
-            // "e" => self.add_buffer(items.join(" ")),
+            num if num.parse::<usize>().ok().is_some() => {
+                let window = self.focused_window_mut();
+                let x = window.cursor_file().as_usize_x();
+                let max_y = window.buffer().len_lines();
+                let y = std::cmp::min(max_y, num.parse::<usize>().unwrap());
+                let pos = Position::new(x, y);
+                window.goto(pos);
+            }
+            c if c.starts_with('!') => {
+                let command = c[1..].to_string();
+                use std::process::Command;
+                let output = Command::new(command)
+                    .args(items)
+                    .output()
+                    .expect("failed to run terminal command from revi editor");
+                let msgerr = String::from_utf8(output.stderr).expect("failed to turn stderr into a string");
+                let msgout = String::from_utf8(output.stdout).expect("failed to turn stdout into a string");
+                let msg = format!("{msgerr}{msgout}");
+                self.create_message_window(msg);
+            }
+            "e" => self.add_buffer(items.join(" ")),
             "q" => self.close_current_window(),
-            // "w" => self.windows[self.last_focused].save(),
-            // "wq" => {
-            //     self.windows[self.last_focused].save();
-            //     self.exit();
-            // }
-            // "b" if !items.is_empty() => {
-            //     if let Some(idx) = items.first().and_then(|i| i.parse::<usize>().ok()) {
-            //         self.switch_buffers_by_index(idx)
-            //     }
-            // }
-            // "clipboard" => self.print(self.clipboard.clone().as_str()),
-            // "print" => self.print(&items.join(" ")),
-            // "set" if !items.is_empty() => match items.first().copied().unwrap_or_default() {
-            //     "number" => {
-            //         self.focused_window_mut().set_number(LineNumberKind::AbsoluteNumber);
-            //     }
-            //     "relativenumber" => {
-            //         self.focused_window_mut().set_number(LineNumberKind::RelativeNumber);
-            //     }
-            //     "nonumber" | "norelativenumber" => {
-            //         self.focused_window_mut().set_number(LineNumberKind::None);
-            //     }
-            //     e => self.error_message(&["unknown command: ", e]),
-            // },
-            // "help" => {
-            //     self.error_message(&["help command is not implemented just yet", "help"]);
-            // }
-            // "ls" => self.list_buffers(),
-            e => self.error_message(&["unknown command: ", e]),
+            "w" => self.focused_window_mut().save(),
+            "wq" => {
+                self.focused_window_mut().save();
+                self.exit();
+            }
+            "b" if !items.is_empty() => {
+                if let Some(idx) = items.first().and_then(|i| i.parse::<usize>().ok()) {
+                    self.switch_buffers_by_index(idx)
+                }
+            }
+            "ls" => self.list_buffers(),
+            e => self.error_message(&format!("unknown command: {e}")),
         }
     }
 }

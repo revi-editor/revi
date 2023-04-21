@@ -1,5 +1,5 @@
-use revi_ui::Key;
 use crate::Mode;
+use revi_ui::Key;
 
 #[derive(Debug, Clone, Default)]
 pub struct Number {
