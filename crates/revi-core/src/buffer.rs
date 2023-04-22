@@ -22,20 +22,24 @@ impl Buffer {
 
     pub fn from_path(name: impl Into<String>) -> Self {
         let name = name.into();
-        let contents = std::fs::read_to_string(&name)
-            .expect("failed to read in file to buffer");
+        let contents = std::fs::read_to_string(&name).expect("failed to read in file to buffer");
         let rope = Rope::from_str(contents.as_str());
-        Self {
-            name,
-            rope,
-        }
+        Self { name, rope }
     }
 
     #[must_use]
-    pub fn on_screen(&self, top: usize, bottom: usize) -> RopeSlice {
-        let start = self.rope.line_to_char(top);
-        let end = self.rope.line_to_char(bottom);
-        self.rope.slice(start..end)
+    pub fn on_screen(&self, top: usize, bottom: usize) -> Vec<RopeSlice> {
+        let mut result = vec![];
+        for idx in top..=bottom {
+            let Some(line) = self.rope.get_line(idx) else {
+                break;
+            };
+            result.push(line);
+        }
+        result
+        // let start = self.rope.line_to_char(top);
+        // let end = self.rope.line_to_char(bottom);
+        // self.rope.slice(start..end)
     }
 
     pub fn line_len(&self, line_idx: usize) -> usize {

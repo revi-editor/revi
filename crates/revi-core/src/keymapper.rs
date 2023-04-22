@@ -1,15 +1,10 @@
 use crate::commands;
 use crate::commands::BoxedCommand;
-use crate::commands::{
-    CursorUp,
-    CursorDown,
-    CursorRight,
-    CursorLeft,
-};
-//     Backspace, BoxedCommand, ChangeMode, CursorLeft, CursorRight, DeleteChar,
+use crate::commands::{CursorDown, CursorLeft, CursorRight, CursorUp, ScrollUp, ScrollDown};
+//     Backspace, BoxedCommand, ChangeMode, DeleteChar,
 //     DeleteLine, End, EnterCommandMode, ExecuteCommandLine, ExitCommandMode, FirstCharInLine, Home,
 //     InsertTab, JumpToFirstLineBuffer, JumpToLastLineBuffer, MoveBackwardByWord, MoveForwardByWord,
-//     NewLine, NextWindow, Paste, PasteBack, Quit, Save, ScrollDown, ScrollUp, Undo, YankLine,
+//     NewLine, NextWindow, Paste, PasteBack, Quit, Save, Undo, YankLine,
 use crate::key_parser::string_to_key;
 use crate::mode::Mode;
 use revi_ui::Key;
@@ -77,13 +72,13 @@ impl Mapper {
             //     .with_mapping(Mode::Normal, "zz", commands![Save, Quit])
             //     .with_mapping(Mode::Normal, "zq", commands![Quit])
             .with_mapping(Mode::Normal, "j", commands![CursorDown])
-            .with_mapping(Mode::Normal, "down", commands![CursorDown])
+            .with_mapping(Mode::Normal, "<down>", commands![CursorDown])
             .with_mapping(Mode::Normal, "k", commands![CursorUp])
             .with_mapping(Mode::Normal, "up", commands![CursorUp])
             .with_mapping(Mode::Normal, "h", commands![CursorLeft])
-            .with_mapping(Mode::Normal, "left", commands![CursorLeft])
+            .with_mapping(Mode::Normal, "<left>", commands![CursorLeft])
             .with_mapping(Mode::Normal, "l", commands![CursorRight])
-            .with_mapping(Mode::Normal, "right", commands![CursorRight])
+            .with_mapping(Mode::Normal, "<right>", commands![CursorRight])
         //     .with_mapping(Mode::Normal, ":", commands![EnterCommandMode])
         //     .with_mapping(Mode::Normal, "i", commands![ChangeMode(Mode::Insert)])
         //     .with_mapping(Mode::Normal, "x", commands![DeleteChar])
@@ -98,10 +93,10 @@ impl Mapper {
         //         "A",
         //         commands![End, ChangeMode(Mode::Insert), CursorRight],
         //     )
-        //     .with_mapping(Mode::Normal, "<C-y>", commands![ScrollUp, CursorDown])
-        //     .with_mapping(Mode::Normal, "<C-e>", commands![ScrollDown, CursorUp])
-        //     .with_mapping(Mode::Normal, "<C-u>", commands![ScrollUp])
-        //     .with_mapping(Mode::Normal, "<C-d>", commands![ScrollDown])
+            .with_mapping(Mode::Normal, "<C-y>", commands![ScrollUp, CursorDown])
+            .with_mapping(Mode::Normal, "<C-e>", commands![ScrollDown, CursorUp])
+            .with_mapping(Mode::Normal, "<C-u>", commands![ScrollUp])
+            .with_mapping(Mode::Normal, "<C-d>", commands![ScrollDown])
         //     .with_mapping(
         //         Mode::Normal,
         //         "o",

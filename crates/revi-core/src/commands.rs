@@ -91,26 +91,20 @@ build_command!(
         ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_right();
     }
 );
-// build_command!(
-//     ScrollUp,
-//     4;
-//     |_: &ScrollUp, revi_rc: Rc<RefCell<ReVi>>, count: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.focused_window_mut().scroll_up(count);
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
-//     }
-// );
-// build_command!(
-//     ScrollDown,
-//     5;
-//     |_: &ScrollDown, revi_rc: Rc<RefCell<ReVi>>, count: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.focused_window_mut().scroll_up(count);
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
-//     }
-// );
+build_command!(
+    ScrollUp,
+    4;
+    |_: &ScrollUp, ctx: Context| {
+        ctx.panes[ctx.focused_pane].borrow_mut().scroll_up();
+    }
+);
+build_command!(
+    ScrollDown,
+    5;
+    |_: &ScrollDown, ctx: Context| {
+        ctx.panes[ctx.focused_pane].borrow_mut().scroll_down();
+    }
+);
 // build_command!(
 //     Home,
 //     6;

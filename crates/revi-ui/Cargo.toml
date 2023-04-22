@@ -9,5 +9,5 @@ license = "MIT"
 keywords = ["revi"]
 
 [dependencies]
-crossterm = "0.20.0"
+crossterm = "0.26.1"
 itertools = "0.10.0"

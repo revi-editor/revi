@@ -57,8 +57,6 @@ impl ContextBuilder {
     }
 }
 
-
-
 #[derive(Debug, Clone)]
 pub struct Context {
     pub buffers: Vec<Rc<RefCell<Buffer>>>,
@@ -77,10 +75,7 @@ impl Context {
         let height = height.saturating_sub(offset);
         let width = self.window_size.width;
         dbg!(self.window_size, self.show_command_bar);
-        dbg!(Size {
-            width,
-            height,
-        })
+        dbg!(Size { width, height })
     }
 
     pub fn main_window_size(&self) -> Size {

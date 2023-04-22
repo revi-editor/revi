@@ -116,17 +116,28 @@ pub mod container {
             self
         }
 
-        pub fn push_box(mut self, boxed_widget: BoxWidget) -> Self {
-            self.children.push(boxed_widget);
-            self
-        }
-
-        pub fn push<W>(mut self, widget: W) -> Self
+        pub fn with_child<W>(mut self, widget: W) -> Self
         where
             W: Widget + 'static,
         {
             self.children.push(BoxWidget::new(widget));
             self
+        }
+
+        pub fn with_child_box(mut self, boxed_widget: BoxWidget) -> Self {
+            self.children.push(boxed_widget);
+            self
+        }
+
+        pub fn push<W>(&mut self, widget: W)
+        where
+            W: Widget + 'static,
+        {
+            self.children.push(BoxWidget::new(widget));
+        }
+
+        pub fn push_box(&mut self, boxed_widget: BoxWidget) {
+            self.children.push(boxed_widget);
         }
     }
 
@@ -180,10 +191,16 @@ pub mod container {
             };
             let width = match stack {
                 Stack::Vertically => child.width().min(current.width()).min(root.width()),
-                Stack::Horizontally => child.width().min(current.width() - last.width()).min(root.width()),
+                Stack::Horizontally => child
+                    .width()
+                    .min(current.width() - last.width())
+                    .min(root.width()),
             };
             let height = match stack {
-                Stack::Vertically => child.height().min(current.height() - last.height()).min(root.height()),
+                Stack::Vertically => child
+                    .height()
+                    .min(current.height() - last.height())
+                    .min(root.height()),
                 Stack::Horizontally => child.height().min(current.height()).min(root.height()),
             };
             let size = Size::new(width, height);
@@ -399,17 +416,13 @@ pub mod application {
 }
 
 mod runtime {
+    use super::clear;
     use super::{
         application::App,
         layout::{Pos, Rect, Size},
     };
-    use super::clear;
     use crate::key;
-    use crossterm::{
-        cursor,
-        event,
-        execute, queue, terminal,
-    };
+    use crossterm::{cursor, event, execute, queue, terminal};
     use std::io::Stdout;
     use std::{io::Write, time::Duration};
 
@@ -424,7 +437,8 @@ mod runtime {
     }
 
     fn leave_alternate_screen(w: &mut Stdout) {
-        execute!(w, cursor::Show, terminal::LeaveAlternateScreen).expect("failure to leave alternate screen.");
+        execute!(w, cursor::Show, terminal::LeaveAlternateScreen)
+            .expect("failure to leave alternate screen.");
     }
 
     fn queue_cursor(w: &mut Stdout, Pos { x, y }: Pos) {
@@ -432,7 +446,7 @@ mod runtime {
             w,
             // RestorePosition,
             cursor::MoveTo(x, y),
-            cursor::SetCursorShape(cursor::CursorShape::Block) // SavePosition,
+            // cursor::SetCursorShape(cursor::CursorShape::Block) // SavePosition,
         )
         .expect("failed to hide cursor");
     }
