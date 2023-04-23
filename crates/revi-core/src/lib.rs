@@ -1,26 +1,19 @@
-// #![warn(clippy::all, clippy::pedantic)]
-// ▞▀▖       ▌        ▞▀▖▞▀▖▞▀▖▛▀▘
-// ▌  ▞▀▖▌  ▌▛▀▖▞▀▖▌ ▌▚▄▘▙▄  ▗▘▙▄
-// ▌ ▖▌ ▌▐▐▐ ▌ ▌▌ ▌▚▄▌▌ ▌▌ ▌▗▘ ▖ ▌
-// ▝▀ ▝▀  ▘▘ ▀▀ ▝▀ ▗▄▘▝▀ ▝▀ ▀▀▘▝▀
-
 // mod command_bar;
+// pub mod api;
 mod context;
 mod pane;
 mod settings;
-// pub mod api;
+mod parse_keys;
+mod window;
 pub mod buffer;
 pub mod commands;
-mod key_parser;
 pub mod mode;
-mod window;
-
-pub mod keymapper;
+pub mod map_keys;
 
 pub use buffer::Buffer;
 pub use context::{Context, ContextBuilder};
-pub use key_parser::KeyParser;
-pub use keymapper::Mapper;
+pub use parse_keys::KeyParser;
+pub use map_keys::Mapper;
 pub use mode::Mode;
 pub use pane::Pane;
 pub use settings::Settings;

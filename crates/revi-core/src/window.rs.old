@@ -1,4 +1,4 @@
-x, y/* windows.rs
+/* windows.rs
 */
 
 use crate::buffer::Buffer;
