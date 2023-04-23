@@ -1,16 +1,113 @@
 use crate::commands;
 use crate::commands::BoxedCommand;
-use crate::commands::{CursorDown, CursorLeft, CursorRight, CursorUp, ScrollUp, ScrollDown};
+use crate::commands::{CursorDown, CursorLeft, CursorRight, CursorUp, ScrollDown, ScrollUp};
 //     Backspace, BoxedCommand, ChangeMode, DeleteChar,
 //     DeleteLine, End, EnterCommandMode, ExecuteCommandLine, ExitCommandMode, FirstCharInLine, Home,
 //     InsertTab, JumpToFirstLineBuffer, JumpToLastLineBuffer, MoveBackwardByWord, MoveForwardByWord,
 //     NewLine, NextWindow, Paste, PasteBack, Quit, Save, Undo, YankLine,
-use crate::key_parser::string_to_key;
 use crate::mode::Mode;
-use revi_ui::Key;
-use std::collections::HashMap;
+use revi_ui::{string_to_keys, Keys};
 
-type KeyMap = HashMap<Vec<Key>, Vec<BoxedCommand>>;
+#[derive(Debug)]
+enum MapNode {
+    Map(Keys, KeyMap),
+    Middle(Keys, KeyMap, Vec<BoxedCommand>),
+    End(Keys, Vec<BoxedCommand>),
+}
+
+#[derive(Debug)]
+struct KeyMap {
+    mappings: Vec<MapNode>,
+}
+
+impl KeyMap {
+    fn new() -> Self {
+        Self {
+            mappings: Vec::new(),
+        }
+    }
+
+    fn new_mapping(node: MapNode) -> Self {
+        Self {
+            mappings: vec![node],
+        }
+    }
+
+    fn is_command(&self, keys: &[Keys]) -> bool {
+        if keys.is_empty() {
+            return false;
+        }
+        self.mappings
+            .iter()
+            .any(|node| match node {
+                MapNode::Map(key, keymap) if key == &keys[0] => keymap.is_command(&keys[1..]),
+                MapNode::Middle(key, keymap, _) if key == &keys[0] => keymap.is_command(&keys[1..]),
+                MapNode::End(key, _) if key == &keys[0] => true,
+                _ => false,
+            })
+    }
+
+    // fn _is_last_branch_command(&self, _: &[Keys]) -> bool {
+    //     todo!()
+    // }
+
+    fn get(&self, key: &[Keys]) -> Option<&Vec<BoxedCommand>> {
+        if key.is_empty() {
+            return None;
+        }
+        for node in self.mappings.iter() {
+            match node {
+                MapNode::Map(k, map) if k == &key[0] => return map.get(&key[1..]),
+                MapNode::Middle(k, _, cmd) if k == &key[0] && key.len() == 1 => return Some(cmd),
+                MapNode::Middle(k, map, _) if k == &key[0] => return map.get(&key[1..]),
+                MapNode::End(k, command) if k == &key[0] => return Some(command),
+                _ => {}
+            };
+        }
+        None
+    }
+
+    fn insert(&mut self, keys: &[Keys], command: Vec<BoxedCommand>) {
+        let Some(key) = keys.first() else {
+            return;
+        };
+        for node in self.mappings.iter_mut() {
+            match node {
+                MapNode::Map(k, map) if k == key => return map.insert(&keys[1..], command),
+                MapNode::Middle(k, map, _) if k == key => {
+                    return map.insert(&keys[1..], command)
+                }
+                MapNode::End(k, cmd) if k == key && keys.len() == 1 => {
+                    *cmd = command;
+                    return;
+                }
+                MapNode::End(k, cmd) if k == key && keys.len() > 1 => {
+                    let mut map = KeyMap::new();
+                    map.insert(&keys[1..], command);
+                    *node = MapNode::Middle(*k, map, cmd.clone());
+                    return;
+                }
+                _ => {},
+            }
+        }
+        self.insert_new(keys, command);
+    }
+
+    // Blindly inserts new mapping
+    fn insert_new(&mut self, keys: &[Keys], command: Vec<BoxedCommand>) {
+        let mut key_iter = keys.iter().rev();
+        let Some(key) = key_iter.next() else {
+            return;
+        };
+        let start_node = MapNode::End(*key, command);
+        let mapnode = key_iter.fold(start_node, |acc, key| {
+            MapNode::Map(*key, KeyMap::new_mapping(acc))
+        });
+        self.mappings.push(mapnode);
+    }
+}
+
+//type KeyMap = HashMap<Vec<Key>, Vec<BoxedCommand>>;
 
 #[derive(Debug)]
 pub struct Mapper {
@@ -51,17 +148,18 @@ impl Mapper {
     }
 
     #[must_use]
-    pub fn is_mapping(&self, mode: Mode, event: &[Key]) -> bool {
-        self.get_map(mode).contains_key(event)
+    pub fn is_mapping(&self, mode: Mode, keys: &[Keys]) -> bool {
+        self.get_map(mode).is_command(keys)
     }
 
     #[must_use]
-    pub fn get_mapping(&self, mode: Mode, event: &[Key]) -> Option<&Vec<BoxedCommand>> {
-        self.get_map(mode).get(event)
+    pub fn get_mapping(&self, mode: Mode, keys: &[Keys]) -> Option<&Vec<BoxedCommand>> {
+        self.get_map(mode).get(keys)
     }
     #[must_use]
     pub fn with_mapping(mut self, mode: Mode, keys: &str, commands: Vec<BoxedCommand>) -> Self {
-        self.get_map_mut(mode).insert(string_to_key(keys), commands);
+        self.get_map_mut(mode)
+            .insert(&string_to_keys(keys), commands);
         self
     }
 
@@ -79,20 +177,20 @@ impl Mapper {
             .with_mapping(Mode::Normal, "<left>", commands![CursorLeft])
             .with_mapping(Mode::Normal, "l", commands![CursorRight])
             .with_mapping(Mode::Normal, "<right>", commands![CursorRight])
-        //     .with_mapping(Mode::Normal, ":", commands![EnterCommandMode])
-        //     .with_mapping(Mode::Normal, "i", commands![ChangeMode(Mode::Insert)])
-        //     .with_mapping(Mode::Normal, "x", commands![DeleteChar])
-        //     .with_mapping(Mode::Normal, "delete", commands![DeleteChar])
-        //     .with_mapping(Mode::Normal, "dd", commands![DeleteLine, CursorUp])
-        //     .with_mapping(Mode::Normal, "home", commands![Home])
-        //     .with_mapping(Mode::Normal, "end", commands![End])
-        //     .with_mapping(Mode::Normal, "0", commands![Home])
-        //     .with_mapping(Mode::Normal, "$", commands![End])
-        //     .with_mapping(
-        //         Mode::Normal,
-        //         "A",
-        //         commands![End, ChangeMode(Mode::Insert), CursorRight],
-        //     )
+            //     .with_mapping(Mode::Normal, ":", commands![EnterCommandMode])
+            //     .with_mapping(Mode::Normal, "i", commands![ChangeMode(Mode::Insert)])
+            //     .with_mapping(Mode::Normal, "x", commands![DeleteChar])
+            //     .with_mapping(Mode::Normal, "delete", commands![DeleteChar])
+            //     .with_mapping(Mode::Normal, "dd", commands![DeleteLine, CursorUp])
+            //     .with_mapping(Mode::Normal, "home", commands![Home])
+            //     .with_mapping(Mode::Normal, "end", commands![End])
+            //     .with_mapping(Mode::Normal, "0", commands![Home])
+            //     .with_mapping(Mode::Normal, "$", commands![End])
+            //     .with_mapping(
+            //         Mode::Normal,
+            //         "A",
+            //         commands![End, ChangeMode(Mode::Insert), CursorRight],
+            //     )
             .with_mapping(Mode::Normal, "<C-y>", commands![ScrollUp, CursorDown])
             .with_mapping(Mode::Normal, "<C-e>", commands![ScrollDown, CursorUp])
             .with_mapping(Mode::Normal, "<C-u>", commands![ScrollUp])
@@ -162,6 +260,21 @@ impl Mapper {
 impl Mapper {
     pub fn normal_insert(&mut self, keys: &str, commands: Vec<BoxedCommand>) {
         self.get_map_mut(Mode::Normal)
-            .insert(string_to_key(keys), commands);
+            .insert(&string_to_keys(keys), commands);
     }
+}
+
+#[test]
+fn test_normal_keymapper() {
+    let km = Mapper::default();
+    assert_eq!(
+        km.get_mapping(Mode::Normal, &string_to_keys("k"))
+            .unwrap(),
+        &commands!(CursorUp)
+    );
+    assert_eq!(
+        km.get_mapping(Mode::Normal, &string_to_keys("j"))
+            .unwrap(),
+        &commands!(CursorDown)
+    );
 }

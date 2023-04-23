@@ -10,7 +10,6 @@ pub struct ContextBuilder {
     panes: Vec<Rc<RefCell<dyn Pane>>>,
     focused_pane: usize,
     on_screen: Vec<usize>,
-    count: usize,
     window_size: Size,
     show_command_bar: bool,
 }
@@ -32,10 +31,6 @@ impl ContextBuilder {
         self.on_screen = on_screen;
         self
     }
-    pub fn with_count(mut self, count: usize) -> Self {
-        self.count = count;
-        self
-    }
     pub fn with_window_size(mut self, size: Size) -> Self {
         self.window_size = size;
         self
@@ -50,7 +45,6 @@ impl ContextBuilder {
             panes: self.panes,
             focused_pane: self.focused_pane,
             on_screen: self.on_screen,
-            count: self.count,
             window_size: self.window_size,
             show_command_bar: self.show_command_bar,
         }
@@ -63,7 +57,6 @@ pub struct Context {
     pub panes: Vec<Rc<RefCell<dyn Pane>>>,
     pub focused_pane: usize,
     pub on_screen: Vec<usize>,
-    pub count: usize,
     window_size: Size,
     show_command_bar: bool,
 }
@@ -74,8 +67,7 @@ impl Context {
         let offset = self.show_command_bar as u16;
         let height = height.saturating_sub(offset);
         let width = self.window_size.width;
-        dbg!(self.window_size, self.show_command_bar);
-        dbg!(Size { width, height })
+        Size { width, height }
     }
 
     pub fn main_window_size(&self) -> Size {

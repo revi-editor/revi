@@ -10,7 +10,8 @@ Email: cowboy8625@protonmail.com
 mod commandline;
 
 use revi_core::{
-    commands::BoxedCommand, Buffer, Context, ContextBuilder, Input, Mapper, Mode, Settings, Window,
+    commands::BoxedCommand, Buffer, Context, ContextBuilder, KeyParser, Mapper, Mode, Settings,
+    Window,
 };
 use revi_ui::{
     tui::{
@@ -35,7 +36,7 @@ fn execute(context: Context, commands: &[BoxedCommand]) {
 struct Revi {
     context: Context,
     is_running: bool,
-    input: Input,
+    keyparser: KeyParser,
     mode: Mode,
     keymapper: Mapper,
 }
@@ -78,19 +79,17 @@ impl App for Revi {
     }
 
     fn update(&mut self, keys: Keys) {
-        match &keys {
-            Keys::KeyAndMod(Key::LC, Key::Ctrl) => self.is_running = false,
-            _ => {}
+        if let Keys::KeyAndMod(Key::LC, Key::Ctrl) = keys {
+            self.is_running = false;
         }
-        let event = match keys {
-            Keys::Key(key) => (key, Key::Null),
-            Keys::KeyAndMod(key, kmod) => (kmod, key),
-        };
-        self.input.input(self.mode, event);
-        let commands = self.keymapper.get_mapping(self.mode, self.input.keys());
-        if let Some(cmd) = dbg!(commands) {
+        self.keyparser.push(keys);
+        let commands = self.keymapper.get_mapping(self.mode, self.keyparser.get_keys());
+        if !self.keymapper.is_mapping(self.mode, self.keyparser.get_keys()) {
+            self.keyparser.clear();
+        }
+        if let Some(cmd) = commands {
             execute(self.context.clone(), cmd);
-            self.input.clear();
+            self.keyparser.clear();
         }
     }
 

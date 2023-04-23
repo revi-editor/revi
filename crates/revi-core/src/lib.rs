@@ -6,7 +6,7 @@
 
 // mod command_bar;
 mod context;
-mod input;
+// mod input;
 mod pane;
 mod settings;
 // pub mod api;
@@ -24,7 +24,8 @@ pub mod keymapper;
 
 pub use buffer::Buffer;
 pub use context::{Context, ContextBuilder};
-pub use input::Input;
+// pub use input::Input;
+pub use key_parser::KeyParser;
 pub use keymapper::Mapper;
 pub use mode::Mode;
 pub use pane::Pane;

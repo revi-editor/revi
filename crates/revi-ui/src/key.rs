@@ -1,8 +1,70 @@
+fn strip_it(key: &str) -> Option<&str> {
+    key.strip_prefix('<').and_then(|n| n.strip_suffix('>'))
+}
+
+fn decode_keys(key: &str) -> Keys {
+    strip_it(key)
+        .and_then(|n| n.split_once('-'))
+        .map(|(m, k)| {
+            let key = Key::from(k);
+            let modk = Key::from(lookup_mod_key(m));
+            Keys::KeyAndMod(key, modk)
+        })
+        .or(strip_it(key).map(|k| Keys::Key(Key::from(k))))
+        .unwrap_or(Keys::Key(Key::from(key)))
+}
+
+fn lookup_mod_key(modk: &str) -> &str {
+    match modk {
+        "c" => "ctrl",
+        "a" => "alt",
+        _ => modk,
+    }
+}
+
+pub fn string_to_keys(src: &str) -> Vec<Keys> {
+    let mut stream = src.chars().peekable();
+    let mut keys = vec![];
+    while let Some(c) = stream.peek() {
+        match c {
+            '<' => {
+                let mut modk = stream.next().unwrap().to_string();
+                while let Some(c) = stream.next_if(|c| c != &'>') {
+                    modk.push(c);
+                }
+                modk.push(stream.next().unwrap());
+                keys.push(decode_keys(&modk));
+            }
+            _ => keys.push(decode_keys(stream.next().unwrap().to_string().as_str())),
+        }
+    }
+    keys
+}
+
+#[test]
+fn test_key_parse() {
+    let left = string_to_keys("<space>abc");
+    let right = vec![
+        Keys::Key(Key::Space),
+        Keys::Key(Key::LA),
+        Keys::Key(Key::LB),
+        Keys::Key(Key::LC),
+    ];
+
+    assert_eq!(left, right);
+}
+
 #[allow(dead_code)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Keys {
     Key(Key),
     KeyAndMod(Key, Key),
+}
+
+impl Keys {
+    pub fn is_null(&self) -> bool {
+        matches!(self, Keys::Key(Key::Null))
+    }
 }
 
 impl From<crossterm::event::KeyEvent> for Keys {

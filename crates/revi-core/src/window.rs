@@ -48,10 +48,7 @@ impl Window {
     pub fn text_field_size(&self) -> Size {
         let width = self.size.width - (self.has_line_numbers as u16 * Self::NUMBER_LINE_WIDTH);
         let height = self.size.height - self.has_status_bar as u16;
-        Size {
-            width,
-            height,
-        }
+        Size { width, height }
     }
 
     fn create_cursor_bounds(&self, y: u16) -> Rect {
@@ -75,7 +72,8 @@ impl Window {
         let top = self.cursor.scroll.y as usize;
         let bottom = (self.cursor.scroll.y + height) as usize;
         let buffer = self.buffer.borrow();
-        let contents = buffer.on_screen(top, bottom)
+        let contents = buffer
+            .on_screen(top, bottom)
             .iter()
             .map(ToString::to_string)
             .collect::<String>();
@@ -88,7 +86,8 @@ impl Window {
         Text::new(&format!(
             "Normal Mode, {}: {}/{}                 ",
             self.buffer.borrow().name,
-            x,y
+            x,
+            y
         ))
         .max_height(1)
         .with_comment("status bar")
@@ -115,10 +114,7 @@ impl Pane for Window {
         let text_field = self.view_contents();
 
         let height = height - (self.has_status_bar as u16);
-        let mut window = Container::new(
-            Rect::new(Size::new(width, height)),
-            Stack::Horizontally,
-        );
+        let mut window = Container::new(Rect::new(Size::new(width, height)), Stack::Horizontally);
 
         if self.has_line_numbers {
             let line_numbers = self.view_line_numbers();
@@ -175,11 +171,12 @@ impl Scrollable for Window {
         let bottom = (self.cursor.scroll.y + self.text_field_size().height) as usize;
         let buffer = self.buffer.borrow();
         let text = buffer.on_screen(top, bottom);
-        let width = text.iter().map(|i| i.len_chars() as u16).max().unwrap_or_default();
+        let width = text
+            .iter()
+            .map(|i| i.len_chars() as u16)
+            .max()
+            .unwrap_or_default();
         let height = buffer.rope.len_lines() as u16;
-        Some(Size {
-            width,
-            height,
-        })
+        Some(Size { width, height })
     }
 }

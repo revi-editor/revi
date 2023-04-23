@@ -1,8 +1,8 @@
 [package]
 name = "revi-ui"
-version = "0.0.0-beta-2"
+version = "0.0.0-beta-3"
 authors = ["cowboy8625 <cowboy8625@protonmail.com>"]
-edition = "2018"
+edition = "2021"
 description = "Provides ui functionality for revi test editor."
 repository = "https://github.com/revi-editor/revi"
 license = "MIT"
