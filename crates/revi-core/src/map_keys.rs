@@ -8,7 +8,7 @@ use crate::commands::{
     ScrollDown,
     ScrollUp,
     ChangeMode,
-    InsertChar,
+    // InsertChar,
     ExecuteCommandLine,
 };
 
@@ -18,8 +18,8 @@ use revi_ui::{string_to_keys, Keys};
 #[derive(Debug)]
 enum MapNode {
     Map(Keys, KeyMap),
-    Middle(Keys, KeyMap, Vec<BoxedCommand>),
-    End(Keys, Vec<BoxedCommand>),
+    Middle(Keys, KeyMap, BoxedCommand),
+    End(Keys, BoxedCommand),
 }
 
 #[derive(Debug)]
@@ -58,23 +58,23 @@ impl KeyMap {
     //     todo!()
     // }
 
-    fn get(&self, key: &[Keys]) -> Option<&Vec<BoxedCommand>> {
+    fn get(&self, key: &[Keys]) -> Option<BoxedCommand> {
         if key.is_empty() {
             return None;
         }
         for node in self.mappings.iter() {
             match node {
                 MapNode::Map(k, map) if k == &key[0] => return map.get(&key[1..]),
-                MapNode::Middle(k, _, cmd) if k == &key[0] && key.len() == 1 => return Some(cmd),
+                MapNode::Middle(k, _, cmd) if k == &key[0] && key.len() == 1 => return Some(cmd.clone()),
                 MapNode::Middle(k, map, _) if k == &key[0] => return map.get(&key[1..]),
-                MapNode::End(k, command) if k == &key[0] => return Some(command),
+                MapNode::End(k, command) if k == &key[0] => return Some(command.clone()),
                 _ => {}
             };
         }
         None
     }
 
-    fn insert(&mut self, keys: &[Keys], command: Vec<BoxedCommand>) {
+    fn insert(&mut self, keys: &[Keys], command: BoxedCommand) {
         let Some(key) = keys.first() else {
             return;
         };
@@ -101,7 +101,7 @@ impl KeyMap {
     }
 
     // Blindly inserts new mapping
-    fn insert_new(&mut self, keys: &[Keys], command: Vec<BoxedCommand>) {
+    fn insert_new(&mut self, keys: &[Keys], command: BoxedCommand) {
         let mut key_iter = keys.iter().rev();
         let Some(key) = key_iter.next() else {
             return;
@@ -114,7 +114,6 @@ impl KeyMap {
     }
 }
 
-//type KeyMap = HashMap<Vec<Key>, Vec<BoxedCommand>>;
 
 #[derive(Debug)]
 pub struct Mapper {
@@ -160,105 +159,105 @@ impl Mapper {
     }
 
     #[must_use]
-    pub fn get_mapping(&self, mode: &Mode, keys: &[Keys]) -> Option<&Vec<BoxedCommand>> {
+    pub fn get_mapping(&self, mode: &Mode, keys: &[Keys]) -> Option<BoxedCommand> {
         self.get_map(mode).get(keys)
     }
 
     #[must_use]
-    pub fn with_mapping(mut self, mode: Mode, keys: &str, commands: Vec<BoxedCommand>) -> Self {
+    pub fn with_mapping(mut self, mode: Mode, keys: &str, commands: impl Into<BoxedCommand>) -> Self {
         self.get_map_mut(mode)
-            .insert(&string_to_keys(keys), commands);
+            .insert(&string_to_keys(keys), commands.into());
         self
     }
 
     fn build_normal(self) -> Self {
         self
-            .with_mapping(Mode::Normal, "<esc>", commands![ChangeMode(Mode::Normal)])
-            // .with_mapping(Mode::Normal, "<C-s>", commands![Save])
-            // .with_mapping(Mode::Normal, "zz", commands![Save, Quit])
-            // .with_mapping(Mode::Normal, "zq", commands![Quit])
-            .with_mapping(Mode::Normal, "j", commands![CursorDown])
-            .with_mapping(Mode::Normal, "<down>", commands![CursorDown])
-            .with_mapping(Mode::Normal, "k", commands![CursorUp])
-            .with_mapping(Mode::Normal, "up", commands![CursorUp])
-            .with_mapping(Mode::Normal, "h", commands![CursorLeft])
-            .with_mapping(Mode::Normal, "<left>", commands![CursorLeft])
-            .with_mapping(Mode::Normal, "l", commands![CursorRight])
-            .with_mapping(Mode::Normal, "<right>", commands![CursorRight])
-            .with_mapping(Mode::Normal, ":", commands![ChangeMode(Mode::Command)])
-            .with_mapping(Mode::Normal, "i", commands![ChangeMode(Mode::Insert)])
-            //     .with_mapping(Mode::Normal, "x", commands![DeleteChar])
-            //     .with_mapping(Mode::Normal, "delete", commands![DeleteChar])
-            //     .with_mapping(Mode::Normal, "dd", commands![DeleteLine, CursorUp])
-            //     .with_mapping(Mode::Normal, "home", commands![Home])
-            //     .with_mapping(Mode::Normal, "end", commands![End])
-            //     .with_mapping(Mode::Normal, "0", commands![Home])
-            //     .with_mapping(Mode::Normal, "$", commands![End])
+            .with_mapping(Mode::Normal, "<esc>", ChangeMode(Mode::Normal))
+            // .with_mapping(Mode::Normal, "<C-s>", Save])
+            // .with_mapping(Mode::Normal, "zz", Save, Quit)
+            // .with_mapping(Mode::Normal, "zq", Quit)
+            .with_mapping(Mode::Normal, "j", CursorDown)
+            .with_mapping(Mode::Normal, "<down>", CursorDown)
+            .with_mapping(Mode::Normal, "k", CursorUp)
+            .with_mapping(Mode::Normal, "up", CursorUp)
+            .with_mapping(Mode::Normal, "h", CursorLeft)
+            .with_mapping(Mode::Normal, "<left>", CursorLeft)
+            .with_mapping(Mode::Normal, "l", CursorRight)
+            .with_mapping(Mode::Normal, "<right>", CursorRight)
+            .with_mapping(Mode::Normal, ":", ChangeMode(Mode::Command))
+            .with_mapping(Mode::Normal, "i", ChangeMode(Mode::Insert))
+            //     .with_mapping(Mode::Normal, "x", DeleteChar)
+            //     .with_mapping(Mode::Normal, "delete", DeleteChar)
+            //     .with_mapping(Mode::Normal, "dd", DeleteLine, CursorUp)
+            //     .with_mapping(Mode::Normal, "home", Home])
+            //     .with_mapping(Mode::Normal, "end", End)
+            //     .with_mapping(Mode::Normal, "0", Home)
+            //     .with_mapping(Mode::Normal, "$", End)
             //     .with_mapping(
             //         Mode::Normal,
             //         "A",
-            //         commands![End, ChangeMode(Mode::Insert), CursorRight],
+            //         End, ChangeMode(Mode::Insert), CursorRight,
             //     )
-            .with_mapping(Mode::Normal, "<C-y>", commands![ScrollUp, CursorDown])
-            .with_mapping(Mode::Normal, "<C-e>", commands![ScrollDown, CursorUp])
-            .with_mapping(Mode::Normal, "<C-u>", commands![ScrollUp])
-            .with_mapping(Mode::Normal, "<C-d>", commands![ScrollDown])
+            // .with_mapping(Mode::Normal, "<C-y>", ScrollUp, CursorDown)
+            // .with_mapping(Mode::Normal, "<C-e>", ScrollDown, CursorUp)
+            // .with_mapping(Mode::Normal, "<C-u>", ScrollUp)
+            // .with_mapping(Mode::Normal, "<C-d>", ScrollDown)
         //     .with_mapping(
         //         Mode::Normal,
         //         "o",
-        //         commands![End, ChangeMode(Mode::Insert), CursorRight, NewLine],
+        //         End, ChangeMode(Mode::Insert), CursorRight, NewLine,
         //     )
         //     .with_mapping(
         //         Mode::Normal,
         //         "O",
-        //         commands![Home, NewLine, ChangeMode(Mode::Insert), CursorUp],
+        //         Home, NewLine, ChangeMode(Mode::Insert), CursorUp,
         //     )
-        //     .with_mapping(Mode::Normal, "^", commands![FirstCharInLine])
+        //     .with_mapping(Mode::Normal, "^", FirstCharInLine)
         //     .with_mapping(
         //         Mode::Normal,
         //         "I",
-        //         commands![FirstCharInLine, ChangeMode(Mode::Insert)],
+        //         FirstCharInLine, ChangeMode(Mode::Insert),
         //     )
-        //     .with_mapping(Mode::Normal, "w", commands![MoveForwardByWord])
-        //     .with_mapping(Mode::Normal, "b", commands![MoveBackwardByWord])
-        //     .with_mapping(Mode::Normal, "gg", commands![JumpToFirstLineBuffer])
-        //     .with_mapping(Mode::Normal, "G", commands![JumpToLastLineBuffer])
-        //     .with_mapping(Mode::Normal, "<C-w><C-w>", commands![NextWindow])
+        //     .with_mapping(Mode::Normal, "w", MoveForwardByWord)
+        //     .with_mapping(Mode::Normal, "b", MoveBackwardByWord)
+        //     .with_mapping(Mode::Normal, "gg", JumpToFirstLineBuffer)
+        //     .with_mapping(Mode::Normal, "G", JumpToLastLineBuffer)
+        //     .with_mapping(Mode::Normal, "<C-w><C-w>", NextWindow)
         //     .with_mapping(
         //         Mode::Normal,
         //         "<enter>",
-        //         commands![ExecuteCommandLine, ExitCommandMode],
+        //         ExecuteCommandLine, ExitCommandMode,
         //     )
-        //     .with_mapping(Mode::Normal, "yy", commands![YankLine])
-        //     .with_mapping(Mode::Normal, "p", commands![Paste])
-        //     .with_mapping(Mode::Normal, "P", commands![PasteBack])
-        //     .with_mapping(Mode::Normal, "u", commands![Undo])
-        //     .with_mapping(Mode::Normal, "<space>a", commands![CursorRight])
+        //     .with_mapping(Mode::Normal, "yy", YankLine)
+        //     .with_mapping(Mode::Normal, "p", Paste)
+        //     .with_mapping(Mode::Normal, "P", PasteBack)
+        //     .with_mapping(Mode::Normal, "u", Undo)
+        //     .with_mapping(Mode::Normal, "<space>a", CursorRight)
     }
 
     fn build_insert(self) -> Self {
-        self.with_mapping(Mode::Insert, "<esc>", commands![ChangeMode(Mode::Normal)])
-        //     .with_mapping(Mode::Insert, "<backspace>", commands![Backspace])
+        self.with_mapping(Mode::Insert, "<esc>", ChangeMode(Mode::Normal))
+        //     .with_mapping(Mode::Insert, "<backspace>", Backspace)
         //     .with_mapping(
         //         Mode::Insert,
         //         "<enter>",
-        //         commands![NewLine, ExecuteCommandLine, ExitCommandMode],
+        //         NewLine, ExecuteCommandLine, ExitCommandMode],
         //     )
-        //     .with_mapping(Mode::Insert, "<home>", commands![Home])
-        //     .with_mapping(Mode::Insert, "<end>", commands![End])
-        //     .with_mapping(Mode::Insert, "<down>", commands![CursorDown])
-        //     .with_mapping(Mode::Insert, "<up>", commands![CursorUp])
-        //     .with_mapping(Mode::Insert, "<left>", commands![CursorLeft])
-        //     .with_mapping(Mode::Insert, "<right>", commands![CursorRight])
-        //     .with_mapping(Mode::Insert, "<tab>", commands![InsertTab])
+        //     .with_mapping(Mode::Insert, "<home>", Home)
+        //     .with_mapping(Mode::Insert, "<end>", End)
+        //     .with_mapping(Mode::Insert, "<down>", CursorDown)
+        //     .with_mapping(Mode::Insert, "<up>", CursorUp)
+        //     .with_mapping(Mode::Insert, "<left>", CursorLeft)
+        //     .with_mapping(Mode::Insert, "<right>", CursorRight)
+        //     .with_mapping(Mode::Insert, "<tab>", InsertTab)
     }
 
     fn build_command(self) -> Self {
-        self.with_mapping(Mode::Command, "<esc>", commands![ChangeMode(Mode::Normal)])
+        self.with_mapping(Mode::Command, "<esc>", ChangeMode(Mode::Normal))
             .with_mapping(
                 Mode::Command,
                 "enter",
-                commands![ExecuteCommandLine],
+                ExecuteCommandLine,
             )
     }
 }

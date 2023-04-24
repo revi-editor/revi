@@ -25,11 +25,6 @@ use revi_ui::{
 };
 
 use std::{cell::{RefCell, RefMut, Ref}, rc::Rc};
-fn execute(context: Context, commands: &[BoxedCommand]) {
-    for boxed in commands {
-        boxed.command.call(context.clone());
-    }
-}
 
 #[derive(Debug, Default)]
 struct Revi {
@@ -100,11 +95,13 @@ impl App for Revi {
             self.parse_keys.clear();
         }
         if let Some(cmd) = commands {
-            execute(self.context.clone(), cmd);
+            for _ in 0..self.parse_keys.multiplier {
+                cmd.call(self.context.clone());
+            }
             self.parse_keys.clear();
         } else if let (None, Mode::Command, Some(c)) = (commands, mode, keys.as_char()){
-            let command = InsertChar(c).into();
-            execute(self.context.clone(), &[command]);
+            let command: BoxedCommand = InsertChar(c).into();
+            command.call(self.context.clone());
             self.parse_keys.clear();
         }
         let mode = *self.context.mode.borrow();

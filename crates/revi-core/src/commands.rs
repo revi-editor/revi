@@ -43,6 +43,12 @@ pub struct BoxedCommand {
     pub command: Rc<dyn Command>,
 }
 
+impl BoxedCommand {
+    pub fn call(&self, ctx: Context) {
+        self.command.call(ctx);
+    }
+}
+
 impl std::fmt::Debug for BoxedCommand {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self.command)

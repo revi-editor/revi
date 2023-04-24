@@ -1,7 +1,7 @@
 use revi_ui::Keys;
 #[derive(Debug)]
 pub struct KeyParser {
-    multiplier: usize,
+    pub multiplier: usize,
     keys: Vec<Keys>,
     idx: usize,
 }
