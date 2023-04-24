@@ -1,10 +1,17 @@
 use crate::commands;
 use crate::commands::BoxedCommand;
-use crate::commands::{CursorDown, CursorLeft, CursorRight, CursorUp, ScrollDown, ScrollUp};
-//     Backspace, BoxedCommand, ChangeMode, DeleteChar,
-//     DeleteLine, End, EnterCommandMode, ExecuteCommandLine, ExitCommandMode, FirstCharInLine, Home,
-//     InsertTab, JumpToFirstLineBuffer, JumpToLastLineBuffer, MoveBackwardByWord, MoveForwardByWord,
-//     NewLine, NextWindow, Paste, PasteBack, Quit, Save, Undo, YankLine,
+use crate::commands::{
+    CursorDown,
+    CursorLeft,
+    CursorRight,
+    CursorUp,
+    ScrollDown,
+    ScrollUp,
+    ChangeMode,
+    InsertChar,
+    ExecuteCommandLine,
+};
+
 use crate::mode::Mode;
 use revi_ui::{string_to_keys, Keys};
 
@@ -131,7 +138,7 @@ impl Mapper {
         }
     }
 
-    fn get_map(&self, mode: Mode) -> &KeyMap {
+    fn get_map(&self, mode: &Mode) -> &KeyMap {
         match mode {
             Mode::Normal => &self.nmaps,
             Mode::Insert => &self.imaps,
@@ -148,14 +155,15 @@ impl Mapper {
     }
 
     #[must_use]
-    pub fn is_mapping(&self, mode: Mode, keys: &[Keys]) -> bool {
+    pub fn is_mapping(&self, mode: &Mode, keys: &[Keys]) -> bool {
         self.get_map(mode).is_command(keys)
     }
 
     #[must_use]
-    pub fn get_mapping(&self, mode: Mode, keys: &[Keys]) -> Option<&Vec<BoxedCommand>> {
+    pub fn get_mapping(&self, mode: &Mode, keys: &[Keys]) -> Option<&Vec<BoxedCommand>> {
         self.get_map(mode).get(keys)
     }
+
     #[must_use]
     pub fn with_mapping(mut self, mode: Mode, keys: &str, commands: Vec<BoxedCommand>) -> Self {
         self.get_map_mut(mode)
@@ -165,10 +173,10 @@ impl Mapper {
 
     fn build_normal(self) -> Self {
         self
-            // .with_mapping(Mode::Normal, "<esc>", commands![ChangeMode(Mode::Normal)])
-            //     .with_mapping(Mode::Normal, "<C-s>", commands![Save])
-            //     .with_mapping(Mode::Normal, "zz", commands![Save, Quit])
-            //     .with_mapping(Mode::Normal, "zq", commands![Quit])
+            .with_mapping(Mode::Normal, "<esc>", commands![ChangeMode(Mode::Normal)])
+            // .with_mapping(Mode::Normal, "<C-s>", commands![Save])
+            // .with_mapping(Mode::Normal, "zz", commands![Save, Quit])
+            // .with_mapping(Mode::Normal, "zq", commands![Quit])
             .with_mapping(Mode::Normal, "j", commands![CursorDown])
             .with_mapping(Mode::Normal, "<down>", commands![CursorDown])
             .with_mapping(Mode::Normal, "k", commands![CursorUp])
@@ -177,8 +185,8 @@ impl Mapper {
             .with_mapping(Mode::Normal, "<left>", commands![CursorLeft])
             .with_mapping(Mode::Normal, "l", commands![CursorRight])
             .with_mapping(Mode::Normal, "<right>", commands![CursorRight])
-            //     .with_mapping(Mode::Normal, ":", commands![EnterCommandMode])
-            //     .with_mapping(Mode::Normal, "i", commands![ChangeMode(Mode::Insert)])
+            .with_mapping(Mode::Normal, ":", commands![ChangeMode(Mode::Command)])
+            .with_mapping(Mode::Normal, "i", commands![ChangeMode(Mode::Insert)])
             //     .with_mapping(Mode::Normal, "x", commands![DeleteChar])
             //     .with_mapping(Mode::Normal, "delete", commands![DeleteChar])
             //     .with_mapping(Mode::Normal, "dd", commands![DeleteLine, CursorUp])
@@ -229,7 +237,7 @@ impl Mapper {
     }
 
     fn build_insert(self) -> Self {
-        // self.with_mapping(Mode::Insert, "<esc>", commands![ChangeMode(Mode::Normal)])
+        self.with_mapping(Mode::Insert, "<esc>", commands![ChangeMode(Mode::Normal)])
         //     .with_mapping(Mode::Insert, "<backspace>", commands![Backspace])
         //     .with_mapping(
         //         Mode::Insert,
@@ -243,24 +251,15 @@ impl Mapper {
         //     .with_mapping(Mode::Insert, "<left>", commands![CursorLeft])
         //     .with_mapping(Mode::Insert, "<right>", commands![CursorRight])
         //     .with_mapping(Mode::Insert, "<tab>", commands![InsertTab])
-        self
     }
 
     fn build_command(self) -> Self {
-        // self.with_mapping(Mode::Command, "<esc>", commands![ExitCommandMode])
-        //     .with_mapping(
-        //         Mode::Command,
-        //         "enter",
-        //         commands![ExecuteCommandLine, ExitCommandMode],
-        //     )
-        self
-    }
-}
-
-impl Mapper {
-    pub fn normal_insert(&mut self, keys: &str, commands: Vec<BoxedCommand>) {
-        self.get_map_mut(Mode::Normal)
-            .insert(&string_to_keys(keys), commands);
+        self.with_mapping(Mode::Command, "<esc>", commands![ChangeMode(Mode::Normal)])
+            .with_mapping(
+                Mode::Command,
+                "enter",
+                commands![ExecuteCommandLine],
+            )
     }
 }
 
@@ -268,13 +267,21 @@ impl Mapper {
 fn test_normal_keymapper() {
     let km = Mapper::default();
     assert_eq!(
-        km.get_mapping(Mode::Normal, &string_to_keys("k"))
+        km.get_mapping(&Mode::Normal, &string_to_keys("k"))
             .unwrap(),
         &commands!(CursorUp)
     );
     assert_eq!(
-        km.get_mapping(Mode::Normal, &string_to_keys("j"))
+        km.get_mapping(&Mode::Normal, &string_to_keys("j"))
             .unwrap(),
         &commands!(CursorDown)
+    );
+}
+
+#[test]
+fn test_command_insert_char() {
+    let km = Mapper::default();
+    assert!(
+        !km.is_mapping(&Mode::Command, &string_to_keys("<esc>"))
     );
 }

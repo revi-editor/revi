@@ -1,4 +1,4 @@
-// use crate::mode::Mode;
+use crate::mode::Mode;
 use crate::context::Context;
 use std::fmt;
 use std::rc::Rc;
@@ -105,16 +105,14 @@ build_command!(
         ctx.panes[ctx.focused_pane].borrow_mut().scroll_down();
     }
 );
+
 // build_command!(
 //     Home,
 //     6;
-//     |_: &Home, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.focused_window_mut().home();
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
+//     |_: &Home, _ctx: Context| {
 //     }
 // );
+
 // build_command!(
 //     End,
 //     7;
@@ -125,6 +123,7 @@ build_command!(
 //         revi.queue.push(focused_window);
 //     }
 // );
+
 // build_command!(
 //     MoveForwardByWord,
 //     8;
@@ -135,7 +134,7 @@ build_command!(
 //         revi.queue.push(focused_window);
 //     }
 // );
-//
+
 // build_command!(
 //     MoveBackwardByWord,
 //     9;
@@ -282,30 +281,63 @@ build_command!(
 //     }
 // );
 //
+build_command!(
+    InsertChar,
+    20,
+    char;
+    |InsertChar(c): &InsertChar, ctx: Context| {
+        let mode = *ctx.mode.borrow();
+        match mode {
+            Mode::Insert => {
+                let id = ctx.focused_pane;
+                let mut pane = ctx.panes[id].borrow_mut();
+                pane.insert_char(*c);
+            }
+            Mode::Command => {
+                ctx.command_bar.borrow_mut().insert_char(*c);
+            }
+            _ => {},
+        }
+    }
+);
+
+build_command!(
+    ChangeMode,
+    21,
+    Mode;
+    |Self(mode): &ChangeMode, ctx: Context| {
+        match &mode {
+            Mode::Command => {
+                let mut bar = ctx.command_bar.borrow_mut();
+                bar.set_focused(true);
+            }
+            Mode::Normal => {
+                let mut bar = ctx.command_bar.borrow_mut();
+                bar.set_focused(false);
+                let id = ctx.focused_pane;
+                let mut pane = ctx.panes[id].borrow_mut();
+                pane.set_focused(true);
+            }
+            _ => {},
+        }
+        *ctx.mode.borrow_mut() = *mode;
+
+    }
+);
+
 // build_command!(
-//     InsertChar,
-//     20,
-//     char;
-//     |insert_char: &InsertChar, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.focused_window_mut().insert_char(insert_char.0);
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
+//     FocusedPane,
+//     22,
+//     PaneId;
+//     |fpane: &FocusedPane, ctx: Context| {
+//         match fpane.0 {
+//             PaneId::CommandBar => {
+//                 let id = ctx.focused_pane;
+//             }
+//             PaneId::Number(id) => 
+//         }
 //     }
 // );
-//
-// build_command!(
-//     ChangeMode,
-//     21,
-//     Mode;
-//     |change_mode: &ChangeMode, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.change_modes(change_mode.0);
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
-//     }
-// );
-//
 // build_command!(
 //     EnterCommandMode,
 //     22;
@@ -316,57 +348,52 @@ build_command!(
 //         revi.queue.push(focused_window);
 //     }
 // );
-//
+
 // build_command!(
 //     ExitCommandMode,
 //     23;
-//     |_: &ExitCommandMode, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         if revi.message_window {
-//             revi.message_window = false;
-//             return;
-//         }
-//         revi.exit_command_mode();
+//     |_: &ExitCommandMode, ctx: Context| {
 //     }
 // );
-//
-// build_command!(
-//     ExecuteCommandLine,
-//     24;
-//     |_: &ExecuteCommandLine, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let is_msg_window_open = revi_rc.borrow().message_window;
-//         if is_msg_window_open {
-//             revi_rc.borrow_mut().close_message_window();
-//             return;
-//         }
-//         let line = {
-//             let mut revi = revi_rc.borrow_mut();
-//             let window = revi.get_command_window_mut();
-//             let mut line = window.get_current_line();
-//             if !line.is_empty() {
-//                 line.remove(0);
-//             }
-//             line
-//         };
-//         // run lua code
-//         // if line.starts_with("lua") {
-//         //     let Some((_, line)) = line.split_once(' ') else {
-//         //         revi_rc
-//         //             .borrow_mut()
-//         //             .error_message(&[line.as_str(), "lua command takes an argument expr"]);
-//         //         return;
-//         //     };
-//         //     let result = lua.load(line.trim()).exec();
-//         //     if let Err(e) = result {
-//         //         revi_rc.borrow_mut().create_message_window(e.to_string());
-//         //     }
-//         //     return;
-//         // }
-//         // built in command
-//         revi_rc.borrow_mut().run_command_line(&line);
-//     }
-// );
-//
+
+build_command!(
+    ExecuteCommandLine,
+    24;
+    |_: &ExecuteCommandLine, ctx: Context| {
+        ChangeMode(crate::mode::Mode::Normal).call(ctx);
+        // let is_msg_window_open = revi_rc.borrow().message_window;
+        // if is_msg_window_open {
+        //     revi_rc.borrow_mut().close_message_window();
+        //     return;
+        // }
+        // let line = {
+        //     let mut revi = revi_rc.borrow_mut();
+        //     let window = revi.get_command_window_mut();
+        //     let mut line = window.get_current_line();
+        //     if !line.is_empty() {
+        //         line.remove(0);
+        //     }
+        //     line
+        // };
+        // // run lua code
+        // // if line.starts_with("lua") {
+        // //     let Some((_, line)) = line.split_once(' ') else {
+        // //         revi_rc
+        // //             .borrow_mut()
+        // //             .error_message(&[line.as_str(), "lua command takes an argument expr"]);
+        // //         return;
+        // //     };
+        // //     let result = lua.load(line.trim()).exec();
+        // //     if let Err(e) = result {
+        // //         revi_rc.borrow_mut().create_message_window(e.to_string());
+        // //     }
+        // //     return;
+        // // }
+        // // built in command
+        // revi_rc.borrow_mut().run_command_line(&line);
+    }
+);
+
 // build_command!(
 //     NextWindow,
 //     25;

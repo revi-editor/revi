@@ -2,7 +2,7 @@ use ropey::{Rope, RopeSlice};
 #[derive(Debug)]
 pub struct Buffer {
     pub name: String,
-    pub rope: Rope,
+    rope: Rope,
 }
 
 impl Buffer {
@@ -44,6 +44,14 @@ impl Buffer {
 
     pub fn line_len(&self, line_idx: usize) -> usize {
         self.rope.line(line_idx).len_chars()
+    }
+
+    pub fn get_rope(&self) -> &Rope {
+        &self.rope
+    }
+
+    pub fn get_rope_mut(&mut self) -> &mut Rope {
+        &mut self.rope
     }
 }
 

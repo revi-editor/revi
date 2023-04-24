@@ -7,8 +7,8 @@ use revi_ui::tui::{
 };
 
 use crate::{
-    pane::{Cursor, CursorMovement, Scrollable},
-    Buffer, Pane,
+    pane::{Cursor, CursorMovement, Scrollable, CursorPos, PaneBounds, BufferBounds, BufferMut},
+    Buffer, Pane, Mode,
 };
 
 #[derive(Debug)]
@@ -19,6 +19,8 @@ pub struct Window {
     buffer: Rc<RefCell<Buffer>>,
     has_line_numbers: bool,
     has_status_bar: bool,
+    active: bool,
+    mode: Mode,
 }
 
 impl Window {
@@ -31,6 +33,8 @@ impl Window {
             buffer,
             has_line_numbers: false,
             has_status_bar: false,
+            active: false,
+            mode: Mode::Normal,
         }
     }
 
@@ -84,7 +88,8 @@ impl Window {
         let x = self.cursor.pos.x + self.cursor.scroll.x;
         let y = self.cursor.pos.y + self.cursor.scroll.y;
         Text::new(&format!(
-            "Normal Mode, {}: {}/{}                 ",
+            "{} {}: {}/{}                 ",
+            self.mode,
             self.buffer.borrow().name,
             x,
             y
@@ -134,12 +139,24 @@ impl Pane for Window {
         view.into()
     }
 
-    fn update(&mut self, _: revi_ui::Keys) {}
+    fn update(&mut self, mode: Mode, _: revi_ui::Keys) {
+        self.mode = mode;
+    }
+    fn is_active(&self) -> bool {
+        self.active
+    }
+    fn set_focused(&mut self, flag: bool) {
+        self.active = flag;
+    }
 }
 
-impl CursorMovement for Window {
-    fn get_cursor_bounds(&self) -> Option<Rect> {
-        Some(self.create_cursor_bounds(self.cursor.pos.y + self.cursor.scroll.y))
+impl CursorPos for Window {
+    fn get_cursor_pos(&self) -> Option<&Cursor> {
+        Some(&self.cursor)
+    }
+
+    fn get_cursor_pos_mut(&mut self) -> Option<&mut Cursor> {
+        Some(&mut self.cursor)
     }
 
     fn get_line_above_bounds(&self) -> Option<Rect> {
@@ -157,16 +174,16 @@ impl CursorMovement for Window {
     }
 }
 
-impl Scrollable for Window {
-    fn get_cursor_pos(&self) -> Option<&Cursor> {
-        Some(&self.cursor)
+impl PaneBounds for Window {
+    fn get_pane_bounds(&self) -> Option<Rect> {
+        Some(self.create_cursor_bounds(self.cursor.pos.y + self.cursor.scroll.y))
     }
+}
 
-    fn get_cursor_pos_mut(&mut self) -> Option<&mut Cursor> {
-        Some(&mut self.cursor)
-    }
 
-    fn get_cursor_and_bounds(&self) -> Option<Size> {
+
+impl BufferBounds for Window {
+    fn get_buffer_bounds(&self) -> Option<Size> {
         let top = self.cursor.scroll.y as usize;
         let bottom = (self.cursor.scroll.y + self.text_field_size().height) as usize;
         let buffer = self.buffer.borrow();
@@ -176,7 +193,14 @@ impl Scrollable for Window {
             .map(|i| i.len_chars() as u16)
             .max()
             .unwrap_or_default();
-        let height = buffer.rope.len_lines() as u16;
+        let height = buffer.get_rope().len_lines() as u16;
         Some(Size { width, height })
     }
 }
+
+impl BufferMut for Window {
+    fn insert_char(&mut self, c: char) { }
+}
+
+impl Scrollable for Window { }
+impl CursorMovement for Window { }

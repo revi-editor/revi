@@ -10,8 +10,8 @@ Email: cowboy8625@protonmail.com
 mod commandline;
 
 use revi_core::{
-    commands::BoxedCommand, Buffer, Context, ContextBuilder, KeyParser, Mapper, Mode, Settings,
-    Window,
+    commands::{BoxedCommand, InsertChar}, Buffer, Context, ContextBuilder, KeyParser, Mapper, Settings,
+    Window, CommandBar, Mode, Pane
 };
 use revi_ui::{
     tui::{
@@ -19,13 +19,12 @@ use revi_ui::{
         container::Container,
         layout::{Pos, Rect, Size, Stack},
         size,
-        text::Text,
         widget::BoxWidget,
     },
     Key, Keys,
 };
 
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::{RefCell, RefMut, Ref}, rc::Rc};
 fn execute(context: Context, commands: &[BoxedCommand]) {
     for boxed in commands {
         boxed.command.call(context.clone());
@@ -36,9 +35,20 @@ fn execute(context: Context, commands: &[BoxedCommand]) {
 struct Revi {
     context: Context,
     is_running: bool,
-    keyparser: KeyParser,
-    mode: Mode,
-    keymapper: Mapper,
+    parse_keys: KeyParser,
+    map_keys: Mapper,
+}
+
+impl Revi {
+    fn get_current_pane(&self) -> Ref<dyn Pane>{
+        let id = self.context.focused_pane;
+        self.context.panes[id].borrow()
+    }
+
+    fn get_current_pane_mut(&self) -> RefMut<dyn Pane>{
+        let id = self.context.focused_pane;
+        self.context.panes[id].borrow_mut()
+    }
 }
 
 impl App for Revi {
@@ -62,10 +72,10 @@ impl App for Revi {
             .with_status_bar(true)
             .with_line_numbers(true),
         ));
-        // .with_status_bar(true).with_line_numbers(true)
         let context = ContextBuilder::default()
             .with_buffers(buffers)
             .with_panes(vec![pane])
+            .with_command_bar(CommandBar::new(Pos { x: 0, y: 0 }, width))
             .with_focused_pane(0)
             .with_on_screen(vec![0])
             .with_window_size(Size::new(width, height))
@@ -82,15 +92,24 @@ impl App for Revi {
         if let Keys::KeyAndMod(Key::LC, Key::Ctrl) = keys {
             self.is_running = false;
         }
-        self.keyparser.push(keys);
-        let commands = self.keymapper.get_mapping(self.mode, self.keyparser.get_keys());
-        if !self.keymapper.is_mapping(self.mode, self.keyparser.get_keys()) {
-            self.keyparser.clear();
+        let mode = *self.context.mode.borrow();
+        self.parse_keys.push(keys);
+        let commands = self.map_keys.get_mapping(&mode, self.parse_keys.get_keys());
+        eprintln!("{mode:?}: {:?}", self.parse_keys.get_keys());
+        if !self.map_keys.is_mapping(&mode, self.parse_keys.get_keys()) {
+            self.parse_keys.clear();
         }
         if let Some(cmd) = commands {
             execute(self.context.clone(), cmd);
-            self.keyparser.clear();
+            self.parse_keys.clear();
+        } else if let (None, Mode::Command, Some(c)) = (commands, mode, keys.as_char()){
+            let command = InsertChar(c).into();
+            execute(self.context.clone(), &[command]);
+            self.parse_keys.clear();
         }
+        let mode = *self.context.mode.borrow();
+        let mut pane = self.get_current_pane_mut();
+        pane.update(mode, keys)
     }
 
     fn quit(&self) -> bool {
@@ -101,9 +120,10 @@ impl App for Revi {
         let id = self.context.focused_pane;
         let main_window = self.context.panes[id].borrow().view();
         let wsize = self.context.main_window_size();
+        let command_bar = self.context.command_bar.borrow().view();
         Container::new(Rect::new(wsize), Stack::Vertically)
             .with_child_box(main_window)
-            .with_child(Text::new("Command Bar").max_height(1))
+            .with_child_box(command_bar)
             .into()
     }
 

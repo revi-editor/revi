@@ -1,4 +1,4 @@
-use super::{Buffer, Pane};
+use super::{CommandBar, Buffer, Pane, Mode};
 
 use revi_ui::tui::layout::Size;
 
@@ -8,6 +8,8 @@ use std::{cell::RefCell, rc::Rc};
 pub struct ContextBuilder {
     buffers: Vec<Rc<RefCell<Buffer>>>,
     panes: Vec<Rc<RefCell<dyn Pane>>>,
+    command_bar: CommandBar,
+    mode: Mode,
     focused_pane: usize,
     on_screen: Vec<usize>,
     window_size: Size,
@@ -21,6 +23,16 @@ impl ContextBuilder {
     }
     pub fn with_panes(mut self, panes: Vec<Rc<RefCell<dyn Pane>>>) -> Self {
         self.panes = panes;
+        self
+    }
+
+    pub fn with_command_bar(mut self, cb: CommandBar) -> Self {
+        self.command_bar = cb;
+        self
+    }
+
+    pub fn with_mode(mut self, mode: Mode) -> Self {
+        self.mode = mode;
         self
     }
     pub fn with_focused_pane(mut self, focused: usize) -> Self {
@@ -43,6 +55,8 @@ impl ContextBuilder {
         Context {
             buffers: self.buffers,
             panes: self.panes,
+            command_bar: Rc::new(RefCell::new(self.command_bar)),
+            mode: Rc::new(RefCell::new(self.mode)),
             focused_pane: self.focused_pane,
             on_screen: self.on_screen,
             window_size: self.window_size,
@@ -55,6 +69,8 @@ impl ContextBuilder {
 pub struct Context {
     pub buffers: Vec<Rc<RefCell<Buffer>>>,
     pub panes: Vec<Rc<RefCell<dyn Pane>>>,
+    pub command_bar: Rc<RefCell<dyn Pane>>,
+    pub mode: Rc<RefCell<Mode>>,
     pub focused_pane: usize,
     pub on_screen: Vec<usize>,
     window_size: Size,

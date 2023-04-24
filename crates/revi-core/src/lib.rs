@@ -1,4 +1,4 @@
-// mod command_bar;
+mod command_bar;
 // pub mod api;
 mod context;
 mod pane;
@@ -18,3 +18,4 @@ pub use mode::Mode;
 pub use pane::Pane;
 pub use settings::Settings;
 pub use window::Window;
+pub use command_bar::CommandBar;

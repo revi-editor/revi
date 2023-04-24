@@ -65,6 +65,16 @@ impl Keys {
     pub fn is_null(&self) -> bool {
         matches!(self, Keys::Key(Key::Null))
     }
+
+    pub fn as_char(&self) -> Option<char> {
+        if self.is_null() {
+            return None;
+        }
+        match self {
+            Self::Key(key) => Some(key.as_char()),
+            _ => None,
+        }
+    }
 }
 
 impl From<crossterm::event::KeyEvent> for Keys {

@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use revi_ui::{
     tui::{
         layout::{Pos, Rect, Size},
@@ -6,10 +8,7 @@ use revi_ui::{
     Keys,
 };
 
-pub trait Pane: std::fmt::Debug + CursorMovement + Scrollable {
-    fn view(&self) -> BoxWidget;
-    fn update(&mut self, keys: Keys);
-}
+use crate::Mode;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Cursor {
@@ -18,18 +17,32 @@ pub struct Cursor {
     pub scroll: Pos,
 }
 
-pub trait CursorMovement: Scrollable {
-    fn get_cursor_bounds(&self) -> Option<Rect> {
-        None
-    }
-    fn get_line_above_bounds(&self) -> Option<Rect> {
-        None
-    }
-    fn get_line_below_bounds(&self) -> Option<Rect> {
-        None
-    }
+
+pub trait Pane: Debug + CursorMovement + Scrollable + BufferMut {
+    fn view(&self) -> BoxWidget;
+    fn update(&mut self, mode: Mode, keys: Keys);
+    fn set_focused(&mut self, _: bool);
+    fn is_active(&self) -> bool;
+}
+
+pub trait CursorPos {
+    fn get_cursor_pos(&self) -> Option<&Cursor> { None }
+    fn get_cursor_pos_mut(&mut self) -> Option<&mut Cursor> { None }
+    fn get_line_above_bounds(&self) -> Option<Rect> { None }
+    fn get_line_below_bounds(&self) -> Option<Rect> { None }
+}
+
+pub trait PaneBounds {
+    fn get_pane_bounds(&self) -> Option<Rect> { None }
+}
+
+pub trait BufferBounds {
+    fn get_buffer_bounds(&self) -> Option<Size> { None }
+}
+
+pub trait CursorMovement: CursorPos + PaneBounds + Scrollable {
     fn move_cursor_up(&mut self) {
-        let Some(bounds) = self.get_cursor_bounds() else {
+        let Some(bounds) = self.get_pane_bounds() else {
             return;
         };
         let above = self.get_line_above_bounds();
@@ -46,10 +59,9 @@ pub trait CursorMovement: Scrollable {
         } else {
             self.scroll_up();
         }
-        // cursor.pos.y = cursor.pos.y.saturating_sub(1).max(bounds.y);
     }
     fn move_cursor_down(&mut self) {
-        let Some(bounds) = self.get_cursor_bounds() else {
+        let Some(bounds) = self.get_pane_bounds() else {
             return;
         };
         let below = self.get_line_below_bounds();
@@ -65,54 +77,39 @@ pub trait CursorMovement: Scrollable {
         } else {
             self.scroll_down();
         }
-        //cursor.pos.y = cursor.pos.y.saturating_add(1).min(bounds.height);
     }
     fn move_cursor_left(&mut self) {
-        let Some(bounds) = self.get_cursor_bounds() else {
+        let Some(bounds) = self.get_pane_bounds() else {
             return;
         };
         let Some(cursor) = self.get_cursor_pos_mut() else {
             return;
         };
-        if cursor.pos.x > bounds.x {
-            cursor.pos.x -= 1;
-            cursor.max.x = cursor.pos.x;
-        }
+        cursor.pos.x = cursor.pos.x.saturating_sub(1).max(bounds.x);
+        cursor.max.x = cursor.pos.x.min(cursor.max.x);
     }
     fn move_cursor_right(&mut self) {
-        let Some(bounds) = self.get_cursor_bounds() else {
+        let Some(bounds) = self.get_pane_bounds() else {
             return;
         };
         let Some(cursor) = self.get_cursor_pos_mut() else {
             return;
         };
-        if cursor.pos.x < bounds.width {
-            cursor.pos.x += 1;
-        }
+        cursor.pos.x = cursor.pos.x.saturating_add(1).min(bounds.width);
         cursor.max.x = cursor.pos.x.max(cursor.max.x);
     }
 }
 
-pub trait Scrollable {
-    fn get_cursor_pos(&self) -> Option<&Cursor> {
-        None
-    }
-    fn get_cursor_pos_mut(&mut self) -> Option<&mut Cursor> {
-        None
-    }
-    fn get_cursor_and_bounds(&self) -> Option<Size> {
-        None
-    }
+pub trait Scrollable: BufferBounds + CursorPos {
     fn scroll_up(&mut self) {
-        let Some(cursor) = self.get_cursor_pos_mut() else {
-            return;
-        };
-        if cursor.scroll.y > 0 {
-            cursor.scroll.y -= 1;
-        }
+        self.get_cursor_pos_mut()
+            .map(|c| {
+                c.scroll.y = c.scroll.y.saturating_sub(1);
+                c
+            });
     }
     fn scroll_down(&mut self) {
-        let bounds = self.get_cursor_and_bounds();
+        let bounds = self.get_buffer_bounds();
         let Some(cursor) = self.get_cursor_pos_mut() else {
             return;
         };
@@ -125,4 +122,9 @@ pub trait Scrollable {
     }
     fn scroll_left(&mut self) {}
     fn scroll_right(&mut self) {}
+}
+
+
+pub trait BufferMut {
+    fn insert_char(&mut self, c: char);
 }
