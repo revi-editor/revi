@@ -11,6 +11,7 @@ mod commandline;
 
 use revi_core::{
     commands::{CmdRc, InsertChar},
+    api::{self, Rhai},
     Buffer, CommandBar, Context, ContextBuilder, KeyParser, Mapper, Mode, Pane, Settings, Window,
 };
 use revi_ui::{
@@ -29,9 +30,10 @@ use std::{
     rc::Rc,
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct Revi {
     context: Context,
+    rhai: Rhai,
     parse_keys: KeyParser,
     map_keys: Mapper,
 }
@@ -78,9 +80,14 @@ impl App for Revi {
             .with_window_size(Size::new(width, height))
             .with_show_command_bar(true)
             .build();
+        let mut rhai = api::init(context.clone()).expect("failed to init scripting engine");
+        rhai.run_file::<()>("./userspace/init.rhai").expect("failed to run init file");
+
         Self {
             context,
-            ..Default::default()
+            rhai,
+            parse_keys: KeyParser::default(),
+            map_keys: Mapper::default(),
         }
     }
 

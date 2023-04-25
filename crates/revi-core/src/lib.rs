@@ -1,5 +1,5 @@
 mod command_bar;
-// pub mod api;
+pub mod api;
 pub mod buffer;
 pub mod commands;
 mod context;
