@@ -11,11 +11,6 @@ pub fn size() -> (u16, u16) {
     crossterm::terminal::size().unwrap_or((0, 0))
 }
 
-// pub trait Display<D: std::fmt::Display> {
-//     fn render(&mut self, func: impl FnMut(u16, u16, Vec<D>));
-//     fn cursor(&self, func: impl FnMut(u16, u16, Option<CursorShape>));
-// }
-
 pub mod widget {
     use super::layout::Rect;
     use std::io::Stdout;
@@ -426,18 +421,14 @@ mod runtime {
     use std::io::Stdout;
     use std::{io::Write, time::Duration};
 
-    fn enable_raw_mode() {
-        terminal::enable_raw_mode().expect("failed to enter in raw mode");
-    }
-    fn disable_raw_mode() {
-        terminal::disable_raw_mode().expect("failed to disable raw mode");
-    }
     fn enter_alternate_screen(w: &mut Stdout) {
-        execute!(w, terminal::EnterAlternateScreen).expect("failure to enter alternate screen.");
+        execute!(w, cursor::SavePosition, cursor::Hide, terminal::EnterAlternateScreen).expect("failure to enter alternate screen.");
+        terminal::enable_raw_mode().expect("failed to enable raw mode");
     }
 
     fn leave_alternate_screen(w: &mut Stdout) {
-        execute!(w, cursor::Show, terminal::LeaveAlternateScreen)
+        terminal::disable_raw_mode().expect("failed to disable raw mode");
+        execute!(w, cursor::RestorePosition, cursor::Show, terminal::LeaveAlternateScreen)
             .expect("failure to leave alternate screen.");
     }
 
@@ -480,9 +471,8 @@ mod runtime {
         A: App,
     {
         let mut writer = std::io::stdout();
-        clear(&mut writer);
-        enable_raw_mode();
         enter_alternate_screen(&mut writer);
+        clear(&mut writer);
 
         render_app(&mut writer, app);
         while app.quit() {
@@ -505,6 +495,5 @@ mod runtime {
         }
 
         leave_alternate_screen(&mut writer);
-        disable_raw_mode();
     }
 }
