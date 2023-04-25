@@ -5,6 +5,7 @@ use crate::commands::{
     CursorLeft,
     CursorRight,
     CursorUp,
+    BackSpace,
     // InsertChar,
     ExecuteCommandLine,
     // ScrollDown,
@@ -250,6 +251,9 @@ impl Mapper {
     fn build_command(self) -> Self {
         self.with_mapping(Mode::Command, "<esc>", ChangeMode(Mode::Normal))
             .with_mapping(Mode::Command, "<enter>", ExecuteCommandLine)
+            .with_mapping(Mode::Command, "<backspace>", BackSpace)
+            .with_mapping(Mode::Command, "<c-h>", CursorLeft)
+            .with_mapping(Mode::Command, "<c-l>", CursorRight)
     }
 }
 

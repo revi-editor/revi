@@ -87,9 +87,19 @@ impl Window {
     fn view_status_bar(&self) -> Text {
         let x = self.cursor.pos.x + self.cursor.scroll.x;
         let y = self.cursor.pos.y + self.cursor.scroll.y;
+        // BUG: this should work
+        // let mode = format!("{:-<7}", self.mode);
+        // assert_eq!(mode.len(), 7);
+        // |Normal| README.md: 5/0
+        // eprintln!("len: {}", mode.len());
+        let mut mode = self.mode.to_string();
+        if mode.len() < 7 {
+            mode += &" ".repeat(7 - mode.len());
+        }
+
         Text::new(&format!(
             "{} {}: {}/{}                 ",
-            self.mode,
+            mode,
             self.buffer.borrow().name,
             x,
             y
@@ -202,6 +212,7 @@ impl BufferMut for Window {
     fn get_buffer_contents(&self) -> String {
         unimplemented!("get buffer contents")
     }
+    fn backspace(&mut self){}
 }
 
 impl Scrollable for Window {}

@@ -30,13 +30,16 @@ impl CommandBar {
 
 impl Pane for CommandBar {
     fn view(&self) -> revi_ui::tui::widget::BoxWidget {
+        // HACK: this should be handled by the render.
+        let w = self.size.width - self.active as u16;
         let content = if self.active {
-            self.content.clone()
+            let w = w as usize;
+            format!("{:<w$}", self.content)
         } else {
             " ".repeat(self.size.width as usize)
         };
         let text_in_bar = Text::new(content.as_str())
-            .max_width(self.size.width - self.active as u16)
+            .max_width(w)
             .max_height(1);
         let mut view = Container::new(
             Rect::with_position(self.pos, self.size),
@@ -73,7 +76,11 @@ impl CursorPos for CommandBar {
 
 impl PaneBounds for CommandBar {
     fn get_pane_bounds(&self) -> Option<Rect> {
-        Some(Rect::new(self.size))
+        let size = Size {
+            width: self.content.len() as u16,
+            height: 1,
+        };
+        Some(Rect::new(size))
     }
 }
 
@@ -88,6 +95,11 @@ impl BufferBounds for CommandBar {
 
 impl BufferMut for CommandBar {
     fn insert_char(&mut self, c: char) {
+        let idx = self.cursor.pos.x as usize;
+        if idx < self.content.len() {
+            self.content.insert(idx, c);
+            return;
+        }
         self.content.push(c);
     }
     fn clear_buffer(&mut self) {
@@ -95,6 +107,14 @@ impl BufferMut for CommandBar {
     }
     fn get_buffer_contents(&self) -> String {
         self.content.clone()
+    }
+    fn backspace(&mut self){
+        let idx = self.cursor.pos.x as usize;
+        if idx == self.content.len() {
+            self.content.pop();
+            return;
+        }
+        self.content.remove(idx.saturating_sub(1));
     }
 }
 

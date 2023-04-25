@@ -75,25 +75,59 @@ build_command!(
 build_command!(
     CursorLeft;
     |_: &CursorLeft, ctx: Context| {
-        ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_left();
+        let mode = *ctx.mode.borrow();
+        match mode {
+            Mode::Command => {
+                ctx.command_bar.borrow_mut().move_cursor_left();
+            }
+            _ => {
+                ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_left();
+            }
+        }
     }
 );
 build_command!(
     CursorRight;
     |_: &CursorRight, ctx: Context| {
-        ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_right();
+        let mode = *ctx.mode.borrow();
+        match mode {
+            Mode::Command => {
+                ctx.command_bar.borrow_mut().move_cursor_right();
+            }
+            _ => {
+                ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_right();
+            }
+        }
     }
 );
+
 build_command!(
     ScrollUp;
     |_: &ScrollUp, ctx: Context| {
         ctx.panes[ctx.focused_pane].borrow_mut().scroll_up();
     }
 );
+
 build_command!(
     ScrollDown;
     |_: &ScrollDown, ctx: Context| {
         ctx.panes[ctx.focused_pane].borrow_mut().scroll_down();
+    }
+);
+
+build_command!(
+    BackSpace;
+    |_: &BackSpace, ctx: Context| {
+        let mode = *ctx.mode.borrow();
+        match mode {
+            Mode::Command => {
+                ctx.command_bar.borrow_mut().backspace();
+            }
+            _ => {
+                ctx.panes[ctx.focused_pane].borrow_mut().backspace();
+            }
+        }
+        CursorLeft.call(ctx)
     }
 );
 
