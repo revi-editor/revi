@@ -385,6 +385,7 @@ pub mod layout {
 pub mod application {
     use super::{layout::Pos, widget::BoxWidget};
     use crate::key::Keys;
+    use crossterm::Result;
     pub trait App: Sized {
         type Settings;
         fn new(_: Self::Settings) -> Self;
@@ -396,8 +397,8 @@ pub mod application {
         fn quit(&self) -> bool {
             true
         }
-        fn run(&mut self) {
-            crate::tui::runtime::run(self);
+        fn run(&mut self) -> Result<()> {
+            crate::tui::runtime::run(self)
         }
     }
 }
@@ -409,22 +410,10 @@ mod runtime {
     };
     use crate::key;
     use crossterm::{
-        Result,
-        QueueableCommand,
-        cursor::{
-            Show,
-            Hide,
-            SavePosition,
-            RestorePosition,
-            MoveTo,
-        },
+        cursor::{Hide, MoveTo, RestorePosition, SavePosition, Show},
         event,
-        terminal::{
-            enable_raw_mode,
-            disable_raw_mode,
-            EnterAlternateScreen,
-            LeaveAlternateScreen,
-        },
+        terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+        QueueableCommand, Result,
     };
     use std::io::Stdout;
     use std::{io::Write, time::Duration};
@@ -458,10 +447,10 @@ mod runtime {
         writer.queue(EnterAlternateScreen)?;
         writer.queue(SavePosition)?;
         writer.queue(Hide)?;
-        enable_raw_mode();
+        enable_raw_mode()?;
         writer.flush()?;
 
-        render_app(&mut writer, app);
+        render_app(&mut writer, app)?;
         while app.quit() {
             // HACK: this is temporary untill other events need to be handled.
             let keys = if event::poll(Duration::from_millis(50)).unwrap_or(false) {
@@ -481,7 +470,7 @@ mod runtime {
             }
         }
 
-        disable_raw_mode();
+        disable_raw_mode()?;
         writer.queue(LeaveAlternateScreen)?;
         writer.queue(RestorePosition)?;
         writer.queue(Show)?;

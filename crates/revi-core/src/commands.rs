@@ -1,8 +1,8 @@
 use crate::context::Context;
 use crate::mode::Mode;
+use std::any::Any;
 use std::fmt;
 use std::rc::Rc;
-use std::any::Any;
 
 pub trait Command: fmt::Debug {
     fn call(&self, ctx: Context);

@@ -197,7 +197,7 @@ impl BufferBounds for Window {
 }
 
 impl BufferMut for Window {
-    fn insert_char(&mut self, c: char) {}
+    fn insert_char(&mut self, _: char) {}
     fn clear_buffer(&mut self) {}
     fn get_buffer_contents(&self) -> String {
         unimplemented!("get buffer contents")

@@ -21,7 +21,7 @@ use revi_ui::{
         size,
         widget::BoxWidget,
     },
-    Key, Keys,
+    Key, Keys, Result,
 };
 
 use std::{
@@ -148,8 +148,8 @@ impl App for Revi {
     }
 }
 
-fn main() {
+fn main() -> Result<()> {
     let files = commandline::args();
     let settings = Settings { files };
-    Revi::new(settings).run();
+    Revi::new(settings).run()
 }

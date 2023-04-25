@@ -1,14 +1,14 @@
 use crate::commands::{
-    CmdRc,
     ChangeMode,
+    CmdRc,
     CursorDown,
     CursorLeft,
     CursorRight,
     CursorUp,
     // InsertChar,
     ExecuteCommandLine,
-    ScrollDown,
-    ScrollUp,
+    // ScrollDown,
+    // ScrollUp,
 };
 
 use crate::mode::Mode;
@@ -160,12 +160,7 @@ impl Mapper {
     }
 
     #[must_use]
-    pub fn with_mapping(
-        mut self,
-        mode: Mode,
-        keys: &str,
-        commands: impl Into<CmdRc>,
-    ) -> Self {
+    pub fn with_mapping(mut self, mode: Mode, keys: &str, commands: impl Into<CmdRc>) -> Self {
         self.get_map_mut(mode)
             .insert(&string_to_keys(keys), commands.into());
         self
