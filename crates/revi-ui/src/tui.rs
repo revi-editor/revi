@@ -1,11 +1,3 @@
-pub fn clear(stdout: &mut std::io::Stdout) {
-    crossterm::execute!(
-        stdout,
-        crossterm::terminal::Clear(crossterm::terminal::ClearType::All)
-    )
-    .unwrap();
-}
-
 #[must_use]
 pub fn size() -> (u16, u16) {
     crossterm::terminal::size().unwrap_or((0, 0))
@@ -411,68 +403,63 @@ pub mod application {
 }
 
 mod runtime {
-    use super::clear;
     use super::{
         application::App,
         layout::{Pos, Rect, Size},
     };
     use crate::key;
-    use crossterm::{cursor, event, execute, queue, terminal};
+    use crossterm::{
+        Result,
+        QueueableCommand,
+        cursor::{
+            Show,
+            Hide,
+            SavePosition,
+            RestorePosition,
+            MoveTo,
+        },
+        event,
+        terminal::{
+            enable_raw_mode,
+            disable_raw_mode,
+            EnterAlternateScreen,
+            LeaveAlternateScreen,
+        },
+    };
     use std::io::Stdout;
     use std::{io::Write, time::Duration};
 
-    fn enter_alternate_screen(w: &mut Stdout) {
-        execute!(w, cursor::SavePosition, cursor::Hide, terminal::EnterAlternateScreen).expect("failure to enter alternate screen.");
-        terminal::enable_raw_mode().expect("failed to enable raw mode");
-    }
-
-    fn leave_alternate_screen(w: &mut Stdout) {
-        terminal::disable_raw_mode().expect("failed to disable raw mode");
-        execute!(w, cursor::RestorePosition, cursor::Show, terminal::LeaveAlternateScreen)
-            .expect("failure to leave alternate screen.");
-    }
-
-    fn queue_cursor(w: &mut Stdout, Pos { x, y }: Pos) {
-        queue!(
-            w,
-            // RestorePosition,
-            cursor::MoveTo(x, y),
-            // cursor::SetCursorShape(cursor::CursorShape::Block) // SavePosition,
-        )
-        .expect("failed to hide cursor");
-    }
-    fn queue_save_hide_cursor(w: &mut Stdout) {
-        queue!(w, cursor::SavePosition, cursor::Hide,).expect("failed to hide cursor");
-    }
-    fn queue_restore_show_cursor(w: &mut Stdout) {
-        queue!(w, cursor::RestorePosition, cursor::Show,).expect("failed to show cursor");
-    }
-
-    fn render_app<A>(w: &mut Stdout, app: &mut A)
+    fn render_app<A>(w: &mut Stdout, app: &mut A) -> Result<()>
     where
         A: App,
     {
-        if let Some(pos) = app.cursor() {
-            queue_cursor(w, pos);
+        if let Some(Pos { x, y }) = app.cursor() {
+            w.queue(MoveTo(x, y))?;
         }
         let widgets = app.view();
         let width = widgets.width();
         let height = widgets.height();
         let app_size = Size { width, height };
         let app_pos = Pos { x: 0, y: 0 };
-        queue_save_hide_cursor(w);
+        w.queue(SavePosition)?;
+        w.queue(Hide)?;
         widgets.draw(w, Rect::with_position(app_pos, app_size));
-        queue_restore_show_cursor(w);
-        w.flush().expect("failed to flush");
+        w.queue(RestorePosition)?;
+        w.queue(Show)?;
+        w.flush()?;
+        Ok(())
     }
 
-    pub fn run<A>(app: &mut A)
+    pub fn run<A>(app: &mut A) -> Result<()>
     where
         A: App,
     {
         let mut writer = std::io::stdout();
-        enter_alternate_screen(&mut writer);
-        clear(&mut writer);
+        writer.queue(EnterAlternateScreen)?;
+        writer.queue(SavePosition)?;
+        writer.queue(Hide)?;
+        enable_raw_mode();
+        writer.flush()?;
 
         render_app(&mut writer, app);
         while app.quit() {
@@ -490,10 +477,15 @@ mod runtime {
             app.update(keys);
             // Update cursor pos on screen after update
             if !matches!(keys, key::Keys::Key(key::Key::Null)) {
-                render_app(&mut writer, app);
+                render_app(&mut writer, app)?;
             }
         }
 
-        leave_alternate_screen(&mut writer);
+        disable_raw_mode();
+        writer.queue(LeaveAlternateScreen)?;
+        writer.queue(RestorePosition)?;
+        writer.queue(Show)?;
+        writer.flush()?;
+        Ok(())
     }
 }
