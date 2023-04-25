@@ -233,6 +233,7 @@ impl Mapper {
 
     fn build_insert(self) -> Self {
         self.with_mapping(Mode::Insert, "<esc>", ChangeMode(Mode::Normal))
+            .with_mapping(Mode::Insert, "<backspace>", BackSpace)
         //     .with_mapping(Mode::Insert, "<backspace>", Backspace)
         //     .with_mapping(
         //         Mode::Insert,

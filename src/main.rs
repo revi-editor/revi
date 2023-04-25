@@ -21,7 +21,7 @@ use revi_ui::{
         size,
         widget::BoxWidget,
     },
-    Key, Keys, Result,
+    Key, Keys, Result, SetCursorStyle,
 };
 
 use std::{
@@ -99,7 +99,7 @@ impl App for Revi {
                 cmd.call(self.context.clone());
             }
             self.parse_keys.clear();
-        } else if let (None, Mode::Command, Some(c)) = (commands, mode, keys.as_char()) {
+        } else if let (None, Mode::Command|Mode::Insert, Some(c)) = (commands, mode, keys.as_char()) {
             let command: CmdRc = InsertChar(c).into();
             command.call(self.context.clone());
             self.parse_keys.clear();
@@ -124,25 +124,38 @@ impl App for Revi {
             .into()
     }
 
-    fn cursor(&self) -> Option<Pos> {
+    fn cursor(&self) -> (Option<Pos>, Option<SetCursorStyle>) {
         let mode = *self.context.mode.borrow();
         match mode {
             Mode::Command => {
                 let pane = self.get_current_pane();
                 let height = pane.view().height();
                 let bar = self.context.command_bar.borrow();
-                bar.get_cursor_pos().map(|c| {
+                let pos = bar.get_cursor_pos().map(|c| {
                     let x = c.pos.x + 1;
                     let y = height;
                     Pos { x, y }
-                })
+                });
+                let style = Some(SetCursorStyle::BlinkingBar);
+                (pos, style)
             }
-            _ => {
+            Mode::Insert => {
                 let id = self.context.focused_pane;
-                self.context.panes[id]
+                let pos = self.context.panes[id]
                     .borrow()
                     .get_cursor_pos()
-                    .map(|c| c.pos)
+                    .map(|c| c.pos);
+                let style = Some(SetCursorStyle::BlinkingBar);
+                (pos, style)
+            }
+            Mode::Normal => {
+                let id = self.context.focused_pane;
+                let pos = self.context.panes[id]
+                    .borrow()
+                    .get_cursor_pos()
+                    .map(|c| c.pos);
+                let style = Some(SetCursorStyle::BlinkingBlock);
+                (pos, style)
             }
         }
     }

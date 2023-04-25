@@ -385,14 +385,17 @@ pub mod layout {
 pub mod application {
     use super::{layout::Pos, widget::BoxWidget};
     use crate::key::Keys;
-    use crossterm::Result;
+    use crossterm::{
+        Result,
+        cursor::SetCursorStyle,
+    };
     pub trait App: Sized {
         type Settings;
         fn new(_: Self::Settings) -> Self;
         fn update(&mut self, keys: Keys);
         fn view(&self) -> BoxWidget;
-        fn cursor(&self) -> Option<Pos> {
-            None
+        fn cursor(&self) -> (Option<Pos>, Option<SetCursorStyle>) {
+            (None, None)
         }
         fn quit(&self) -> bool {
             true
@@ -422,8 +425,12 @@ mod runtime {
     where
         A: App,
     {
-        if let Some(Pos { x, y }) = app.cursor() {
+        let (cursor_pos, cursor_style) = app.cursor();
+        if let Some(Pos { x, y }) = cursor_pos {
             w.queue(MoveTo(x, y))?;
+        }
+        if let Some(cs) = cursor_style {
+            w.queue(cs)?;
         }
         let widgets = app.view();
         let width = widgets.width();
