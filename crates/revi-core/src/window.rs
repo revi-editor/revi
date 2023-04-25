@@ -7,8 +7,8 @@ use revi_ui::tui::{
 };
 
 use crate::{
-    pane::{Cursor, CursorMovement, Scrollable, CursorPos, PaneBounds, BufferBounds, BufferMut},
-    Buffer, Pane, Mode,
+    pane::{BufferBounds, BufferMut, Cursor, CursorMovement, CursorPos, PaneBounds, Scrollable},
+    Buffer, Mode, Pane,
 };
 
 #[derive(Debug)]
@@ -180,8 +180,6 @@ impl PaneBounds for Window {
     }
 }
 
-
-
 impl BufferBounds for Window {
     fn get_buffer_bounds(&self) -> Option<Size> {
         let top = self.cursor.scroll.y as usize;
@@ -199,8 +197,12 @@ impl BufferBounds for Window {
 }
 
 impl BufferMut for Window {
-    fn insert_char(&mut self, c: char) { }
+    fn insert_char(&mut self, c: char) {}
+    fn clear_buffer(&mut self) {}
+    fn get_buffer_contents(&self) -> String {
+        unimplemented!("get buffer contents")
+    }
 }
 
-impl Scrollable for Window { }
-impl CursorMovement for Window { }
+impl Scrollable for Window {}
+impl CursorMovement for Window {}

@@ -1,112 +1,97 @@
-use crate::mode::Mode;
 use crate::context::Context;
+use crate::mode::Mode;
 use std::fmt;
 use std::rc::Rc;
+use std::any::Any;
 
-#[macro_export]
-macro_rules! commands {
-    ( $( $x:ident $(($($args:expr),*))? ),* ) => {
-        vec![$(BoxedCommand { command: std::rc::Rc::new($x $(($($args),*))?) }),*]
-    }
-
+pub trait Command: fmt::Debug {
+    fn call(&self, ctx: Context);
+    fn equal(&self, other: &dyn Command) -> bool;
+    fn as_any(&self) -> &dyn Any;
 }
 
 macro_rules! build_command {
-    ($name:ident, $counter:expr $(, $ty:ty)?; $caller:expr) => {
-        #[derive(Debug, PartialEq)]
+    ($name:ident $(, $ty:ty)?; $caller:expr) => {
+        #[derive(Debug, PartialEq, Eq)]
         pub struct $name $((pub $ty))?;
         impl Command for $name {
             fn call(&self, ctx: Context) {
                 $caller(&self, ctx);
             }
-            fn id(&self) -> usize {
-                $counter
+            fn equal(&self, other: &dyn Command) -> bool {
+                other.as_any().downcast_ref::<Self>().map_or(false, |i| self==i)
+            }
+            fn as_any(&self) -> &dyn Any {
+                self
             }
         }
-        impl From<$name> for BoxedCommand {
+        impl From<$name> for CmdRc {
             fn from(value: $name) -> Self {
-                Self {
-                    command: std::rc::Rc::new(value),
-                }
+                Self(Rc::new(value))
             }
         }
     };
 }
 
-pub trait Command: fmt::Debug {
-    fn call(&self, ctx: Context);
-    fn id(&self) -> usize;
-}
-
 #[derive(Clone)]
-pub struct BoxedCommand {
-    pub command: Rc<dyn Command>,
-}
+pub struct CmdRc(Rc<dyn Command>);
 
-impl BoxedCommand {
+impl CmdRc {
     pub fn call(&self, ctx: Context) {
-        self.command.call(ctx);
+        self.0.call(ctx);
     }
 }
 
-impl std::fmt::Debug for BoxedCommand {
+impl std::fmt::Debug for CmdRc {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self.command)
+        write!(f, "{:?}", self.0)
     }
 }
 
-impl BoxedCommand {
+impl CmdRc {
     pub fn new(command: impl Command + 'static) -> Self {
-        Self {
-            command: Rc::new(command),
-        }
+        Self(Rc::new(command))
     }
 }
 
-impl PartialEq for BoxedCommand {
+impl PartialEq for CmdRc {
     fn eq(&self, other: &Self) -> bool {
-        self.command.id() == other.command.id()
+        self.0.equal(&*other.0)
     }
 }
 
 build_command!(
-    CursorUp,
-    0;
+    CursorUp;
     |_: &CursorUp, ctx: Context| {
         ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_up();
     }
 );
 build_command!(
-    CursorDown,
-    1;
+    CursorDown;
     |_: &CursorDown, ctx: Context| {
         ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_down();
     }
 );
 build_command!(
-    CursorLeft,
-    2;
+    CursorLeft;
     |_: &CursorLeft, ctx: Context| {
         ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_left();
     }
 );
 build_command!(
-    CursorRight,
-    3;
+    CursorRight;
     |_: &CursorRight, ctx: Context| {
         ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_right();
     }
 );
 build_command!(
-    ScrollUp,
-    4;
+    ScrollUp;
     |_: &ScrollUp, ctx: Context| {
         ctx.panes[ctx.focused_pane].borrow_mut().scroll_up();
     }
 );
 build_command!(
-    ScrollDown,
-    5;
+    ScrollDown;
     |_: &ScrollDown, ctx: Context| {
         ctx.panes[ctx.focused_pane].borrow_mut().scroll_down();
     }
@@ -289,7 +274,6 @@ build_command!(
 //
 build_command!(
     InsertChar,
-    20,
     char;
     |InsertChar(c): &InsertChar, ctx: Context| {
         let mode = *ctx.mode.borrow();
@@ -298,9 +282,12 @@ build_command!(
                 let id = ctx.focused_pane;
                 let mut pane = ctx.panes[id].borrow_mut();
                 pane.insert_char(*c);
+                pane.move_cursor_right();
             }
             Mode::Command => {
-                ctx.command_bar.borrow_mut().insert_char(*c);
+                let mut bar = ctx.command_bar.borrow_mut();
+                bar.insert_char(*c);
+                bar.move_cursor_right();
             }
             _ => {},
         }
@@ -309,23 +296,18 @@ build_command!(
 
 build_command!(
     ChangeMode,
-    21,
     Mode;
     |Self(mode): &ChangeMode, ctx: Context| {
-        match &mode {
-            Mode::Command => {
-                let mut bar = ctx.command_bar.borrow_mut();
-                bar.set_focused(true);
-            }
-            Mode::Normal => {
-                let mut bar = ctx.command_bar.borrow_mut();
-                bar.set_focused(false);
-                let id = ctx.focused_pane;
-                let mut pane = ctx.panes[id].borrow_mut();
-                pane.set_focused(true);
-            }
-            _ => {},
-        }
+        let (cmd_focused, pane_focused) = match &mode {
+            Mode::Command => (true, false),
+            Mode::Normal => (false, true),
+            Mode::Insert => (false, true),
+        };
+        let mut bar = ctx.command_bar.borrow_mut();
+        bar.set_focused(cmd_focused);
+        let id = ctx.focused_pane;
+        let mut pane = ctx.panes[id].borrow_mut();
+        pane.set_focused(pane_focused);
         *ctx.mode.borrow_mut() = *mode;
 
     }
@@ -340,7 +322,7 @@ build_command!(
 //             PaneId::CommandBar => {
 //                 let id = ctx.focused_pane;
 //             }
-//             PaneId::Number(id) => 
+//             PaneId::Number(id) =>
 //         }
 //     }
 // );
@@ -363,40 +345,19 @@ build_command!(
 // );
 
 build_command!(
-    ExecuteCommandLine,
-    24;
+    ExecuteCommandLine;
     |_: &ExecuteCommandLine, ctx: Context| {
-        ChangeMode(crate::mode::Mode::Normal).call(ctx);
-        // let is_msg_window_open = revi_rc.borrow().message_window;
-        // if is_msg_window_open {
-        //     revi_rc.borrow_mut().close_message_window();
-        //     return;
-        // }
-        // let line = {
-        //     let mut revi = revi_rc.borrow_mut();
-        //     let window = revi.get_command_window_mut();
-        //     let mut line = window.get_current_line();
-        //     if !line.is_empty() {
-        //         line.remove(0);
-        //     }
-        //     line
-        // };
-        // // run lua code
-        // // if line.starts_with("lua") {
-        // //     let Some((_, line)) = line.split_once(' ') else {
-        // //         revi_rc
-        // //             .borrow_mut()
-        // //             .error_message(&[line.as_str(), "lua command takes an argument expr"]);
-        // //         return;
-        // //     };
-        // //     let result = lua.load(line.trim()).exec();
-        // //     if let Err(e) = result {
-        // //         revi_rc.borrow_mut().create_message_window(e.to_string());
-        // //     }
-        // //     return;
-        // // }
-        // // built in command
-        // revi_rc.borrow_mut().run_command_line(&line);
+        ChangeMode(crate::mode::Mode::Normal).call(ctx.clone());
+        let mut bar = ctx.command_bar.borrow_mut();
+        if let Some(cursor) = bar.get_cursor_pos_mut() {
+            cursor.pos.x = 0;
+        }
+        let command = bar.get_buffer_contents();
+        bar.clear_buffer();
+        match command.as_str() {
+            "exit" | "quit" | "q" => Quit.call(ctx.clone()),
+            _ => {},
+        }
     }
 );
 
@@ -421,16 +382,14 @@ build_command!(
 //         revi.queue.push(focused_window);
 //     }
 // );
-//
-// build_command!(
-//     Quit,
-//     27;
-//     |_: &Quit, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.exit();
-//     }
-// );
-//
+
+build_command!(
+    Quit;
+    |_: &Quit, ctx: Context| {
+        *ctx.is_running.borrow_mut() = false;
+    }
+);
+
 // build_command!(
 //     CloseWindow,
 //     28;
@@ -483,3 +442,8 @@ build_command!(
 //         unimplemented!("Undo");
 //     }
 // );
+
+#[test]
+fn test_parsual_eq() {
+    assert_eq!(Into::<CmdRc>::into(Quit), Quit.into());
+}

@@ -5,8 +5,8 @@ use revi_ui::tui::{
 };
 
 use crate::{
-    pane::{Cursor, CursorMovement, Scrollable, CursorPos, PaneBounds, BufferBounds, BufferMut},
-    Pane, Mode,
+    pane::{BufferBounds, BufferMut, Cursor, CursorMovement, CursorPos, PaneBounds, Scrollable},
+    Mode, Pane,
 };
 
 #[derive(Debug, Clone, Default)]
@@ -22,7 +22,7 @@ impl CommandBar {
     pub fn new(pos: Pos, width: u16) -> Self {
         Self {
             pos,
-            size: Size{height:1,width},
+            size: Size { height: 1, width },
             ..Default::default()
         }
     }
@@ -30,22 +30,27 @@ impl CommandBar {
 
 impl Pane for CommandBar {
     fn view(&self) -> revi_ui::tui::widget::BoxWidget {
-        let text_in_bar = Text::new(self.content.as_str())
+        let content = if self.active {
+            self.content.clone()
+        } else {
+            " ".repeat(self.size.width as usize)
+        };
+        let text_in_bar = Text::new(content.as_str())
             .max_width(self.size.width - self.active as u16)
             .max_height(1);
-        let mut view = Container::new(Rect::with_position(self.pos, self.size), Stack::Horizontally);
+        let mut view = Container::new(
+            Rect::with_position(self.pos, self.size),
+            Stack::Horizontally,
+        );
         if self.active {
-            let colon = Text::new(":")
-                .max_height(1)
-                .max_width(1);
+            let colon = Text::new(":").max_height(1).max_width(1);
             view.push(colon);
         }
         view.push(text_in_bar);
         view.into()
     }
 
-    fn update(&mut self, _mode: Mode, _keys: revi_ui::Keys) {
-    }
+    fn update(&mut self, _mode: Mode, _keys: revi_ui::Keys) {}
 
     fn is_active(&self) -> bool {
         self.active
@@ -74,7 +79,10 @@ impl PaneBounds for CommandBar {
 
 impl BufferBounds for CommandBar {
     fn get_buffer_bounds(&self) -> Option<Size> {
-        Some(Size { width: self.content.len() as u16, height: 1 })
+        Some(Size {
+            width: self.content.len() as u16,
+            height: 1,
+        })
     }
 }
 
@@ -82,7 +90,13 @@ impl BufferMut for CommandBar {
     fn insert_char(&mut self, c: char) {
         self.content.push(c);
     }
+    fn clear_buffer(&mut self) {
+        self.content.clear();
+    }
+    fn get_buffer_contents(&self) -> String {
+        self.content.clone()
+    }
 }
 
-impl Scrollable for CommandBar { }
-impl CursorMovement for CommandBar { }
+impl Scrollable for CommandBar {}
+impl CursorMovement for CommandBar {}

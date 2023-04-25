@@ -1,4 +1,4 @@
-use super::{CommandBar, Buffer, Pane, Mode};
+use super::{Buffer, CommandBar, Mode, Pane};
 
 use revi_ui::tui::layout::Size;
 
@@ -59,6 +59,7 @@ impl ContextBuilder {
             mode: Rc::new(RefCell::new(self.mode)),
             focused_pane: self.focused_pane,
             on_screen: self.on_screen,
+            is_running: Rc::new(RefCell::new(true)),
             window_size: self.window_size,
             show_command_bar: self.show_command_bar,
         }
@@ -73,6 +74,7 @@ pub struct Context {
     pub mode: Rc<RefCell<Mode>>,
     pub focused_pane: usize,
     pub on_screen: Vec<usize>,
+    pub is_running: Rc<RefCell<bool>>,
     window_size: Size,
     show_command_bar: bool,
 }

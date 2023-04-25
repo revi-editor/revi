@@ -10,8 +10,8 @@ Email: cowboy8625@protonmail.com
 mod commandline;
 
 use revi_core::{
-    commands::{BoxedCommand, InsertChar}, Buffer, Context, ContextBuilder, KeyParser, Mapper, Settings,
-    Window, CommandBar, Mode, Pane
+    commands::{CmdRc, InsertChar},
+    Buffer, CommandBar, Context, ContextBuilder, KeyParser, Mapper, Mode, Pane, Settings, Window,
 };
 use revi_ui::{
     tui::{
@@ -24,23 +24,25 @@ use revi_ui::{
     Key, Keys,
 };
 
-use std::{cell::{RefCell, RefMut, Ref}, rc::Rc};
+use std::{
+    cell::{Ref, RefCell, RefMut},
+    rc::Rc,
+};
 
 #[derive(Debug, Default)]
 struct Revi {
     context: Context,
-    is_running: bool,
     parse_keys: KeyParser,
     map_keys: Mapper,
 }
 
 impl Revi {
-    fn get_current_pane(&self) -> Ref<dyn Pane>{
+    fn get_current_pane(&self) -> Ref<dyn Pane> {
         let id = self.context.focused_pane;
         self.context.panes[id].borrow()
     }
 
-    fn get_current_pane_mut(&self) -> RefMut<dyn Pane>{
+    fn get_current_pane_mut(&self) -> RefMut<dyn Pane> {
         let id = self.context.focused_pane;
         self.context.panes[id].borrow_mut()
     }
@@ -78,19 +80,17 @@ impl App for Revi {
             .build();
         Self {
             context,
-            is_running: true,
             ..Default::default()
         }
     }
 
     fn update(&mut self, keys: Keys) {
         if let Keys::KeyAndMod(Key::LC, Key::Ctrl) = keys {
-            self.is_running = false;
+            *self.context.is_running.borrow_mut() = false;
         }
         let mode = *self.context.mode.borrow();
         self.parse_keys.push(keys);
         let commands = self.map_keys.get_mapping(&mode, self.parse_keys.get_keys());
-        eprintln!("{mode:?}: {:?}", self.parse_keys.get_keys());
         if !self.map_keys.is_mapping(&mode, self.parse_keys.get_keys()) {
             self.parse_keys.clear();
         }
@@ -99,8 +99,8 @@ impl App for Revi {
                 cmd.call(self.context.clone());
             }
             self.parse_keys.clear();
-        } else if let (None, Mode::Command, Some(c)) = (commands, mode, keys.as_char()){
-            let command: BoxedCommand = InsertChar(c).into();
+        } else if let (None, Mode::Command, Some(c)) = (commands, mode, keys.as_char()) {
+            let command: CmdRc = InsertChar(c).into();
             command.call(self.context.clone());
             self.parse_keys.clear();
         }
@@ -110,7 +110,7 @@ impl App for Revi {
     }
 
     fn quit(&self) -> bool {
-        self.is_running
+        *self.context.is_running.borrow()
     }
 
     fn view(&self) -> BoxWidget {
@@ -125,11 +125,26 @@ impl App for Revi {
     }
 
     fn cursor(&self) -> Option<Pos> {
-        let id = self.context.focused_pane;
-        self.context.panes[id]
-            .borrow()
-            .get_cursor_pos()
-            .map(|c| c.pos)
+        let mode = *self.context.mode.borrow();
+        match mode {
+            Mode::Command => {
+                let pane = self.get_current_pane();
+                let height = pane.view().height();
+                let bar = self.context.command_bar.borrow();
+                bar.get_cursor_pos().map(|c| {
+                    let x = c.pos.x + 1;
+                    let y = height;
+                    Pos { x, y }
+                })
+            }
+            _ => {
+                let id = self.context.focused_pane;
+                self.context.panes[id]
+                    .borrow()
+                    .get_cursor_pos()
+                    .map(|c| c.pos)
+            }
+        }
     }
 }
 

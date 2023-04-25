@@ -17,7 +17,6 @@ pub struct Cursor {
     pub scroll: Pos,
 }
 
-
 pub trait Pane: Debug + CursorMovement + Scrollable + BufferMut {
     fn view(&self) -> BoxWidget;
     fn update(&mut self, mode: Mode, keys: Keys);
@@ -26,18 +25,30 @@ pub trait Pane: Debug + CursorMovement + Scrollable + BufferMut {
 }
 
 pub trait CursorPos {
-    fn get_cursor_pos(&self) -> Option<&Cursor> { None }
-    fn get_cursor_pos_mut(&mut self) -> Option<&mut Cursor> { None }
-    fn get_line_above_bounds(&self) -> Option<Rect> { None }
-    fn get_line_below_bounds(&self) -> Option<Rect> { None }
+    fn get_cursor_pos(&self) -> Option<&Cursor> {
+        None
+    }
+    fn get_cursor_pos_mut(&mut self) -> Option<&mut Cursor> {
+        None
+    }
+    fn get_line_above_bounds(&self) -> Option<Rect> {
+        None
+    }
+    fn get_line_below_bounds(&self) -> Option<Rect> {
+        None
+    }
 }
 
 pub trait PaneBounds {
-    fn get_pane_bounds(&self) -> Option<Rect> { None }
+    fn get_pane_bounds(&self) -> Option<Rect> {
+        None
+    }
 }
 
 pub trait BufferBounds {
-    fn get_buffer_bounds(&self) -> Option<Size> { None }
+    fn get_buffer_bounds(&self) -> Option<Size> {
+        None
+    }
 }
 
 pub trait CursorMovement: CursorPos + PaneBounds + Scrollable {
@@ -102,11 +113,10 @@ pub trait CursorMovement: CursorPos + PaneBounds + Scrollable {
 
 pub trait Scrollable: BufferBounds + CursorPos {
     fn scroll_up(&mut self) {
-        self.get_cursor_pos_mut()
-            .map(|c| {
-                c.scroll.y = c.scroll.y.saturating_sub(1);
-                c
-            });
+        self.get_cursor_pos_mut().map(|c| {
+            c.scroll.y = c.scroll.y.saturating_sub(1);
+            c
+        });
     }
     fn scroll_down(&mut self) {
         let bounds = self.get_buffer_bounds();
@@ -124,7 +134,8 @@ pub trait Scrollable: BufferBounds + CursorPos {
     fn scroll_right(&mut self) {}
 }
 
-
 pub trait BufferMut {
     fn insert_char(&mut self, c: char);
+    fn get_buffer_contents(&self) -> String;
+    fn clear_buffer(&mut self);
 }
