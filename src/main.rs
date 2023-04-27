@@ -10,9 +10,9 @@ Email: cowboy8625@protonmail.com
 mod commandline;
 
 use revi_core::{
-    commands::{CmdRc, InsertChar},
     api::{self, Rhai},
-    Buffer, CommandBar, Context, ContextBuilder, KeyParser, Mapper, Mode, Pane, Settings, Window,
+    commands::{CmdRc, InsertChar},
+    Buffer, CommandBar, Context, ContextBuilder, KeyParser, Mode, Pane, Settings, Window,
 };
 use revi_ui::{
     tui::{
@@ -33,9 +33,7 @@ use std::{
 #[derive(Debug)]
 struct Revi {
     context: Context,
-    rhai: Rhai,
     parse_keys: KeyParser,
-    map_keys: Mapper,
 }
 
 impl Revi {
@@ -80,14 +78,14 @@ impl App for Revi {
             .with_window_size(Size::new(width, height))
             .with_show_command_bar(true)
             .build();
-        let mut rhai = api::init(context.clone()).expect("failed to init scripting engine");
-        rhai.run_file::<()>("./userspace/init.rhai").expect("failed to run init file");
+        // let _rhai = api::init(context.clone()).expect("failed to init scripting engine");
+        // _rhai
+        //     .run_file::<()>("./userspace/init.rhai")
+        //     .expect("failed to run init file");
 
         Self {
             context,
-            rhai,
             parse_keys: KeyParser::default(),
-            map_keys: Mapper::default(),
         }
     }
 
@@ -97,8 +95,17 @@ impl App for Revi {
         }
         let mode = *self.context.mode.borrow();
         self.parse_keys.push(keys);
-        let commands = self.map_keys.get_mapping(&mode, self.parse_keys.get_keys());
-        if !self.map_keys.is_mapping(&mode, self.parse_keys.get_keys()) {
+        let commands = self
+            .context
+            .map_keys
+            .borrow()
+            .get_mapping(&mode, self.parse_keys.get_keys());
+        let is_possible_mapping = self
+            .context
+            .map_keys
+            .borrow()
+            .is_possible_mapping(&mode, self.parse_keys.get_keys());
+        if !is_possible_mapping {
             self.parse_keys.clear();
         }
         if let Some(cmd) = commands {
@@ -106,7 +113,9 @@ impl App for Revi {
                 cmd.call(self.context.clone());
             }
             self.parse_keys.clear();
-        } else if let (None, Mode::Command|Mode::Insert, Some(c)) = (commands, mode, keys.as_char()) {
+        } else if let (None, Mode::Command | Mode::Insert, Some(c)) =
+            (commands, mode, keys.as_char())
+        {
             let command: CmdRc = InsertChar(c).into();
             command.call(self.context.clone());
             self.parse_keys.clear();

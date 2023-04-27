@@ -1,6 +1,6 @@
-mod command_bar;
 pub mod api;
 pub mod buffer;
+mod command_bar;
 pub mod commands;
 mod context;
 pub mod map_keys;

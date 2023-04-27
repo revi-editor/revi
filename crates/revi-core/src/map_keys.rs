@@ -1,15 +1,16 @@
 use crate::commands::{
+    BackSpace,
     ChangeMode,
     CmdRc,
     CursorDown,
     CursorLeft,
     CursorRight,
     CursorUp,
-    BackSpace,
-    // InsertChar,
-    ExecuteCommandLine,
+    ExeCommandList,
     // ScrollDown,
     // ScrollUp,
+    // InsertChar,
+    ExecuteCommandLine,
 };
 
 use crate::mode::Mode;
@@ -40,12 +41,27 @@ impl KeyMap {
         }
     }
 
+    fn is_possible_command(&self, keys: &[Keys]) -> bool {
+        if keys.is_empty() {
+            return false;
+        }
+        self.mappings.iter().any(|node| match node {
+            MapNode::Map(key, keymap) if key == &keys[0] && keys.len() == 1 => true,
+            MapNode::Map(key, keymap) if key == &keys[0] => keymap.is_command(&keys[1..]),
+            MapNode::Middle(key, _, _) if key == &keys[0] && keys.len() == 1 => true,
+            MapNode::Middle(key, keymap, _) if key == &keys[0] => keymap.is_command(&keys[1..]),
+            MapNode::End(key, _) if key == &keys[0] => true,
+            _ => false,
+        })
+    }
+
     fn is_command(&self, keys: &[Keys]) -> bool {
         if keys.is_empty() {
             return false;
         }
         self.mappings.iter().any(|node| match node {
             MapNode::Map(key, keymap) if key == &keys[0] => keymap.is_command(&keys[1..]),
+            MapNode::Middle(key, _, _) if key == &keys[0] && keys.len() == 1 => true,
             MapNode::Middle(key, keymap, _) if key == &keys[0] => keymap.is_command(&keys[1..]),
             MapNode::End(key, _) if key == &keys[0] => true,
             _ => false,
@@ -156,6 +172,11 @@ impl Mapper {
     }
 
     #[must_use]
+    pub fn is_possible_mapping(&self, mode: &Mode, keys: &[Keys]) -> bool {
+        self.get_map(mode).is_possible_command(keys)
+    }
+
+    #[must_use]
     pub fn get_mapping(&self, mode: &Mode, keys: &[Keys]) -> Option<CmdRc> {
         self.get_map(mode).get(keys)
     }
@@ -165,6 +186,33 @@ impl Mapper {
         self.get_map_mut(mode)
             .insert(&string_to_keys(keys), commands.into());
         self
+    }
+
+    pub fn nmap(&mut self, keys: &str, command: impl Into<CmdRc>) {
+        self.nmaps.insert(&string_to_keys(keys), command.into());
+    }
+
+    pub fn nmap_from_str(&mut self, keys: &str, command: &str) {
+        let keys = string_to_keys(keys);
+        let command = string_to_keys(command);
+        let mut cmds = Vec::new();
+        let mut combo = Vec::new();
+        for key in command.iter() {
+            match self.get_mapping(&Mode::Normal, &[*key]) {
+                Some(cmd) => cmds.push(cmd),
+                None => match self.get_mapping(&Mode::Normal, &combo) {
+                    Some(cmd) => {
+                        cmds.push(cmd);
+                        combo.clear();
+                    }
+                    _ => combo.push(*key),
+                },
+            }
+        }
+        if cmds.is_empty() {
+            return;
+        }
+        self.nmaps.insert(&keys, ExeCommandList(cmds).into());
     }
 
     fn build_normal(self) -> Self {
@@ -258,21 +306,40 @@ impl Mapper {
     }
 }
 
-#[test]
-fn test_normal_keymapper() {
-    let km = Mapper::default();
-    assert_eq!(
-        km.get_mapping(&Mode::Normal, &string_to_keys("k")).unwrap(),
-        CursorUp.into()
-    );
-    assert_eq!(
-        km.get_mapping(&Mode::Normal, &string_to_keys("j")).unwrap(),
-        CursorDown.into()
-    );
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_normal_keymapper() {
+        let km = Mapper::default();
+        assert_eq!(
+            km.get_mapping(&Mode::Normal, &string_to_keys("k")).unwrap(),
+            CursorUp.into()
+        );
+        assert_eq!(
+            km.get_mapping(&Mode::Normal, &string_to_keys("j")).unwrap(),
+            CursorDown.into()
+        );
+    }
 
-#[test]
-fn test_command_insert_char() {
-    let km = Mapper::default();
-    assert!(!km.is_mapping(&Mode::Command, &string_to_keys("<esc>")));
+    #[test]
+    fn test_command_insert_char() {
+        let km = Mapper::default();
+        assert!(!km.is_mapping(&Mode::Command, &string_to_keys("<esc>")));
+    }
+
+    #[test]
+    fn test_multi_key_bindings() {
+        let km = Mapper::default();
+        let keys = string_to_keys("gg");
+        let left = km.get_mapping(&Mode::Normal, &keys).unwrap();
+        let right = ExeCommandList(vec![
+            CursorRight.into(),
+            CursorRight.into(),
+            CursorRight.into(),
+            CursorRight.into(),
+        ])
+        .into();
+        assert_eq!(left, right);
+    }
 }

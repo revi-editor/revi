@@ -1,35 +1,43 @@
 mod context;
 
-use rhai::{Engine, Scope, EvalAltResult, AST};
+pub use self::context::ContextRhaiApi;
 use crate::Context;
-use self::context::ContextRhaiApi;
+use rhai::{Engine, EvalAltResult, Scope, AST};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Rhai {
-    engine: Engine,
-    scope: Scope<'static>,
+    pub engine: Engine,
+    pub scope: Scope<'static>,
+    pub ast: AST,
 }
 
 impl Rhai {
     pub fn run_ast<T>(&mut self, ast: &AST) -> Result<T, Box<EvalAltResult>>
-        where T: Clone + 'static
+    where
+        T: Clone + 'static,
     {
         self.engine.eval_ast_with_scope::<T>(&mut self.scope, ast)
     }
 
-    pub fn run_file<T>(&mut self, filename: &str) -> Result<T, Box<EvalAltResult>>
-        where T: Clone + 'static
-    {
-        self.engine.eval_file_with_scope::<T>(&mut self.scope, filename.into())
+    pub fn compile(&mut self, filename: &str) -> Result<(), Box<EvalAltResult>> {
+        let ast = self.engine
+            .compile_file_with_scope(&mut self.scope, filename.into())?;
+        self.ast = ast;
+        Ok(())
+    }
+
+    pub fn run_ast_with_scope(&mut self) -> Result<(), Box<EvalAltResult>> {
+        self.engine.run_ast_with_scope(&mut self.scope, &self.ast)?;
+        Ok(())
     }
 }
 
-pub fn init<'a>(ctx: Context) -> Result<Rhai, Box<EvalAltResult>> {
-    let mut engine = Engine::new();
-    engine.build_type::<ContextRhaiApi>();
-    let mut scope = Scope::new();
-    scope.push("revi", ContextRhaiApi(ctx));
-    Ok(Rhai {
-        engine, scope
-    })
+pub fn init<'a>(ctx: Context) -> Result<(), Box<EvalAltResult>> {
+    let c = ctx.clone();
+    let mut rhai = c.rhai.borrow_mut();
+    rhai.engine.build_type::<ContextRhaiApi>();
+    rhai.scope.push("revi", ContextRhaiApi(ctx));
+    rhai.compile("./userspace/init.rhai")?;
+    rhai.run_ast_with_scope()?;
+    Ok(())
 }

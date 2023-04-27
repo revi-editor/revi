@@ -1,4 +1,42 @@
-revi.mode = "insert";
+let go_to_top_of_file = || {
+  revi.set_cursor_row(0);
+  revi.set_scroll_row(0);
+};
+
+revi.nmap("gg", go_to_top_of_file);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// revi.nmap("<up>", "k");
+// revi.nmap("<down>", "j");
+// revi.nmap("<right>", "l");
+// revi.nmap("<left>", "h");
+// revi.mode = "command";
 
 
 

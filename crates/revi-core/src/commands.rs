@@ -12,7 +12,7 @@ pub trait Command: fmt::Debug {
 
 macro_rules! build_command {
     ($name:ident $(, $ty:ty)?; $caller:expr) => {
-        #[derive(Debug, PartialEq, Eq)]
+        #[derive(Debug, PartialEq)]
         pub struct $name $((pub $ty))?;
         impl Command for $name {
             fn call(&self, ctx: Context) {
@@ -61,6 +61,21 @@ impl PartialEq for CmdRc {
 }
 
 build_command!(
+    UserCommand,
+    usize;
+    |Self(id): &UserCommand, ctx: Context| {
+        let fnptr = &ctx.rhai_commands.borrow_mut()[*id];
+        let rhai = ctx.rhai.borrow_mut();
+        let engine = &rhai.engine;
+        let ast = &rhai.ast;
+        let name = fnptr.fn_name();
+        fnptr.call::<()>(engine, ast, ())
+            .expect(&format!("failed to execute user command '{name}'"));
+        eprintln!("Run user command {name}");
+    }
+);
+
+build_command!(
     CursorUp;
     |_: &CursorUp, ctx: Context| {
         ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_up();
@@ -97,6 +112,16 @@ build_command!(
             _ => {
                 ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_right();
             }
+        }
+    }
+);
+
+build_command!(
+    ExeCommandList,
+    Vec<CmdRc>;
+    |ecl: &ExeCommandList, ctx: Context| {
+        for cmd in ecl.0.iter() {
+            cmd.call(ctx.clone());
         }
     }
 );

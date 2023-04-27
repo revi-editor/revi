@@ -208,13 +208,13 @@ impl BufferBounds for Window {
 
 impl BufferMut for Window {
     fn insert_char(&mut self, ch: char) {
-        let col = (self.cursor.pos.x as usize) -
-            (self.has_line_numbers as u16 * Self::NUMBER_LINE_WIDTH) as usize;
+        let col = (self.cursor.pos.x as usize)
+            - (self.has_line_numbers as u16 * Self::NUMBER_LINE_WIDTH) as usize;
         let row = self.cursor.pos.y as usize;
         let mut buffer = self.buffer.borrow_mut();
         let rope = buffer.get_rope_mut();
         let idx = rope.line_to_char(row);
-        rope.insert_char(idx+col, ch);
+        rope.insert_char(idx + col, ch);
     }
     fn clear_buffer(&mut self) {
         unimplemented!("clear buffer contents")
@@ -222,15 +222,15 @@ impl BufferMut for Window {
     fn get_buffer_contents(&self) -> String {
         unimplemented!("get buffer contents")
     }
-    fn backspace(&mut self){
-        let col = (self.cursor.pos.x as usize) -
-            (self.has_line_numbers as u16 * Self::NUMBER_LINE_WIDTH) as usize;
+    fn backspace(&mut self) {
+        let col = (self.cursor.pos.x as usize)
+            - (self.has_line_numbers as u16 * Self::NUMBER_LINE_WIDTH) as usize;
         let row = self.cursor.pos.y as usize;
         let mut buffer = self.buffer.borrow_mut();
         let rope = buffer.get_rope_mut();
         let idx = rope.line_to_char(row);
-        let start = (idx+col).saturating_sub(1);
-        let end = idx+col;
+        let start = (idx + col).saturating_sub(1);
+        let end = idx + col;
         rope.remove(start..end);
     }
 }

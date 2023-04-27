@@ -138,5 +138,5 @@ pub trait BufferMut {
     fn insert_char(&mut self, c: char);
     fn get_buffer_contents(&self) -> String;
     fn clear_buffer(&mut self);
-    fn backspace(&mut self){}
+    fn backspace(&mut self) {}
 }

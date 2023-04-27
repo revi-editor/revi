@@ -38,9 +38,7 @@ impl Pane for CommandBar {
         } else {
             " ".repeat(self.size.width as usize)
         };
-        let text_in_bar = Text::new(content.as_str())
-            .max_width(w)
-            .max_height(1);
+        let text_in_bar = Text::new(content.as_str()).max_width(w).max_height(1);
         let mut view = Container::new(
             Rect::with_position(self.pos, self.size),
             Stack::Horizontally,
@@ -108,7 +106,7 @@ impl BufferMut for CommandBar {
     fn get_buffer_contents(&self) -> String {
         self.content.clone()
     }
-    fn backspace(&mut self){
+    fn backspace(&mut self) {
         let idx = self.cursor.pos.x as usize;
         if idx == self.content.len() {
             self.content.pop();

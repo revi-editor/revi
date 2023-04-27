@@ -385,10 +385,7 @@ pub mod layout {
 pub mod application {
     use super::{layout::Pos, widget::BoxWidget};
     use crate::key::Keys;
-    use crossterm::{
-        Result,
-        cursor::SetCursorStyle,
-    };
+    use crossterm::{cursor::SetCursorStyle, Result};
     pub trait App: Sized {
         type Settings;
         fn new(_: Self::Settings) -> Self;

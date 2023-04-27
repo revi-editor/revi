@@ -1,4 +1,7 @@
-use super::{Buffer, CommandBar, Mode, Pane};
+use crate::api::Rhai;
+use rhai::FnPtr;
+
+use super::{Buffer, CommandBar, Mapper, Mode, Pane};
 
 use revi_ui::tui::layout::Size;
 
@@ -52,17 +55,24 @@ impl ContextBuilder {
         self
     }
     pub fn build(self) -> Context {
-        Context {
+        let ctx = Context {
             buffers: self.buffers,
             panes: self.panes,
             command_bar: Rc::new(RefCell::new(self.command_bar)),
+            map_keys: Rc::new(RefCell::new(Mapper::default())),
             mode: Rc::new(RefCell::new(self.mode)),
+            rhai_commands: Rc::new(RefCell::new(Vec::new())),
+            rhai: Rc::new(RefCell::new(Rhai::default())),
             focused_pane: self.focused_pane,
             on_screen: self.on_screen,
             is_running: Rc::new(RefCell::new(true)),
             window_size: self.window_size,
             show_command_bar: self.show_command_bar,
-        }
+        };
+
+        crate::api::init(ctx.clone()).expect("failed to init scripting engine");
+        ctx
+
     }
 }
 
@@ -71,7 +81,10 @@ pub struct Context {
     pub buffers: Vec<Rc<RefCell<Buffer>>>,
     pub panes: Vec<Rc<RefCell<dyn Pane>>>,
     pub command_bar: Rc<RefCell<dyn Pane>>,
+    pub map_keys: Rc<RefCell<Mapper>>,
     pub mode: Rc<RefCell<Mode>>,
+    pub rhai_commands: Rc<RefCell<Vec<FnPtr>>>,
+    pub rhai: Rc<RefCell<Rhai>>,
     pub focused_pane: usize,
     pub on_screen: Vec<usize>,
     pub is_running: Rc<RefCell<bool>>,
