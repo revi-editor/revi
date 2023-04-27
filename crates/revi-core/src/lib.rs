@@ -1,24 +1,21 @@
-#![warn(clippy::all, clippy::pedantic)]
-// ▞▀▖       ▌        ▞▀▖▞▀▖▞▀▖▛▀▘
-// ▌  ▞▀▖▌  ▌▛▀▖▞▀▖▌ ▌▚▄▘▙▄  ▗▘▙▄
-// ▌ ▖▌ ▌▐▐▐ ▌ ▌▌ ▌▚▄▌▌ ▌▌ ▌▗▘ ▖ ▌
-// ▝▀ ▝▀  ▘▘ ▀▀ ▝▀ ▗▄▘▝▀ ▝▀ ▀▀▘▝▀
-
 pub mod api;
 pub mod buffer;
+mod command_bar;
 pub mod commands;
-mod key_parser;
-pub mod line_number;
+mod context;
+pub mod map_keys;
 pub mod mode;
-pub mod position;
-pub mod revi;
-mod text_formater;
-pub mod window;
-
-pub mod keymapper;
+mod pane;
+mod parse_keys;
+mod settings;
+mod window;
 
 pub use buffer::Buffer;
-pub use keymapper::Mapper;
+pub use command_bar::CommandBar;
+pub use context::{Context, ContextBuilder};
+pub use map_keys::Mapper;
 pub use mode::Mode;
-pub use position::Position;
-pub use revi::{ReVi, Settings};
+pub use pane::Pane;
+pub use parse_keys::KeyParser;
+pub use settings::Settings;
+pub use window::Window;
