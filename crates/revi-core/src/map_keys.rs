@@ -7,6 +7,8 @@ use crate::commands::{
     CursorRight,
     CursorUp,
     ExeCommandList,
+    Delete,
+    DeleteLine,
     // ScrollDown,
     // ScrollUp,
     // InsertChar,
@@ -46,7 +48,7 @@ impl KeyMap {
             return false;
         }
         self.mappings.iter().any(|node| match node {
-            MapNode::Map(key, keymap) if key == &keys[0] && keys.len() == 1 => true,
+            MapNode::Map(key, _) if key == &keys[0] && keys.len() == 1 => true,
             MapNode::Map(key, keymap) if key == &keys[0] => keymap.is_command(&keys[1..]),
             MapNode::Middle(key, _, _) if key == &keys[0] && keys.len() == 1 => true,
             MapNode::Middle(key, keymap, _) if key == &keys[0] => keymap.is_command(&keys[1..]),
@@ -230,9 +232,9 @@ impl Mapper {
             .with_mapping(Mode::Normal, "<right>", CursorRight)
             .with_mapping(Mode::Normal, ":", ChangeMode(Mode::Command))
             .with_mapping(Mode::Normal, "i", ChangeMode(Mode::Insert))
-        //     .with_mapping(Mode::Normal, "x", DeleteChar)
-        //     .with_mapping(Mode::Normal, "delete", DeleteChar)
-        //     .with_mapping(Mode::Normal, "dd", DeleteLine, CursorUp)
+            .with_mapping(Mode::Normal, "x", Delete)
+            .with_mapping(Mode::Normal, "delete", Delete)
+            .with_mapping(Mode::Normal, "dd", DeleteLine)
         //     .with_mapping(Mode::Normal, "home", Home])
         //     .with_mapping(Mode::Normal, "end", End)
         //     .with_mapping(Mode::Normal, "0", Home)

@@ -72,7 +72,6 @@ impl ContextBuilder {
 
         crate::api::init(ctx.clone()).expect("failed to init scripting engine");
         ctx
-
     }
 }
 

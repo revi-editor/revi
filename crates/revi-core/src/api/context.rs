@@ -1,8 +1,8 @@
+use crate::commands::UserCommand;
 use crate::Context;
 use crate::Mode;
-use crate::commands::UserCommand;
 
-use rhai::{CustomType, TypeBuilder, Dynamic, FuncArgs};
+use rhai::{CustomType, Dynamic, FuncArgs, TypeBuilder};
 
 #[derive(Debug, Clone)]
 pub struct ContextRhaiApi(pub Context);
@@ -21,23 +21,21 @@ impl ContextRhaiApi {
         *self.0.mode.borrow_mut() = mode;
     }
 
-    fn nmap_from_str(
-        &mut self,
-        combo: rhai::ImmutableString,
-        command: rhai::ImmutableString,
-    ) {
-        self.0.map_keys.borrow_mut().nmap_from_str(combo.as_str(), command.as_str());
+    fn nmap_from_str(&mut self, combo: rhai::ImmutableString, command: rhai::ImmutableString) {
+        self.0
+            .map_keys
+            .borrow_mut()
+            .nmap_from_str(combo.as_str(), command.as_str());
     }
 
-    fn nmap_function(
-        &mut self,
-        combo: rhai::ImmutableString,
-        func: rhai::FnPtr,
-    ) {
+    fn nmap_function(&mut self, combo: rhai::ImmutableString, func: rhai::FnPtr) {
         let mut rhai_commands = self.0.rhai_commands.borrow_mut();
         let id = rhai_commands.len();
         rhai_commands.push(func);
-        self.0.map_keys.borrow_mut().nmap(combo.as_str(), UserCommand(id));
+        self.0
+            .map_keys
+            .borrow_mut()
+            .nmap(combo.as_str(), UserCommand(id));
     }
 
     fn set_cursor_row(&mut self, row: rhai::INT) {

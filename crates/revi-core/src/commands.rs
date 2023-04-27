@@ -156,6 +156,177 @@ build_command!(
     }
 );
 
+build_command!(
+    InsertChar,
+    char;
+    |InsertChar(c): &InsertChar, ctx: Context| {
+        let mode = *ctx.mode.borrow();
+        match mode {
+            Mode::Insert => {
+                let id = ctx.focused_pane;
+                let mut pane = ctx.panes[id].borrow_mut();
+                pane.insert_char(*c);
+                pane.move_cursor_right();
+            }
+            Mode::Command => {
+                let mut bar = ctx.command_bar.borrow_mut();
+                bar.insert_char(*c);
+                bar.move_cursor_right();
+            }
+            _ => {},
+        }
+    }
+);
+
+build_command!(
+    ChangeMode,
+    Mode;
+    |Self(mode): &ChangeMode, ctx: Context| {
+        let (cmd_focused, pane_focused) = match &mode {
+            Mode::Command => (true, false),
+            Mode::Normal => (false, true),
+            Mode::Insert => (false, true),
+        };
+        let mut bar = ctx.command_bar.borrow_mut();
+        bar.set_focused(cmd_focused);
+        let id = ctx.focused_pane;
+        let mut pane = ctx.panes[id].borrow_mut();
+        pane.set_focused(pane_focused);
+        *ctx.mode.borrow_mut() = *mode;
+
+    }
+);
+
+build_command!(
+    ExecuteCommandLine;
+    |_: &ExecuteCommandLine, ctx: Context| {
+        ChangeMode(crate::mode::Mode::Normal).call(ctx.clone());
+        let mut bar = ctx.command_bar.borrow_mut();
+        if let Some(cursor) = bar.get_cursor_pos_mut() {
+            cursor.pos.x = 0;
+        }
+        let command = bar.get_buffer_contents();
+        bar.clear_buffer();
+        match command.as_str() {
+            "exit" | "quit" | "q" => Quit.call(ctx.clone()),
+            _ => {},
+        }
+    }
+);
+
+build_command!(
+    Quit;
+    |_: &Quit, ctx: Context| {
+        *ctx.is_running.borrow_mut() = false;
+    }
+);
+
+build_command!(
+    Delete;
+    |_: &Delete, ctx: Context| {
+        let mode = *ctx.mode.borrow();
+        match mode {
+            Mode::Command => {
+                ctx.command_bar.borrow_mut().delete();
+            }
+            _ => {
+                ctx.panes[ctx.focused_pane].borrow_mut().delete();
+            }
+        }
+    }
+);
+
+build_command!(
+    DeleteLine;
+    |_: &DeleteLine, ctx: Context| {
+        let mode = *ctx.mode.borrow();
+        match mode {
+            Mode::Command => {
+                ctx.command_bar.borrow_mut().delete_line();
+            }
+            _ => {
+                ctx.panes[ctx.focused_pane].borrow_mut().delete_line();
+            }
+        }
+    }
+);
+
+
+// build_command!(
+//     NextWindow,
+//     25;
+//     |_: &NextWindow, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
+//         let mut revi = revi_rc.borrow_mut();
+//         revi.next_window();
+//         let focused_window = revi.focused;
+//         revi.queue.push(focused_window);
+//     }
+// );
+//
+// build_command!(
+//     Save,
+//     26;
+//     |_: &Save, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
+//         let mut revi = revi_rc.borrow_mut();
+//         revi.focused_window().save();
+//         let focused_window = revi.focused;
+//         revi.queue.push(focused_window);
+//     }
+// );
+
+// build_command!(
+//     CloseWindow,
+//     28;
+//     |_: &CloseWindow, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
+//         let mut revi = revi_rc.borrow_mut();
+//         revi.close_current_window();
+//     }
+// );
+//
+// build_command!(
+//     ListBuffers,
+//     29;
+//     |_: &ListBuffers, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
+//         let mut revi = revi_rc.borrow_mut();
+//         revi.list_buffers();
+//     }
+// );
+//
+// build_command!(
+//     InsertTab,
+//     30;
+//     |_: &InsertTab, revi_rc: Rc<RefCell<ReVi>>, count: usize| {
+//         let mut revi = revi_rc.borrow_mut();
+//         for _ in 0..revi.settings.tab_width+count {
+//             revi.focused_window_mut().insert_char(' ');
+//         }
+//     }
+// );
+//
+// build_command!(
+//     JumpListBack,
+//     31;
+//     |_: &JumpListBack, _revi_rc: Rc<RefCell<ReVi>>, _: usize| {
+//         unimplemented!("JumpListBack");
+//     }
+// );
+//
+// build_command!(
+//     JumpListForward,
+//     32;
+//     |_: &JumpListForward, _revi_rc: Rc<RefCell<ReVi>>, _: usize| {
+//         unimplemented!("JumpListForward");
+//     }
+// );
+//
+// build_command!(
+//     Undo,
+//     33;
+//     |_: &Undo, _revi_rc: Rc<RefCell<ReVi>>, _: usize| {
+//         unimplemented!("Undo");
+//     }
+// );
+
 // build_command!(
 //     Home,
 //     6;
@@ -219,17 +390,6 @@ build_command!(
 // );
 //
 // build_command!(
-//     Backspace,
-//     12;
-//     |_: &Backspace, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.focused_window_mut().backspace();
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
-//     }
-// );
-//
-// build_command!(
 //     NewLine,
 //     13;
 //     |_: &NewLine, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
@@ -251,29 +411,6 @@ build_command!(
 //     }
 // );
 //
-// build_command!(
-//     DeleteChar,
-//     15;
-//     |_: &DeleteChar, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.focused_window_mut().delete();
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
-//     }
-// );
-//
-// build_command!(
-//     DeleteLine,
-//     16;
-//     |_: &DeleteLine, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         let line = revi.focused_window_mut().delete_line();
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
-//         revi.clipboard.clear();
-//         revi.clipboard.push_str(line.as_str());
-//     }
-// );
 //
 // build_command!(
 //     YankLine,
@@ -328,177 +465,6 @@ build_command!(
 //             let mut buffer = window.buffer_mut();
 //             buffer.insert_line(line_idx + 1, &clipboard);
 //         }
-//     }
-// );
-//
-build_command!(
-    InsertChar,
-    char;
-    |InsertChar(c): &InsertChar, ctx: Context| {
-        let mode = *ctx.mode.borrow();
-        match mode {
-            Mode::Insert => {
-                let id = ctx.focused_pane;
-                let mut pane = ctx.panes[id].borrow_mut();
-                pane.insert_char(*c);
-                pane.move_cursor_right();
-            }
-            Mode::Command => {
-                let mut bar = ctx.command_bar.borrow_mut();
-                bar.insert_char(*c);
-                bar.move_cursor_right();
-            }
-            _ => {},
-        }
-    }
-);
-
-build_command!(
-    ChangeMode,
-    Mode;
-    |Self(mode): &ChangeMode, ctx: Context| {
-        let (cmd_focused, pane_focused) = match &mode {
-            Mode::Command => (true, false),
-            Mode::Normal => (false, true),
-            Mode::Insert => (false, true),
-        };
-        let mut bar = ctx.command_bar.borrow_mut();
-        bar.set_focused(cmd_focused);
-        let id = ctx.focused_pane;
-        let mut pane = ctx.panes[id].borrow_mut();
-        pane.set_focused(pane_focused);
-        *ctx.mode.borrow_mut() = *mode;
-
-    }
-);
-
-// build_command!(
-//     FocusedPane,
-//     22,
-//     PaneId;
-//     |fpane: &FocusedPane, ctx: Context| {
-//         match fpane.0 {
-//             PaneId::CommandBar => {
-//                 let id = ctx.focused_pane;
-//             }
-//             PaneId::Number(id) =>
-//         }
-//     }
-// );
-// build_command!(
-//     EnterCommandMode,
-//     22;
-//     |_: &EnterCommandMode, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.enter_command_mode();
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
-//     }
-// );
-
-// build_command!(
-//     ExitCommandMode,
-//     23;
-//     |_: &ExitCommandMode, ctx: Context| {
-//     }
-// );
-
-build_command!(
-    ExecuteCommandLine;
-    |_: &ExecuteCommandLine, ctx: Context| {
-        ChangeMode(crate::mode::Mode::Normal).call(ctx.clone());
-        let mut bar = ctx.command_bar.borrow_mut();
-        if let Some(cursor) = bar.get_cursor_pos_mut() {
-            cursor.pos.x = 0;
-        }
-        let command = bar.get_buffer_contents();
-        bar.clear_buffer();
-        match command.as_str() {
-            "exit" | "quit" | "q" => Quit.call(ctx.clone()),
-            _ => {},
-        }
-    }
-);
-
-// build_command!(
-//     NextWindow,
-//     25;
-//     |_: &NextWindow, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.next_window();
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
-//     }
-// );
-//
-// build_command!(
-//     Save,
-//     26;
-//     |_: &Save, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.focused_window().save();
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
-//     }
-// );
-
-build_command!(
-    Quit;
-    |_: &Quit, ctx: Context| {
-        *ctx.is_running.borrow_mut() = false;
-    }
-);
-
-// build_command!(
-//     CloseWindow,
-//     28;
-//     |_: &CloseWindow, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.close_current_window();
-//     }
-// );
-//
-// build_command!(
-//     ListBuffers,
-//     29;
-//     |_: &ListBuffers, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.list_buffers();
-//     }
-// );
-//
-// build_command!(
-//     InsertTab,
-//     30;
-//     |_: &InsertTab, revi_rc: Rc<RefCell<ReVi>>, count: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         for _ in 0..revi.settings.tab_width+count {
-//             revi.focused_window_mut().insert_char(' ');
-//         }
-//     }
-// );
-//
-// build_command!(
-//     JumpListBack,
-//     31;
-//     |_: &JumpListBack, _revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         unimplemented!("JumpListBack");
-//     }
-// );
-//
-// build_command!(
-//     JumpListForward,
-//     32;
-//     |_: &JumpListForward, _revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         unimplemented!("JumpListForward");
-//     }
-// );
-//
-// build_command!(
-//     Undo,
-//     33;
-//     |_: &Undo, _revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         unimplemented!("Undo");
 //     }
 // );
 

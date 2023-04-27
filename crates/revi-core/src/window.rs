@@ -233,6 +233,28 @@ impl BufferMut for Window {
         let end = idx + col;
         rope.remove(start..end);
     }
+
+    fn delete(&mut self) {
+        let mut col = (self.cursor.pos.x as usize)
+            - (self.has_line_numbers as u16 * Self::NUMBER_LINE_WIDTH) as usize;
+        col += 1;
+        let row = self.cursor.pos.y as usize;
+        let mut buffer = self.buffer.borrow_mut();
+        let rope = buffer.get_rope_mut();
+        let idx = rope.line_to_char(row);
+        let start = (idx + col).saturating_sub(1);
+        let end = idx + col;
+        rope.remove(start..end);
+    }
+
+    fn delete_line(&mut self) {
+        let row = self.cursor.pos.y as usize;
+        let mut buffer = self.buffer.borrow_mut();
+        let rope = buffer.get_rope_mut();
+        let start = rope.line_to_char(row);
+        let end = rope.line_to_char(row + 1);
+        rope.remove(start..end);
+    }
 }
 
 impl Scrollable for Window {}

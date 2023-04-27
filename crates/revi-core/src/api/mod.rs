@@ -20,7 +20,8 @@ impl Rhai {
     }
 
     pub fn compile(&mut self, filename: &str) -> Result<(), Box<EvalAltResult>> {
-        let ast = self.engine
+        let ast = self
+            .engine
             .compile_file_with_scope(&mut self.scope, filename.into())?;
         self.ast = ast;
         Ok(())
