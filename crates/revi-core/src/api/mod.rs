@@ -20,10 +20,12 @@ impl Rhai {
     }
 
     pub fn compile(&mut self, filename: &str) -> Result<(), Box<EvalAltResult>> {
-        let ast = self
+        if let Ok(ast) = self
             .engine
-            .compile_file_with_scope(&mut self.scope, filename.into())?;
-        self.ast = ast;
+            .compile_file_with_scope(&self.scope, filename.into())
+        {
+            self.ast = ast;
+        }
         Ok(())
     }
 
@@ -33,7 +35,7 @@ impl Rhai {
     }
 }
 
-pub fn init<'a>(ctx: Context) -> Result<(), Box<EvalAltResult>> {
+pub fn init(ctx: Context) -> Result<(), Box<EvalAltResult>> {
     let c = ctx.clone();
     let mut rhai = c.rhai.borrow_mut();
     rhai.engine.build_type::<ContextRhaiApi>();

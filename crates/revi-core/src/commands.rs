@@ -1,6 +1,10 @@
+use revi_ui::tui::layout::{Pos, Size};
+
 use crate::context::Context;
 use crate::mode::Mode;
+use crate::{Buffer, Event, MessageBox};
 use std::any::Any;
+use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
 
@@ -68,23 +72,24 @@ build_command!(
         let rhai = ctx.rhai.borrow_mut();
         let engine = &rhai.engine;
         let ast = &rhai.ast;
-        let name = fnptr.fn_name();
-        fnptr.call::<()>(engine, ast, ())
-            .expect(&format!("failed to execute user command '{name}'"));
-        eprintln!("Run user command {name}");
+        // let name = fnptr.fn_name();
+        if let Err(err_message) = fnptr.call::<()>(engine, ast, ()) {
+            Message(err_message.to_string()).call(ctx.clone());
+        }
+            // .expect(&format!("failed to execute user command '{name}'"));
     }
 );
 
 build_command!(
     CursorUp;
     |_: &CursorUp, ctx: Context| {
-        ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_up();
+        ctx.focused_pane().borrow_mut().move_cursor_up();
     }
 );
 build_command!(
     CursorDown;
     |_: &CursorDown, ctx: Context| {
-        ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_down();
+        ctx.focused_pane().borrow_mut().move_cursor_down();
     }
 );
 build_command!(
@@ -96,7 +101,7 @@ build_command!(
                 ctx.command_bar.borrow_mut().move_cursor_left();
             }
             _ => {
-                ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_left();
+                ctx.focused_pane().borrow_mut().move_cursor_left();
             }
         }
     }
@@ -110,7 +115,7 @@ build_command!(
                 ctx.command_bar.borrow_mut().move_cursor_right();
             }
             _ => {
-                ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_right();
+                ctx.focused_pane().borrow_mut().move_cursor_right();
             }
         }
     }
@@ -129,14 +134,14 @@ build_command!(
 build_command!(
     ScrollUp;
     |_: &ScrollUp, ctx: Context| {
-        ctx.panes[ctx.focused_pane].borrow_mut().scroll_up();
+        ctx.focused_pane().borrow_mut().scroll_up();
     }
 );
 
 build_command!(
     ScrollDown;
     |_: &ScrollDown, ctx: Context| {
-        ctx.panes[ctx.focused_pane].borrow_mut().scroll_down();
+        ctx.focused_pane().borrow_mut().scroll_down();
     }
 );
 
@@ -149,7 +154,7 @@ build_command!(
                 ctx.command_bar.borrow_mut().backspace();
             }
             _ => {
-                ctx.panes[ctx.focused_pane].borrow_mut().backspace();
+                ctx.focused_pane().borrow_mut().backspace();
             }
         }
         CursorLeft.call(ctx)
@@ -163,8 +168,8 @@ build_command!(
         let mode = *ctx.mode.borrow();
         match mode {
             Mode::Insert => {
-                let id = ctx.focused_pane;
-                let mut pane = ctx.panes[id].borrow_mut();
+                let pane = ctx.focused_pane();
+                let mut pane = pane.borrow_mut();
                 pane.insert_char(*c);
                 pane.move_cursor_right();
             }
@@ -189,8 +194,8 @@ build_command!(
         };
         let mut bar = ctx.command_bar.borrow_mut();
         bar.set_focused(cmd_focused);
-        let id = ctx.focused_pane;
-        let mut pane = ctx.panes[id].borrow_mut();
+        let pane = ctx.focused_pane();
+        let mut pane = pane.borrow_mut();
         pane.set_focused(pane_focused);
         *ctx.mode.borrow_mut() = *mode;
 
@@ -209,6 +214,7 @@ build_command!(
         bar.clear_buffer();
         match command.as_str() {
             "exit" | "quit" | "q" => Quit.call(ctx.clone()),
+            "message" => Message(command.to_string()).call(ctx.clone()),
             _ => {},
         }
     }
@@ -230,7 +236,7 @@ build_command!(
                 ctx.command_bar.borrow_mut().delete();
             }
             _ => {
-                ctx.panes[ctx.focused_pane].borrow_mut().delete();
+                ctx.focused_pane().borrow_mut().delete();
             }
         }
     }
@@ -245,12 +251,39 @@ build_command!(
                 ctx.command_bar.borrow_mut().delete_line();
             }
             _ => {
-                ctx.panes[ctx.focused_pane].borrow_mut().delete_line();
+                ctx.focused_pane().borrow_mut().delete_line();
             }
         }
     }
 );
 
+// build_command!(
+//     ExecuteExternalCommand,
+//     String;
+//     |_: &DeleteLine, ctx: Context| {
+//     }
+// );
+
+build_command!(
+    Message,
+    String;
+    |Self(message): &Message, ctx: Context| {
+        let id = ctx.panes.borrow().len();
+        *ctx.focused_pane.borrow_mut() = id;
+        // let Size { width, height } = ctx.window_size();
+        // let pos = Pos { x: (width/2)/2, y: (height/2)/2};
+        let pos = Pos { x: 0, y: 0 };
+        let size = Size { width: message.len() as u16, height: 1 };
+        let buffer = Rc::new(RefCell::new(Buffer::new_str("", message)));
+
+
+        let message_box = Rc::new(RefCell::new(MessageBox::new(pos, size, buffer)));
+        let id = ctx.panes.borrow().len();
+        *ctx.focused_pane.borrow_mut() = id;
+        ctx.panes.borrow_mut().push(message_box);
+        *ctx.event.borrow_mut() = Event::Message;
+    }
+);
 
 // build_command!(
 //     NextWindow,

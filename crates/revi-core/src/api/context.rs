@@ -2,7 +2,7 @@ use crate::commands::UserCommand;
 use crate::Context;
 use crate::Mode;
 
-use rhai::{CustomType, Dynamic, FuncArgs, TypeBuilder};
+use rhai::{CustomType, TypeBuilder};
 
 #[derive(Debug, Clone)]
 pub struct ContextRhaiApi(pub Context);
@@ -14,9 +14,9 @@ impl ContextRhaiApi {
         let mode = match str_mode.to_lowercase().as_str() {
             "insert" => Mode::Insert,
             "command" => Mode::Command,
-            "normal" | _ => Mode::Normal,
+            _ => Mode::Normal,
         };
-        // *self.0.panes[self.0.focused_pane].borrow_mut().mode = mode;
+        // *self.0.panes[*self.0.focused_pane.borrow()].borrow_mut().mode = mode;
         // BUG: This doesnt set the current window status bar to current mode
         *self.0.mode.borrow_mut() = mode;
     }
@@ -39,8 +39,8 @@ impl ContextRhaiApi {
     }
 
     fn set_cursor_row(&mut self, row: rhai::INT) {
-        let id = self.0.focused_pane;
-        let mut pane = self.0.panes[id].borrow_mut();
+        let pane = self.0.focused_pane();
+        let mut pane = pane.borrow_mut();
         pane.get_cursor_pos_mut().map(|c| {
             c.pos.y = row as u16;
             c
@@ -48,16 +48,16 @@ impl ContextRhaiApi {
     }
 
     fn set_cursor_col(&mut self, col: rhai::INT) {
-        let id = self.0.focused_pane;
-        let mut pane = self.0.panes[id].borrow_mut();
+        let pane = self.0.focused_pane();
+        let mut pane = pane.borrow_mut();
         pane.get_cursor_pos_mut().map(|c| {
             c.pos.x = col as u16;
             c
         });
     }
     fn set_scroll_row(&mut self, row: rhai::INT) {
-        let id = self.0.focused_pane;
-        let mut pane = self.0.panes[id].borrow_mut();
+        let pane = self.0.focused_pane();
+        let mut pane = pane.borrow_mut();
         pane.get_cursor_pos_mut().map(|c| {
             c.scroll.y = row as u16;
             c

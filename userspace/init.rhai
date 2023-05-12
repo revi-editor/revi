@@ -4,6 +4,7 @@ let go_to_top_of_file = || {
 };
 
 revi.nmap("gg", go_to_top_of_file);
+revi.nmap("tt", "jjjj");
 
 
 

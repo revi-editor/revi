@@ -6,9 +6,9 @@ use crate::commands::{
     CursorLeft,
     CursorRight,
     CursorUp,
-    ExeCommandList,
     Delete,
     DeleteLine,
+    ExeCommandList,
     // ScrollDown,
     // ScrollUp,
     // InsertChar,
@@ -233,7 +233,7 @@ impl Mapper {
             .with_mapping(Mode::Normal, ":", ChangeMode(Mode::Command))
             .with_mapping(Mode::Normal, "i", ChangeMode(Mode::Insert))
             .with_mapping(Mode::Normal, "x", Delete)
-            .with_mapping(Mode::Normal, "delete", Delete)
+            .with_mapping(Mode::Normal, "<delete>", Delete)
             .with_mapping(Mode::Normal, "dd", DeleteLine)
         //     .with_mapping(Mode::Normal, "home", Home])
         //     .with_mapping(Mode::Normal, "end", End)

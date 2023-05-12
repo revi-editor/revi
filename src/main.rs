@@ -10,9 +10,8 @@ Email: cowboy8625@protonmail.com
 mod commandline;
 
 use revi_core::{
-    api::{self, Rhai},
     commands::{CmdRc, InsertChar},
-    Buffer, CommandBar, Context, ContextBuilder, KeyParser, Mode, Pane, Settings, Window,
+    Buffer, CommandBar, Context, ContextBuilder, Event, KeyParser, Mode, Settings, Window,
 };
 use revi_ui::{
     tui::{
@@ -25,27 +24,12 @@ use revi_ui::{
     Key, Keys, Result, SetCursorStyle,
 };
 
-use std::{
-    cell::{Ref, RefCell, RefMut},
-    rc::Rc,
-};
+use std::{cell::RefCell, rc::Rc};
 
 #[derive(Debug)]
 struct Revi {
     context: Context,
     parse_keys: KeyParser,
-}
-
-impl Revi {
-    fn get_current_pane(&self) -> Ref<dyn Pane> {
-        let id = self.context.focused_pane;
-        self.context.panes[id].borrow()
-    }
-
-    fn get_current_pane_mut(&self) -> RefMut<dyn Pane> {
-        let id = self.context.focused_pane;
-        self.context.panes[id].borrow_mut()
-    }
 }
 
 impl App for Revi {
@@ -78,10 +62,6 @@ impl App for Revi {
             .with_window_size(Size::new(width, height))
             .with_show_command_bar(true)
             .build();
-        // let _rhai = api::init(context.clone()).expect("failed to init scripting engine");
-        // _rhai
-        //     .run_file::<()>("./userspace/init.rhai")
-        //     .expect("failed to run init file");
 
         Self {
             context,
@@ -121,8 +101,19 @@ impl App for Revi {
             self.parse_keys.clear();
         }
         let mode = *self.context.mode.borrow();
-        let mut pane = self.get_current_pane_mut();
-        pane.update(mode, keys)
+        let pane = self.context.focused_pane();
+        let mut pane = pane.borrow_mut();
+        pane.update(mode, keys);
+        let event = *self.context.event.borrow();
+        if let Event::Message = event {
+            let closing = pane.close();
+            if closing {
+                self.context.panes.borrow_mut().pop();
+                *self.context.focused_pane.borrow_mut() -= 1;
+                *self.context.event.borrow_mut() = Event::None;
+                *self.context.mode.borrow_mut() = Mode::Normal;
+            }
+        }
     }
 
     fn quit(&self) -> bool {
@@ -130,23 +121,33 @@ impl App for Revi {
     }
 
     fn view(&self) -> BoxWidget {
-        let id = self.context.focused_pane;
-        let main_window = self.context.panes[id].borrow().view();
+        let pane = self.context.focused_pane();
+        let pane = pane.borrow();
+        let main_window = pane.view();
         let wsize = self.context.main_window_size();
-        let command_bar = self.context.command_bar.borrow().view();
-        Container::new(Rect::new(wsize), Stack::Vertically)
-            .with_child_box(main_window)
-            .with_child_box(command_bar)
-            .into()
+        let event = *self.context.event.borrow();
+        let mut c = Container::new(Rect::new(wsize), Stack::Vertically).with_child_box(main_window);
+        if let Event::None = event {
+            let command_bar = self.context.command_bar.borrow().view();
+            c.push_box(command_bar);
+        }
+        c.into()
     }
 
     fn cursor(&self) -> (Option<Pos>, Option<SetCursorStyle>) {
         let mode = *self.context.mode.borrow();
+        let event = *self.context.event.borrow();
+        if let Event::Message = event {
+            return (None, None);
+        }
         match mode {
             Mode::Command => {
-                let pane = self.get_current_pane();
-                let height = pane.view().height();
+                // let pane = self.context.focused_pane();
+                // let pane = pane.borrow();
+                // let height = pane.view().height();
+                let height = self.context.window_size().height;
                 let bar = self.context.command_bar.borrow();
+                // let pos = pane.cursor();
                 let pos = bar.get_cursor_pos().map(|c| {
                     let x = c.pos.x + 1;
                     let y = height;
@@ -156,20 +157,16 @@ impl App for Revi {
                 (pos, style)
             }
             Mode::Insert => {
-                let id = self.context.focused_pane;
-                let pos = self.context.panes[id]
-                    .borrow()
-                    .get_cursor_pos()
-                    .map(|c| c.pos);
+                let pane = self.context.focused_pane();
+                let pane = pane.borrow();
+                let pos = pane.cursor();
                 let style = Some(SetCursorStyle::BlinkingBar);
                 (pos, style)
             }
             Mode::Normal => {
-                let id = self.context.focused_pane;
-                let pos = self.context.panes[id]
-                    .borrow()
-                    .get_cursor_pos()
-                    .map(|c| c.pos);
+                let pane = self.context.focused_pane();
+                let pane = pane.borrow();
+                let pos = pane.cursor();
                 let style = Some(SetCursorStyle::BlinkingBlock);
                 (pos, style)
             }

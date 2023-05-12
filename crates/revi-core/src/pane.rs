@@ -20,8 +20,12 @@ pub struct Cursor {
 pub trait Pane: Debug + CursorMovement + Scrollable + BufferMut {
     fn view(&self) -> BoxWidget;
     fn update(&mut self, mode: Mode, keys: Keys);
+    fn cursor(&self) -> Option<Pos> {
+        None
+    }
     fn set_focused(&mut self, _: bool);
     fn is_active(&self) -> bool;
+    fn close(&self) -> bool;
 }
 
 pub trait CursorPos {

@@ -221,7 +221,7 @@ pub mod text {
         pub fn new(content: &str) -> Self {
             Self {
                 content: content.into(),
-                width: content.lines().map(|x| x.len()).max().unwrap_or(0) as u16,
+                width: content.lines().map(|x| x.len()).max().unwrap_or_default() as u16,
                 height: content.lines().count() as u16,
                 comment: None,
             }
@@ -422,6 +422,7 @@ mod runtime {
     where
         A: App,
     {
+        w.queue(Hide)?;
         let (cursor_pos, cursor_style) = app.cursor();
         if let Some(Pos { x, y }) = cursor_pos {
             w.queue(MoveTo(x, y))?;
@@ -435,10 +436,11 @@ mod runtime {
         let app_size = Size { width, height };
         let app_pos = Pos { x: 0, y: 0 };
         w.queue(SavePosition)?;
-        w.queue(Hide)?;
         widgets.draw(w, Rect::with_position(app_pos, app_size));
         w.queue(RestorePosition)?;
-        w.queue(Show)?;
+        if cursor_style.is_some() {
+            w.queue(Show)?;
+        }
         w.flush()?;
         Ok(())
     }

@@ -16,6 +16,7 @@ pub struct CommandBar {
     size: Size,
     content: String,
     active: bool,
+    closing: bool,
 }
 
 impl CommandBar {
@@ -59,6 +60,9 @@ impl Pane for CommandBar {
 
     fn set_focused(&mut self, flag: bool) {
         self.active = flag;
+    }
+    fn close(&self) -> bool {
+        self.closing
     }
 }
 

@@ -21,6 +21,7 @@ pub struct Window {
     has_status_bar: bool,
     active: bool,
     mode: Mode,
+    closing: bool,
 }
 
 impl Window {
@@ -35,6 +36,7 @@ impl Window {
             has_status_bar: false,
             active: false,
             mode: Mode::Normal,
+            closing: false,
         }
     }
 
@@ -63,16 +65,24 @@ impl Window {
             x: self.pos.x + (has_line_numbers * Self::NUMBER_LINE_WIDTH),
             y: self.pos.y,
         };
+        let pane_height = self.size.height - has_status_bar - 1;
+        let buffer_height = self
+            .buffer
+            .borrow()
+            .get_rope()
+            .len_lines()
+            .saturating_sub(2) as u16;
+        let height = pane_height.min(buffer_height);
         let size = Size {
             //NOTE: we subtracte 2 from width for offseting the new line
             width: (line_text_width + pos.x).saturating_sub(2).max(pos.x),
-            height: self.size.height - has_status_bar - 1,
+            height,
         };
         Rect::with_position(pos, size)
     }
 
     fn view_contents(&self) -> Text {
-        let Size { height, .. } = self.size;
+        let Size { height, width } = self.size;
         let top = self.cursor.scroll.y as usize;
         let bottom = (self.cursor.scroll.y + height) as usize;
         let buffer = self.buffer.borrow();
@@ -81,7 +91,9 @@ impl Window {
             .iter()
             .map(ToString::to_string)
             .collect::<String>();
-        Text::new(&contents).with_comment("text file")
+        Text::new(&contents)
+            .max_width(width)
+            .with_comment("text file")
     }
 
     fn view_status_bar(&self) -> Text {
@@ -139,7 +151,6 @@ impl Pane for Window {
 
         let mut view = Container::new(Rect::new(self.size), Stack::Vertically)
             .with_comment("everything")
-            .stack(Stack::Vertically)
             .with_child(window);
 
         if self.has_status_bar {
@@ -152,11 +163,21 @@ impl Pane for Window {
     fn update(&mut self, mode: Mode, _: revi_ui::Keys) {
         self.mode = mode;
     }
+
+    fn cursor(&self) -> Option<Pos> {
+        let x = self.cursor.pos.x + self.pos.x;
+        let y = self.cursor.pos.y + self.pos.y;
+        let pos = Pos { x, y };
+        Some(pos)
+    }
     fn is_active(&self) -> bool {
         self.active
     }
     fn set_focused(&mut self, flag: bool) {
         self.active = flag;
+    }
+    fn close(&self) -> bool {
+        self.closing
     }
 }
 
