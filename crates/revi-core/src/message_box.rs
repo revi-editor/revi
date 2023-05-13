@@ -22,7 +22,8 @@ pub struct MessageBox {
 }
 
 impl MessageBox {
-    pub fn new(pos: Pos, size: Size, buffer: Rc<RefCell<Buffer>>) -> Self {
+    pub fn new(pos: Pos, mut size: Size, buffer: Rc<RefCell<Buffer>>) -> Self {
+        size.height += 1;
         Self {
             pos,
             cursor: Cursor::default(),
@@ -66,10 +67,12 @@ impl Pane for MessageBox {
             .collect::<String>();
         let text = Text::new(&contents)
             .max_width(width)
-            .max_height(height)
             .with_comment("text file");
+        use revi_ui::Color;
+        let bar = Text::new(&" ".repeat(width as usize)).with_bg(Color::Grey);
         Container::new(Rect::with_position(self.pos, self.size), Stack::Vertically)
             .with_child(text)
+            .with_child(bar)
             .into()
     }
 

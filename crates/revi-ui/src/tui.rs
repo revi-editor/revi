@@ -207,11 +207,14 @@ pub mod container {
 pub mod text {
     use super::layout::Rect;
     use super::widget::{BoxWidget, Widget};
+    use crossterm::style::{Color, Colors, ResetColor, SetColors};
     use crossterm::{cursor, queue, style};
     use std::io::Stdout;
     #[derive(Debug, Default, Clone)]
     pub struct Text {
         content: String,
+        fg: Option<Color>,
+        bg: Option<Color>,
         width: u16,
         height: u16,
         comment: Option<String>,
@@ -221,10 +224,22 @@ pub mod text {
         pub fn new(content: &str) -> Self {
             Self {
                 content: content.into(),
+                fg: None,
+                bg: None,
                 width: content.lines().map(|x| x.len()).max().unwrap_or_default() as u16,
                 height: content.lines().count() as u16,
                 comment: None,
             }
+        }
+
+        pub fn with_fg(mut self, fg: Color) -> Self {
+            self.fg = Some(fg);
+            self
+        }
+
+        pub fn with_bg(mut self, bg: Color) -> Self {
+            self.bg = Some(bg);
+            self
         }
 
         pub fn with_comment(mut self, comment: impl Into<String>) -> Self {
@@ -257,6 +272,12 @@ pub mod text {
             self.height
         }
         fn draw(&self, stdout: &mut Stdout, bounds: Rect) {
+            let colors = Colors {
+                foreground: self.fg,
+                background: self.bg,
+            };
+
+            queue!(stdout, SetColors(colors)).expect("failed to queue color");
             for (i, line) in self
                 .content
                 .lines()
@@ -270,6 +291,7 @@ pub mod text {
                 )
                 .expect("Failed to queue Text");
             }
+            queue!(stdout, ResetColor).expect("failed to queue reset color");
         }
         fn debug_name(&self) -> String {
             self.comment.clone().unwrap_or_default()

@@ -36,6 +36,7 @@ impl App for Revi {
     type Settings = Settings;
     fn new(settings: Self::Settings) -> Self {
         let (width, height) = size();
+        dbg!(width);
         let buffers = settings
             .files
             .into_iter()
