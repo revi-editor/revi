@@ -213,7 +213,7 @@ build_command!(
         match command.as_str() {
             c if c.starts_with('!')=> ExecuteTerminalCommand(command[1..].trim().into()).call(ctx.clone()),
             "exit" | "quit" | "q" => Quit.call(ctx.clone()),
-            "write" | "w" => Save.call(ctx.clone()),
+            "write" | "w" => SaveFile.call(ctx.clone()),
             "message" => Message(command.to_string(), "".into()).call(ctx.clone()),
             _ => {},
         }
@@ -319,8 +319,8 @@ build_command!(
 // );
 //
 build_command!(
-    Save;
-    |_: &Save, ctx: Context| {
+    SaveFile;
+    |_: &SaveFile, ctx: Context| {
         use std::fs::File;
         use std::io::BufWriter;
         let id = *ctx.focused_pane.borrow();
