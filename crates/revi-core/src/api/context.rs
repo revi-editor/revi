@@ -39,19 +39,38 @@ impl ContextRhaiApi {
     }
 
     fn set_cursor_row(&mut self, row: rhai::INT) {
+        let row = row as u16;
         let pane = self.0.focused_pane();
         let mut pane = pane.borrow_mut();
+        let min = pane
+            .get_pane_bounds()
+            .map(|rect| rect.y)
+            .unwrap_or_default();
+        let max = pane
+            .get_pane_bounds()
+            .map(|rect| rect.height)
+            .unwrap_or_default();
         pane.get_cursor_pos_mut().map(|c| {
-            c.pos.y = row as u16;
+            c.pos.y = row.clamp(min, max);
             c
         });
     }
 
     fn set_cursor_col(&mut self, col: rhai::INT) {
+        let col = col as u16;
         let pane = self.0.focused_pane();
         let mut pane = pane.borrow_mut();
+        let min = pane
+            .get_pane_bounds()
+            .map(|rect| rect.x)
+            .unwrap_or_default();
+        let max = pane
+            .get_pane_bounds()
+            .map(|rect| rect.width)
+            .unwrap_or_default();
         pane.get_cursor_pos_mut().map(|c| {
-            c.pos.x = col as u16;
+            c.pos.x = col.clamp(min, max);
+            c.max.x = c.pos.x.min(c.max.x);
             c
         });
     }

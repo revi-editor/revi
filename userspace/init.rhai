@@ -4,6 +4,11 @@ let go_to_top_of_file = || {
 };
 
 revi.nmap("gg", go_to_top_of_file);
+
+let go_to_home = || {
+  revi.set_cursor_col(0);
+};
+revi.nmap("0", go_to_home);
 revi.nmap("tt", "jjjj");
 
 
