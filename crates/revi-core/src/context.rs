@@ -7,6 +7,7 @@ use revi_ui::tui::layout::Size;
 
 use std::{cell::RefCell, rc::Rc};
 type Panes = Vec<Rc<RefCell<dyn Pane>>>;
+type Buffers = Vec<Rc<RefCell<Buffer>>>;
 
 #[derive(Debug, Default)]
 pub struct ContextBuilder {
@@ -57,7 +58,7 @@ impl ContextBuilder {
     }
     pub fn build(self) -> Context {
         let ctx = Context {
-            buffers: self.buffers,
+            buffers: Rc::new(RefCell::new(self.buffers)),
             panes: Rc::new(RefCell::new(self.panes)),
             command_bar: Rc::new(RefCell::new(self.command_bar)),
             map_keys: Rc::new(RefCell::new(Mapper::default())),
@@ -79,7 +80,7 @@ impl ContextBuilder {
 
 #[derive(Debug, Clone)]
 pub struct Context {
-    pub buffers: Vec<Rc<RefCell<Buffer>>>,
+    pub buffers: Rc<RefCell<Buffers>>,
     pub panes: Rc<RefCell<Panes>>,
     pub command_bar: Rc<RefCell<dyn Pane>>,
     pub map_keys: Rc<RefCell<Mapper>>,

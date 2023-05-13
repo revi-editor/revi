@@ -214,6 +214,7 @@ build_command!(
             c if c.starts_with('!')=> ExecuteTerminalCommand(command[1..].trim().into()).call(ctx.clone()),
             "exit" | "quit" | "q" => Quit.call(ctx.clone()),
             "write" | "w" => SaveFile.call(ctx.clone()),
+            "edit" | "e" => EditFile(command).call(ctx.clone()),
             "message" => Message(command.to_string(), "".into()).call(ctx.clone()),
             _ => {},
         }
@@ -324,7 +325,8 @@ build_command!(
         use std::fs::File;
         use std::io::BufWriter;
         let id = *ctx.focused_pane.borrow();
-        let buf = ctx.buffers[id].borrow();
+        let buf = ctx.buffers.borrow();
+        let buf = buf[id].borrow();
         let name = &buf.name;
         File::create(name)
             .map(BufWriter::new)
@@ -334,6 +336,30 @@ build_command!(
                         String::new()
                     ).call(ctx.clone()))
             .ok();
+    }
+);
+
+build_command!(
+    EditFile(String);
+    |Self(command): &EditFile, ctx: Context| {
+        eprintln!("edit file: {command:?}");
+        let Some((_, name)) = command.split_once(' ') else {
+            let msg = "edit command requires a file path";
+            Message(msg.into(), command.into()).call(ctx);
+            return;
+        };
+        let id = ctx.panes.borrow().len();
+        *ctx.focused_pane.borrow_mut() = id;
+        let text = std::fs::read_to_string(name).unwrap_or("\n".into());
+        let rope = ropey::Rope::from_str(&text);
+        let buf = Rc::new(RefCell::new(Buffer::new(name, rope)));
+        let pos = revi_ui::tui::layout::Pos::default();
+        // HACK: sheppereds hook
+        // size needs to be dynamicly dispatched
+        let size = ctx.window_size();
+        let window = crate::Window::new(pos, size, buf);
+        let mut panes = ctx.panes.borrow_mut();
+        panes.push(Rc::new(RefCell::new(window)));
     }
 );
 
