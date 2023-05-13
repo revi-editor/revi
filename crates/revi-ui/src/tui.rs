@@ -207,14 +207,13 @@ pub mod container {
 pub mod text {
     use super::layout::Rect;
     use super::widget::{BoxWidget, Widget};
-    use crossterm::style::{Color, Colors, ResetColor, SetColors};
+    use crossterm::style::{Attribute, Color, ContentStyle, ResetColor, SetAttribute, SetStyle};
     use crossterm::{cursor, queue, style};
     use std::io::Stdout;
     #[derive(Debug, Default, Clone)]
     pub struct Text {
         content: String,
-        fg: Option<Color>,
-        bg: Option<Color>,
+        style: ContentStyle,
         width: u16,
         height: u16,
         comment: Option<String>,
@@ -224,8 +223,7 @@ pub mod text {
         pub fn new(content: &str) -> Self {
             Self {
                 content: content.into(),
-                fg: None,
-                bg: None,
+                style: ContentStyle::new(),
                 width: content.lines().map(|x| x.len()).max().unwrap_or_default() as u16,
                 height: content.lines().count() as u16,
                 comment: None,
@@ -233,12 +231,17 @@ pub mod text {
         }
 
         pub fn with_fg(mut self, fg: Color) -> Self {
-            self.fg = Some(fg);
+            self.style.foreground_color = Some(fg);
             self
         }
 
         pub fn with_bg(mut self, bg: Color) -> Self {
-            self.bg = Some(bg);
+            self.style.background_color = Some(bg);
+            self
+        }
+
+        pub fn with_atter(mut self, atter: impl Into<style::Attributes>) -> Self {
+            self.style.attributes = atter.into();
             self
         }
 
@@ -272,12 +275,7 @@ pub mod text {
             self.height
         }
         fn draw(&self, stdout: &mut Stdout, bounds: Rect) {
-            let colors = Colors {
-                foreground: self.fg,
-                background: self.bg,
-            };
-
-            queue!(stdout, SetColors(colors)).expect("failed to queue color");
+            queue!(stdout, SetStyle(self.style)).expect("failed to set style");
             for (i, line) in self
                 .content
                 .lines()
@@ -291,7 +289,8 @@ pub mod text {
                 )
                 .expect("Failed to queue Text");
             }
-            queue!(stdout, ResetColor).expect("failed to queue reset color");
+            queue!(stdout, ResetColor, SetAttribute(Attribute::Reset))
+                .expect("failed to queue reset color and  attribute");
         }
         fn debug_name(&self) -> String {
             self.comment.clone().unwrap_or_default()

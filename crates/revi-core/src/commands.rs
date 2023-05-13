@@ -16,9 +16,9 @@ pub trait Command: fmt::Debug {
 }
 
 macro_rules! build_command {
-    ($name:ident $(, $ty:ty)?; $caller:expr) => {
+    ($name:ident$(($($ty:ty $(,)?)*))?; $caller:expr) => {
         #[derive(Debug, PartialEq)]
-        pub struct $name $((pub $ty))?;
+        pub struct $name $(($(pub $ty, )*))?;
         impl Command for $name {
             fn call(&self, ctx: Context) {
                 $caller(&self, ctx);
@@ -66,8 +66,7 @@ impl PartialEq for CmdRc {
 }
 
 build_command!(
-    UserCommand,
-    usize;
+    UserCommand(usize);
     |Self(id): &UserCommand, ctx: Context| {
         let fnptr = &ctx.rhai_commands.borrow_mut()[*id];
         let rhai = ctx.rhai.borrow_mut();
@@ -75,7 +74,7 @@ build_command!(
         let ast = &rhai.ast;
         // let name = fnptr.fn_name();
         if let Err(err_message) = fnptr.call::<()>(engine, ast, ()) {
-            Message(err_message.to_string()).call(ctx.clone());
+            Message(err_message.to_string(), "".into()).call(ctx.clone());
         }
             // .expect(&format!("failed to execute user command '{name}'"));
     }
@@ -123,8 +122,7 @@ build_command!(
 );
 
 build_command!(
-    ExeCommandList,
-    Vec<CmdRc>;
+    ExeCommandList(Vec<CmdRc>);
     |ecl: &ExeCommandList, ctx: Context| {
         for cmd in ecl.0.iter() {
             cmd.call(ctx.clone());
@@ -163,8 +161,7 @@ build_command!(
 );
 
 build_command!(
-    InsertChar,
-    char;
+    InsertChar(char);
     |InsertChar(c): &InsertChar, ctx: Context| {
         let mode = *ctx.mode.borrow();
         match mode {
@@ -185,8 +182,7 @@ build_command!(
 );
 
 build_command!(
-    ChangeMode,
-    Mode;
+    ChangeMode(Mode);
     |Self(mode): &ChangeMode, ctx: Context| {
         let (cmd_focused, pane_focused) = match &mode {
             Mode::Command => (true, false),
@@ -217,15 +213,15 @@ build_command!(
         match command.as_str() {
             c if c.starts_with('!')=> ExecuteTerminalCommand(command[1..].trim().into()).call(ctx.clone()),
             "exit" | "quit" | "q" => Quit.call(ctx.clone()),
-            "message" => Message(command.to_string()).call(ctx.clone()),
+            "write" | "w" => Save.call(ctx.clone()),
+            "message" => Message(command.to_string(), "".into()).call(ctx.clone()),
             _ => {},
         }
     }
 );
 
 build_command!(
-    ExecuteTerminalCommand,
-    String;
+    ExecuteTerminalCommand(String);
     |Self(command): &ExecuteTerminalCommand, ctx: Context| {
         let Some((head, args)) = command.split_once(' ').or(Some((command, ""))) else {
             return;
@@ -241,7 +237,7 @@ build_command!(
             let stdout = String::from_utf8(output.stdout).ok().unwrap_or_default();
             format!("{stderr}\n{stdout}")
         }).unwrap_or_default();
-        Message(message.trim().to_string()).call(ctx);
+        Message(message.trim().to_string(), command.into()).call(ctx);
     }
 );
 
@@ -290,9 +286,8 @@ build_command!(
 // );
 
 build_command!(
-    Message,
-    String;
-    |Self(message): &Message, ctx: Context| {
+    Message(String, String);
+    |Self(message, footer): &Message, ctx: Context| {
         let id = ctx.panes.borrow().len();
         *ctx.focused_pane.borrow_mut() = id;
         // let Size { width, height } = ctx.window_size();
@@ -304,7 +299,7 @@ build_command!(
         let buffer = Rc::new(RefCell::new(Buffer::new_str("", message)));
 
 
-        let message_box = Rc::new(RefCell::new(MessageBox::new(pos, size, buffer)));
+        let message_box = Rc::new(RefCell::new(MessageBox::new(pos, size, buffer).with_footer(footer)));
         let id = ctx.panes.borrow().len();
         *ctx.focused_pane.borrow_mut() = id;
         ctx.panes.borrow_mut().push(message_box);
@@ -323,16 +318,24 @@ build_command!(
 //     }
 // );
 //
-// build_command!(
-//     Save,
-//     26;
-//     |_: &Save, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.focused_window().save();
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
-//     }
-// );
+build_command!(
+    Save;
+    |_: &Save, ctx: Context| {
+        use std::fs::File;
+        use std::io::BufWriter;
+        let id = *ctx.focused_pane.borrow();
+        let buf = ctx.buffers[id].borrow();
+        let name = &buf.name;
+        File::create(name)
+            .map(BufWriter::new)
+            .and_then(|b|buf.get_rope().write_to(b))
+            .map_err(|err|Message(
+                        err.to_string(),
+                        String::new()
+                    ).call(ctx.clone()))
+            .ok();
+    }
+);
 
 // build_command!(
 //     CloseWindow,

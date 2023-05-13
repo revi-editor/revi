@@ -1,9 +1,12 @@
 use std::{cell::RefCell, rc::Rc};
 
-use revi_ui::tui::{
-    container::Container,
-    layout::{Pos, Rect, Size, Stack},
-    text::Text,
+use revi_ui::{
+    tui::{
+        container::Container,
+        layout::{Pos, Rect, Size, Stack},
+        text::Text,
+    },
+    Attribute,
 };
 
 use crate::{
@@ -17,6 +20,7 @@ pub struct MessageBox {
     cursor: Cursor,
     size: Size,
     buffer: Rc<RefCell<Buffer>>,
+    footer: String,
     active: bool,
     closing: bool,
 }
@@ -29,9 +33,15 @@ impl MessageBox {
             cursor: Cursor::default(),
             size,
             buffer,
+            footer: String::new(),
             active: false,
             closing: false,
         }
+    }
+
+    pub fn with_footer(mut self, msg: impl Into<String>) -> Self {
+        self.footer = msg.into();
+        self
     }
 
     fn create_cursor_bounds(&self, y: u16) -> Rect {
@@ -69,7 +79,16 @@ impl Pane for MessageBox {
             .max_width(width)
             .with_comment("text file");
         use revi_ui::Color;
-        let bar = Text::new(&" ".repeat(width as usize)).with_bg(Color::Grey);
+        let msg = self
+            .footer
+            .chars()
+            .chain(std::iter::repeat(' '))
+            .take(width as usize)
+            .collect::<String>();
+        let bar = Text::new(&msg)
+            .with_bg(Color::DarkGrey)
+            .with_fg(Color::Black)
+            .with_atter(vec![Attribute::Bold, Attribute::Italic].as_slice());
         Container::new(Rect::with_position(self.pos, self.size), Stack::Vertically)
             .with_child(text)
             .with_child(bar)

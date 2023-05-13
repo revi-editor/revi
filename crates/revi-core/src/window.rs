@@ -1,9 +1,12 @@
 use std::{cell::RefCell, rc::Rc};
 
-use revi_ui::tui::{
-    container::Container,
-    layout::{Pos, Rect, Size, Stack},
-    text::Text,
+use revi_ui::{
+    tui::{
+        container::Container,
+        layout::{Pos, Rect, Size, Stack},
+        text::Text,
+    },
+    Attribute, Color,
 };
 
 use crate::{
@@ -99,6 +102,7 @@ impl Window {
     fn view_status_bar(&self) -> Text {
         let x = self.cursor.pos.x + self.cursor.scroll.x;
         let y = self.cursor.pos.y + self.cursor.scroll.y;
+        let Size { width, .. } = self.size;
         // BUG: this should work
         // let mode = format!("{:-<7}", self.mode);
         // assert_eq!(mode.len(), 7);
@@ -117,6 +121,9 @@ impl Window {
             y
         ))
         .max_height(1)
+        .max_width(width)
+        .with_bg(Color::DarkGrey)
+        .with_atter(vec![Attribute::Bold].as_slice())
         .with_comment("status bar")
     }
 
