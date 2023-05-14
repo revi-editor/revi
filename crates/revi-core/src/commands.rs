@@ -210,7 +210,9 @@ build_command!(
         });
         let command = bar.get_buffer_contents();
         bar.clear_buffer();
-        match command.as_str() {
+
+        let (cmd, _) = command.split_once(' ').unwrap_or((command.as_str(), ""));
+        match cmd {
             c if c.starts_with('!')=> ExecuteTerminalCommand(command[1..].trim().into()).call(ctx.clone()),
             "exit" | "quit" | "q" => Quit.call(ctx.clone()),
             "write" | "w" => SaveFile.call(ctx.clone()),
@@ -342,12 +344,13 @@ build_command!(
 build_command!(
     EditFile(String);
     |Self(command): &EditFile, ctx: Context| {
-        eprintln!("edit file: {command:?}");
         let Some((_, name)) = command.split_once(' ') else {
             let msg = "edit command requires a file path";
             Message(msg.into(), command.into()).call(ctx);
             return;
         };
+        let settings = ctx.settings.borrow();
+        let line_numbers = settings.line_numbers;
         let id = ctx.panes.borrow().len();
         *ctx.focused_pane.borrow_mut() = id;
         let text = std::fs::read_to_string(name).unwrap_or("\n".into());
@@ -357,7 +360,9 @@ build_command!(
         // HACK: sheppereds hook
         // size needs to be dynamicly dispatched
         let size = ctx.window_size();
-        let window = crate::Window::new(pos, size, buf);
+        let window = crate::Window::new(pos, size, buf)
+            .with_status_bar(true)
+            .with_status_bar(line_numbers);
         let mut panes = ctx.panes.borrow_mut();
         panes.push(Rc::new(RefCell::new(window)));
     }

@@ -36,10 +36,9 @@ impl App for Revi {
     type Settings = Settings;
     fn new(settings: Self::Settings) -> Self {
         let (width, height) = size();
-        dbg!(width);
         let buffers = settings
             .files
-            .into_iter()
+            .iter()
             .map(|filename| Rc::new(RefCell::new(Buffer::from_path(filename.as_str()))))
             .collect::<Vec<Rc<RefCell<Buffer>>>>();
         let pane = Rc::new(RefCell::new(
@@ -52,7 +51,7 @@ impl App for Revi {
                 buffers[0].clone(),
             )
             .with_status_bar(true)
-            .with_line_numbers(true),
+            .with_line_numbers(settings.line_numbers),
         ));
         let context = ContextBuilder::default()
             .with_buffers(buffers)
@@ -62,6 +61,7 @@ impl App for Revi {
             .with_on_screen(vec![0])
             .with_window_size(Size::new(width, height))
             .with_show_command_bar(true)
+            .with_settings(settings)
             .build();
 
         Self {
@@ -177,6 +177,9 @@ impl App for Revi {
 
 fn main() -> Result<()> {
     let files = commandline::args();
-    let settings = Settings { files };
+    let settings = Settings {
+        files,
+        line_numbers: true,
+    };
     Revi::new(settings).run()
 }

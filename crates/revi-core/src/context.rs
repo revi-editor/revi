@@ -1,4 +1,4 @@
-use crate::api::Rhai;
+use crate::{api::Rhai, Settings};
 use rhai::FnPtr;
 
 use super::{Buffer, CommandBar, Event, Mapper, Mode, Pane};
@@ -19,6 +19,7 @@ pub struct ContextBuilder {
     on_screen: Vec<usize>,
     window_size: Size,
     show_command_bar: bool,
+    settings: Settings,
 }
 
 impl ContextBuilder {
@@ -56,6 +57,10 @@ impl ContextBuilder {
         self.show_command_bar = flag;
         self
     }
+    pub fn with_settings(mut self, settings: Settings) -> Self {
+        self.settings = settings;
+        self
+    }
     pub fn build(self) -> Context {
         let ctx = Context {
             buffers: Rc::new(RefCell::new(self.buffers)),
@@ -69,6 +74,7 @@ impl ContextBuilder {
             on_screen: self.on_screen,
             is_running: Rc::new(RefCell::new(true)),
             event: Rc::new(RefCell::new(Event::None)),
+            settings: Rc::new(RefCell::new(self.settings)),
             window_size: self.window_size,
             show_command_bar: self.show_command_bar,
         };
@@ -91,6 +97,7 @@ pub struct Context {
     pub on_screen: Vec<usize>,
     pub is_running: Rc<RefCell<bool>>,
     pub event: Rc<RefCell<Event>>,
+    pub settings: Rc<RefCell<Settings>>,
     window_size: Size,
     show_command_bar: bool,
 }
