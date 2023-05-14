@@ -217,7 +217,7 @@ build_command!(
             "exit" | "quit" | "q" => Quit.call(ctx.clone()),
             "write" | "w" => SaveFile.call(ctx.clone()),
             "edit" | "e" => EditFile(command).call(ctx.clone()),
-            "message" => Message(command.to_string(), "".into()).call(ctx.clone()),
+            "ls" => ListBuffers.call(ctx.clone()),
             _ => {},
         }
     }
@@ -376,15 +376,19 @@ build_command!(
 //         revi.close_current_window();
 //     }
 // );
-//
-// build_command!(
-//     ListBuffers,
-//     29;
-//     |_: &ListBuffers, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.list_buffers();
-//     }
-// );
+
+build_command!(
+    ListBuffers;
+    |_: &ListBuffers, ctx: Context| {
+        let buf = ctx.buffers.borrow().clone();
+        let paths = buf.iter()
+             .enumerate()
+             .map(|(i, b)|format!("{} {}", i, b.borrow().name))
+             .collect::<Vec<String>>();
+        let msg = paths.join("\n");
+        Message(msg, "ls List Buffers".into()).call(ctx);
+    }
+);
 //
 // build_command!(
 //     InsertTab,
