@@ -42,6 +42,9 @@ impl Buffer {
         // self.rope.slice(start..end)
     }
 
+    pub fn len_lines(&self) -> usize {
+        self.rope.len_lines()
+    }
     pub fn line_len(&self, line_idx: usize) -> usize {
         self.rope.line(line_idx).len_chars()
     }

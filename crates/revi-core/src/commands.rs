@@ -2,7 +2,7 @@ use revi_ui::tui::layout::{Pos, Size};
 
 use crate::context::Context;
 use crate::mode::Mode;
-use crate::{Buffer, Event, MessageBox};
+use crate::{panes::MessageBox, Buffer, Event};
 use std::any::Any;
 use std::cell::RefCell;
 use std::fmt;
@@ -16,7 +16,8 @@ pub trait Command: fmt::Debug {
 }
 
 macro_rules! build_command {
-    ($name:ident$(($($ty:ty $(,)?)*))?; $caller:expr) => {
+    ($([doc:  $doc:expr])? $name:ident$(($($ty:ty $(,)?)*))?; $caller:expr) => {
+        $(#[doc=$doc])?
         #[derive(Debug, PartialEq)]
         pub struct $name $(($(pub $ty, )*))?;
         impl Command for $name {
@@ -342,6 +343,8 @@ build_command!(
 );
 
 build_command!(
+    [doc: "loads a file from disk if it exsists and if not just create a empty file
+    and place it in buffer list and put the current file buffer into the current window."]
     EditFile(String);
     |Self(command): &EditFile, ctx: Context| {
         let Some((_, name)) = command.split_once(' ') else {
@@ -349,22 +352,14 @@ build_command!(
             Message(msg.into(), command.into()).call(ctx);
             return;
         };
-        let settings = ctx.settings.borrow();
-        let line_numbers = settings.line_numbers;
-        let id = ctx.panes.borrow().len();
-        *ctx.focused_pane.borrow_mut() = id;
         let text = std::fs::read_to_string(name).unwrap_or("\n".into());
         let rope = ropey::Rope::from_str(&text);
-        let buf = Rc::new(RefCell::new(Buffer::new(name, rope)));
-        let pos = revi_ui::tui::layout::Pos::default();
-        // HACK: sheppereds hook
-        // size needs to be dynamicly dispatched
-        let size = ctx.window_size();
-        let window = crate::Window::new(pos, size, buf)
-            .with_status_bar(true)
-            .with_status_bar(line_numbers);
-        let mut panes = ctx.panes.borrow_mut();
-        panes.push(Rc::new(RefCell::new(window)));
+        let new_buf = Rc::new(RefCell::new(Buffer::new(name, rope)));
+        let mut buf_list = ctx.buffers.borrow_mut();
+        buf_list.push(new_buf.clone());
+        let pane = ctx.focused_pane();
+        let mut pane = pane.borrow_mut();
+        pane.set_buffer(new_buf);
     }
 );
 

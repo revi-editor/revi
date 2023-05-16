@@ -12,6 +12,15 @@ revi.nmap("0", go_to_home);
 revi.nmap("tt", "jjjj");
 
 
+// let UserCommand = || {
+//   revi.message("hello");
+// };
+
+// revi.export_command(UserCommand);
+
+// revi.nmap("er", ":UserCommand<CR>");
+
+
 
 
 

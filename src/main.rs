@@ -11,7 +11,8 @@ mod commandline;
 
 use revi_core::{
     commands::{CmdRc, InsertChar},
-    Buffer, CommandBar, Context, ContextBuilder, Event, KeyParser, Mode, Settings, Window,
+    panes::{CommandBar, Window},
+    Buffer, Context, ContextBuilder, Event, KeyParser, Mode, Settings,
 };
 use revi_ui::{
     tui::{

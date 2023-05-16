@@ -1,7 +1,10 @@
 use crate::{api::Rhai, Settings};
 use rhai::FnPtr;
 
-use super::{Buffer, CommandBar, Event, Mapper, Mode, Pane};
+use super::{
+    panes::{CommandBar, Pane},
+    Buffer, Event, Mapper, Mode,
+};
 
 use revi_ui::tui::layout::Size;
 

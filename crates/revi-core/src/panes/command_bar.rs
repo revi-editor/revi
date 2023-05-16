@@ -3,11 +3,12 @@ use revi_ui::tui::{
     layout::{Pos, Rect, Size, Stack},
     text::Text,
 };
+use std::{cell::RefCell, rc::Rc};
 
-use crate::{
-    pane::{BufferBounds, BufferMut, Cursor, CursorMovement, CursorPos, PaneBounds, Scrollable},
-    Mode, Pane,
+use super::{
+    BufferBounds, BufferMut, Cursor, CursorMovement, CursorPos, Pane, PaneBounds, Scrollable,
 };
+use crate::{Buffer, Mode};
 
 #[derive(Debug, Clone, Default)]
 pub struct CommandBar {
@@ -96,6 +97,9 @@ impl BufferBounds for CommandBar {
 }
 
 impl BufferMut for CommandBar {
+    fn set_buffer(&mut self, _buf: Rc<RefCell<Buffer>>) {
+        todo!("set buffer for command bar")
+    }
     fn insert_char(&mut self, c: char) {
         let idx = self.cursor.pos.x as usize;
         if idx < self.content.len() {

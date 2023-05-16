@@ -6,15 +6,6 @@ pub enum Mode {
     Command,
     Insert,
 }
-// impl Mode {
-//     #[must_use]
-//     pub fn shape(self) -> revi_ui::CursorShape {
-//         match self {
-//             Self::Normal | Self::Command => Block,
-//             Self::Insert => Line,
-//         }
-//     }
-// }
 
 impl fmt::Display for Mode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -9,10 +9,10 @@ use revi_ui::{
     Attribute, Color,
 };
 
-use crate::{
-    pane::{BufferBounds, BufferMut, Cursor, CursorMovement, CursorPos, PaneBounds, Scrollable},
-    Buffer, Mode, Pane,
+use super::{
+    BufferBounds, BufferMut, Cursor, CursorMovement, CursorPos, Pane, PaneBounds, Scrollable,
 };
+use crate::{Buffer, Mode};
 
 #[derive(Debug)]
 pub struct Window {
@@ -93,9 +93,12 @@ impl Window {
             .on_screen(top, bottom)
             .iter()
             .map(ToString::to_string)
+            .chain(std::iter::repeat("\n".into()))
+            .take(height as usize)
             .collect::<String>();
         Text::new(&contents)
             .max_width(width)
+            .max_height(height)
             .with_comment("text file")
     }
 
@@ -132,13 +135,15 @@ impl Window {
         let height = height - (self.has_status_bar as u16);
         let start = self.cursor.scroll.y;
         let end = height + self.cursor.scroll.y;
-        Text::new(
-            &(start..=end)
-                .map(|n| format!(" {} \n", n))
-                .collect::<String>(),
-        )
-        .max_width(4)
-        .with_comment("numbers")
+        let content_rows = (self.buffer.borrow().len_lines() - 2) as u16;
+        let text = &(start..=end.min(content_rows))
+            .map(|n| format!(" {} \n", n))
+            .chain(std::iter::repeat("~\n".into()))
+            .take(end as usize)
+            .collect::<String>();
+        Text::new(text)
+            .max_width(Self::NUMBER_LINE_WIDTH)
+            .with_comment("numbers")
     }
 }
 
@@ -235,6 +240,9 @@ impl BufferBounds for Window {
 }
 
 impl BufferMut for Window {
+    fn set_buffer(&mut self, buf: Rc<RefCell<Buffer>>) {
+        self.buffer = buf;
+    }
     fn insert_char(&mut self, ch: char) {
         let col = (self.cursor.pos.x as usize)
             - (self.has_line_numbers as u16 * Self::NUMBER_LINE_WIDTH) as usize;

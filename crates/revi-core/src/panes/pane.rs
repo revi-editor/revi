@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{cell::RefCell, fmt::Debug, rc::Rc};
 
 use revi_ui::{
     tui::{
@@ -8,6 +8,7 @@ use revi_ui::{
     Keys,
 };
 
+use crate::Buffer;
 use crate::Mode;
 
 #[derive(Debug, Clone, Copy, Default)]
@@ -139,6 +140,7 @@ pub trait Scrollable: BufferBounds + CursorPos {
 }
 
 pub trait BufferMut {
+    fn set_buffer(&mut self, buf: Rc<RefCell<Buffer>>);
     fn get_buffer_contents(&self) -> String;
     fn insert_char(&mut self, c: char);
     fn clear_buffer(&mut self);

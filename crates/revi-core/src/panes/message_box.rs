@@ -9,10 +9,10 @@ use revi_ui::{
     Attribute,
 };
 
-use crate::{
-    pane::{BufferBounds, BufferMut, Cursor, CursorMovement, CursorPos, PaneBounds, Scrollable},
-    Buffer, Mode, Pane,
+use super::{
+    BufferBounds, BufferMut, Cursor, CursorMovement, CursorPos, Pane, PaneBounds, Scrollable,
 };
+use crate::{Buffer, Mode};
 
 #[derive(Debug)]
 pub struct MessageBox {
@@ -171,6 +171,9 @@ impl BufferBounds for MessageBox {
 }
 
 impl BufferMut for MessageBox {
+    fn set_buffer(&mut self, buf: Rc<RefCell<Buffer>>) {
+        self.buffer = buf;
+    }
     fn insert_char(&mut self, _: char) {}
     fn clear_buffer(&mut self) {}
     fn get_buffer_contents(&self) -> String {
