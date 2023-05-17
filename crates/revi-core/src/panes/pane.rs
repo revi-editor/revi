@@ -1,4 +1,8 @@
-use std::{cell::RefCell, fmt::Debug, rc::Rc};
+use std::{
+    cell::{Ref, RefCell, RefMut},
+    fmt::Debug,
+    rc::Rc,
+};
 
 use revi_ui::{
     tui::{
@@ -30,10 +34,10 @@ pub trait Pane: Debug + CursorMovement + Scrollable + BufferMut {
 }
 
 pub trait CursorPos {
-    fn get_cursor_pos(&self) -> Option<&Cursor> {
+    fn get_cursor_pos(&self) -> Option<Ref<'_, Cursor>> {
         None
     }
-    fn get_cursor_pos_mut(&mut self) -> Option<&mut Cursor> {
+    fn get_cursor_pos_mut(&mut self) -> Option<RefMut<'_, Cursor>> {
         None
     }
     fn get_line_above_bounds(&self) -> Option<Rect> {
@@ -62,43 +66,47 @@ pub trait CursorMovement: CursorPos + PaneBounds + Scrollable {
             return;
         };
         let above = self.get_line_above_bounds();
-        let Some(cursor) = self.get_cursor_pos_mut() else {
-            return;
-        };
+        {
+            let Some(mut cursor) = self.get_cursor_pos_mut() else {
+                return;
+            };
 
-        cursor.max.x = cursor.pos.x.max(cursor.max.x);
-        if let Some(above) = above {
-            cursor.pos.x = cursor.max.x.min(above.width);
+            cursor.max.x = cursor.pos.x.max(cursor.max.x);
+            if let Some(above) = above {
+                cursor.pos.x = cursor.max.x.min(above.width);
+            }
+            if cursor.pos.y > bounds.y {
+                cursor.pos.y -= 1;
+                return;
+            }
         }
-        if cursor.pos.y > bounds.y {
-            cursor.pos.y -= 1;
-        } else {
-            self.scroll_up();
-        }
+        self.scroll_up();
     }
     fn move_cursor_down(&mut self) {
         let Some(bounds) = self.get_pane_bounds() else {
             return;
         };
         let below = self.get_line_below_bounds();
-        let Some(cursor) = self.get_cursor_pos_mut() else {
+        {
+            let Some(mut cursor) = self.get_cursor_pos_mut() else {
             return;
         };
-        cursor.max.x = cursor.pos.x.max(cursor.max.x);
-        if let Some(below) = below {
-            cursor.pos.x = cursor.max.x.min(below.width.min(cursor.max.x));
+            cursor.max.x = cursor.pos.x.max(cursor.max.x);
+            if let Some(below) = below {
+                cursor.pos.x = cursor.max.x.min(below.width.min(cursor.max.x));
+            }
+            if cursor.pos.y < bounds.height {
+                cursor.pos.y += 1;
+                return;
+            }
         }
-        if cursor.pos.y < bounds.height {
-            cursor.pos.y += 1;
-        } else {
-            self.scroll_down();
-        }
+        self.scroll_down();
     }
     fn move_cursor_left(&mut self) {
         let Some(bounds) = self.get_pane_bounds() else {
             return;
         };
-        let Some(cursor) = self.get_cursor_pos_mut() else {
+        let Some(mut cursor) = self.get_cursor_pos_mut() else {
             return;
         };
         cursor.pos.x = cursor.pos.x.saturating_sub(1).max(bounds.x);
@@ -108,7 +116,7 @@ pub trait CursorMovement: CursorPos + PaneBounds + Scrollable {
         let Some(bounds) = self.get_pane_bounds() else {
             return;
         };
-        let Some(cursor) = self.get_cursor_pos_mut() else {
+        let Some(mut cursor) = self.get_cursor_pos_mut() else {
             return;
         };
         cursor.pos.x = cursor.pos.x.saturating_add(1).min(bounds.width);
@@ -118,14 +126,14 @@ pub trait CursorMovement: CursorPos + PaneBounds + Scrollable {
 
 pub trait Scrollable: BufferBounds + CursorPos {
     fn scroll_up(&mut self) {
-        self.get_cursor_pos_mut().map(|c| {
+        self.get_cursor_pos_mut().map(|mut c| {
             c.scroll.y = c.scroll.y.saturating_sub(1);
             c
         });
     }
     fn scroll_down(&mut self) {
         let bounds = self.get_buffer_bounds();
-        let Some(cursor) = self.get_cursor_pos_mut() else {
+        let Some(mut cursor) = self.get_cursor_pos_mut() else {
             return;
         };
         let Some(bounds) = bounds else {

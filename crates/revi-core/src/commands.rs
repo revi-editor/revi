@@ -205,7 +205,7 @@ build_command!(
     |_: &ExecuteCommandLine, ctx: Context| {
         ChangeMode(crate::mode::Mode::Normal).call(ctx.clone());
         let mut bar = ctx.command_bar.borrow_mut();
-        bar.get_cursor_pos_mut().map(|c| {
+        bar.get_cursor_pos_mut().map(|mut c| {
             c.pos.x = 0;
             c
         });
@@ -218,6 +218,7 @@ build_command!(
             "exit" | "quit" | "q" => Quit.call(ctx.clone()),
             "write" | "w" => SaveFile.call(ctx.clone()),
             "edit" | "e" => EditFile(command).call(ctx.clone()),
+            "buffer" | "b" => JumpToBuffer(command).call(ctx.clone()),
             "ls" => ListBuffers.call(ctx.clone()),
             _ => {},
         }
@@ -281,13 +282,6 @@ build_command!(
         }
     }
 );
-
-// build_command!(
-//     ExecuteExternalCommand,
-//     String;
-//     |_: &DeleteLine, ctx: Context| {
-//     }
-// );
 
 build_command!(
     Message(String, String);
@@ -360,6 +354,46 @@ build_command!(
         let pane = ctx.focused_pane();
         let mut pane = pane.borrow_mut();
         pane.set_buffer(new_buf);
+    }
+);
+
+build_command!(
+    [doc: "command `buffer | b` `JumpToBuffer` swaps Pane's buffer with selected buffer
+    which could be a file path or a index of buffer in list of buffers open."]
+    JumpToBuffer(String);
+    |Self(command): &JumpToBuffer, ctx: Context| {
+        let Some((_, name)) = command.split_once(' ') else {
+            Message(
+                "expected a arguement".into(),
+                command.into())
+                .call(ctx);
+            return;
+        };
+        if let Ok(idx) = name.parse::<usize>() {
+            let bufs = ctx.buffers.borrow();
+            let Some(buf) =  bufs.get(idx) else {
+                Message(
+                    "buffer id does not exsist".into(),
+                    command.into())
+                    .call(ctx.clone());
+                return;
+            };
+            let pane = ctx.focused_pane();
+            let mut pane = pane.borrow_mut();
+            pane.set_buffer(buf.clone());
+            return;
+        }
+        let buffers = ctx.buffers.borrow();
+        let Some(buf) = buffers.iter().find(|b| b.borrow().name == name) else {
+            Message(
+                "name buffer open with that name or path".into(),
+                command.into())
+                .call(ctx.clone());
+            return;
+        };
+        let pane = ctx.focused_pane();
+        let mut pane = pane.borrow_mut();
+        pane.set_buffer(buf.clone());
     }
 );
 

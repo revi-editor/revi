@@ -1,4 +1,7 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::{Ref, RefCell, RefMut},
+    rc::Rc,
+};
 
 use revi_ui::{
     tui::{
@@ -17,7 +20,6 @@ use crate::{Buffer, Mode};
 #[derive(Debug)]
 pub struct Window {
     pos: Pos,
-    cursor: Cursor,
     size: Size,
     buffer: Rc<RefCell<Buffer>>,
     has_line_numbers: bool,
@@ -32,7 +34,6 @@ impl Window {
     pub fn new(pos: Pos, size: Size, buffer: Rc<RefCell<Buffer>>) -> Self {
         Self {
             pos,
-            cursor: Cursor::default(),
             size,
             buffer,
             has_line_numbers: false,
@@ -45,7 +46,8 @@ impl Window {
 
     pub fn with_line_numbers(mut self, flag: bool) -> Self {
         self.has_line_numbers = flag;
-        self.cursor.pos.x += flag as u16 * Self::NUMBER_LINE_WIDTH;
+        let mut cursor = self.buffer.borrow_mut().cursor;
+        cursor.pos.x += flag as u16 * Self::NUMBER_LINE_WIDTH;
         self
     }
 
@@ -61,20 +63,16 @@ impl Window {
     }
 
     fn create_cursor_bounds(&self, y: u16) -> Rect {
+        let buffer = self.buffer.borrow();
         let has_status_bar = self.has_status_bar as u16;
         let has_line_numbers = self.has_line_numbers as u16;
-        let line_text_width = self.buffer.borrow().line_len(y as usize) as u16;
+        let line_text_width = buffer.line_len(y as usize) as u16;
         let pos = Pos {
             x: self.pos.x + (has_line_numbers * Self::NUMBER_LINE_WIDTH),
             y: self.pos.y,
         };
         let pane_height = self.size.height - has_status_bar - 1;
-        let buffer_height = self
-            .buffer
-            .borrow()
-            .get_rope()
-            .len_lines()
-            .saturating_sub(2) as u16;
+        let buffer_height = buffer.get_rope().len_lines().saturating_sub(2) as u16;
         let height = pane_height.min(buffer_height);
         let size = Size {
             //NOTE: we subtracte 2 from width for offseting the new line
@@ -86,11 +84,9 @@ impl Window {
 
     fn view_contents(&self) -> Text {
         let Size { height, width } = self.size;
-        let top = self.cursor.scroll.y as usize;
-        let bottom = (self.cursor.scroll.y + height) as usize;
         let buffer = self.buffer.borrow();
         let contents = buffer
-            .on_screen(top, bottom)
+            .on_screen(height)
             .iter()
             .map(ToString::to_string)
             .chain(std::iter::repeat("\n".into()))
@@ -103,8 +99,9 @@ impl Window {
     }
 
     fn view_status_bar(&self) -> Text {
-        let x = self.cursor.pos.x + self.cursor.scroll.x;
-        let y = self.cursor.pos.y + self.cursor.scroll.y;
+        let cursor = self.buffer.borrow().cursor;
+        let x = cursor.pos.x + cursor.scroll.x;
+        let y = cursor.pos.y + cursor.scroll.y;
         let Size { width, .. } = self.size;
         // BUG: this should work
         // let mode = format!("{:-<7}", self.mode);
@@ -133,8 +130,9 @@ impl Window {
     fn view_line_numbers(&self) -> Text {
         let Size { height, .. } = self.size;
         let height = height - (self.has_status_bar as u16);
-        let start = self.cursor.scroll.y;
-        let end = height + self.cursor.scroll.y;
+        let cursor = self.buffer.borrow().cursor;
+        let start = cursor.scroll.y;
+        let end = height + cursor.scroll.y;
         let content_rows = (self.buffer.borrow().len_lines() - 2) as u16;
         let text = &(start..=end.min(content_rows))
             .map(|n| format!(" {} \n", n))
@@ -177,8 +175,10 @@ impl Pane for Window {
     }
 
     fn cursor(&self) -> Option<Pos> {
-        let x = self.cursor.pos.x + self.pos.x;
-        let y = self.cursor.pos.y + self.pos.y;
+        let cursor = self.buffer.borrow().cursor;
+        let x =
+            (cursor.pos.x + self.pos.x) + (self.has_line_numbers as u16 * Self::NUMBER_LINE_WIDTH);
+        let y = cursor.pos.y + self.pos.y;
         let pos = Pos { x, y };
         Some(pos)
     }
@@ -194,41 +194,44 @@ impl Pane for Window {
 }
 
 impl CursorPos for Window {
-    fn get_cursor_pos(&self) -> Option<&Cursor> {
-        Some(&self.cursor)
+    fn get_cursor_pos(&self) -> Option<Ref<'_, Cursor>> {
+        Some(Ref::map(self.buffer.borrow(), |b| &b.cursor))
     }
 
-    fn get_cursor_pos_mut(&mut self) -> Option<&mut Cursor> {
-        Some(&mut self.cursor)
+    fn get_cursor_pos_mut(&mut self) -> Option<RefMut<'_, Cursor>> {
+        Some(RefMut::map(self.buffer.borrow_mut(), |b| &mut b.cursor))
     }
 
     fn get_line_above_bounds(&self) -> Option<Rect> {
-        if self.cursor.pos.y == 0 {
+        let cursor = self.buffer.borrow().cursor;
+        if cursor.pos.y == 0 {
             return None;
         }
-        Some(self.create_cursor_bounds(self.cursor.pos.y + self.cursor.scroll.y - 1))
+        let cursor = self.buffer.borrow().cursor;
+        Some(self.create_cursor_bounds(cursor.pos.y + cursor.scroll.y - 1))
     }
 
     fn get_line_below_bounds(&self) -> Option<Rect> {
-        if self.cursor.pos.y + 1 > self.size.height {
+        let cursor = self.buffer.borrow().cursor;
+        if cursor.pos.y + 1 > self.size.height {
             return None;
         }
-        Some(self.create_cursor_bounds(self.cursor.pos.y + self.cursor.scroll.y + 1))
+        Some(self.create_cursor_bounds(cursor.pos.y + cursor.scroll.y + 1))
     }
 }
 
 impl PaneBounds for Window {
     fn get_pane_bounds(&self) -> Option<Rect> {
-        Some(self.create_cursor_bounds(self.cursor.pos.y + self.cursor.scroll.y))
+        let cursor = self.buffer.borrow().cursor;
+        Some(self.create_cursor_bounds(cursor.pos.y + cursor.scroll.y))
     }
 }
 
 impl BufferBounds for Window {
     fn get_buffer_bounds(&self) -> Option<Size> {
-        let top = self.cursor.scroll.y as usize;
-        let bottom = (self.cursor.scroll.y + self.text_field_size().height) as usize;
+        let Size { height, .. } = self.size;
         let buffer = self.buffer.borrow();
-        let text = buffer.on_screen(top, bottom);
+        let text = buffer.on_screen(height);
         let width = text
             .iter()
             .map(|i| i.len_chars() as u16)
@@ -244,9 +247,10 @@ impl BufferMut for Window {
         self.buffer = buf;
     }
     fn insert_char(&mut self, ch: char) {
-        let col = (self.cursor.pos.x as usize)
+        let cursor = self.buffer.borrow().cursor;
+        let col = (cursor.pos.x as usize)
             - (self.has_line_numbers as u16 * Self::NUMBER_LINE_WIDTH) as usize;
-        let row = self.cursor.pos.y as usize;
+        let row = cursor.pos.y as usize;
         let mut buffer = self.buffer.borrow_mut();
         let rope = buffer.get_rope_mut();
         let idx = rope.line_to_char(row);
@@ -259,9 +263,10 @@ impl BufferMut for Window {
         unimplemented!("get buffer contents")
     }
     fn backspace(&mut self) {
-        let col = (self.cursor.pos.x as usize)
+        let cursor = self.buffer.borrow().cursor;
+        let col = (cursor.pos.x as usize)
             - (self.has_line_numbers as u16 * Self::NUMBER_LINE_WIDTH) as usize;
-        let row = self.cursor.pos.y as usize;
+        let row = cursor.pos.y as usize;
         let mut buffer = self.buffer.borrow_mut();
         let rope = buffer.get_rope_mut();
         let idx = rope.line_to_char(row);
@@ -271,10 +276,11 @@ impl BufferMut for Window {
     }
 
     fn delete(&mut self) {
-        let mut col = (self.cursor.pos.x as usize)
+        let cursor = self.buffer.borrow().cursor;
+        let mut col = (cursor.pos.x as usize)
             - (self.has_line_numbers as u16 * Self::NUMBER_LINE_WIDTH) as usize;
         col += 1;
-        let row = self.cursor.pos.y as usize;
+        let row = cursor.pos.y as usize;
         let mut buffer = self.buffer.borrow_mut();
         let rope = buffer.get_rope_mut();
         let idx = rope.line_to_char(row);
@@ -284,8 +290,9 @@ impl BufferMut for Window {
     }
 
     fn delete_line(&mut self) {
-        let row = self.cursor.pos.y as usize;
         let mut buffer = self.buffer.borrow_mut();
+        let cursor = buffer.cursor;
+        let row = cursor.pos.y as usize;
         let rope = buffer.get_rope_mut();
         let start = rope.line_to_char(row);
         let end = rope.line_to_char(row + 1);

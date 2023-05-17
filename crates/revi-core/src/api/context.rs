@@ -50,7 +50,7 @@ impl ContextRhaiApi {
             .get_pane_bounds()
             .map(|rect| rect.height)
             .unwrap_or_default();
-        pane.get_cursor_pos_mut().map(|c| {
+        pane.get_cursor_pos_mut().map(|mut c| {
             c.pos.y = row.clamp(min, max);
             c
         });
@@ -68,7 +68,7 @@ impl ContextRhaiApi {
             .get_pane_bounds()
             .map(|rect| rect.width)
             .unwrap_or_default();
-        pane.get_cursor_pos_mut().map(|c| {
+        pane.get_cursor_pos_mut().map(|mut c| {
             c.pos.x = col.clamp(min, max);
             c.max.x = c.pos.x.min(c.max.x);
             c
@@ -77,7 +77,7 @@ impl ContextRhaiApi {
     fn set_scroll_row(&mut self, row: rhai::INT) {
         let pane = self.0.focused_pane();
         let mut pane = pane.borrow_mut();
-        pane.get_cursor_pos_mut().map(|c| {
+        pane.get_cursor_pos_mut().map(|mut c| {
             c.scroll.y = row as u16;
             c
         });

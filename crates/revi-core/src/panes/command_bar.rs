@@ -3,19 +3,22 @@ use revi_ui::tui::{
     layout::{Pos, Rect, Size, Stack},
     text::Text,
 };
-use std::{cell::RefCell, rc::Rc};
+
+use std::{
+    cell::{Ref, RefCell, RefMut},
+    rc::Rc,
+};
 
 use super::{
     BufferBounds, BufferMut, Cursor, CursorMovement, CursorPos, Pane, PaneBounds, Scrollable,
 };
 use crate::{Buffer, Mode};
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 pub struct CommandBar {
     pos: Pos,
-    cursor: Cursor,
+    buffer: Rc<RefCell<Buffer>>,
     size: Size,
-    content: String,
     active: bool,
     closing: bool,
 }
@@ -36,7 +39,15 @@ impl Pane for CommandBar {
         let w = self.size.width - self.active as u16;
         let content = if self.active {
             let w = w as usize;
-            format!("{:<w$}", self.content)
+            format!(
+                "{:<w$}",
+                self.buffer
+                    .borrow()
+                    .on_screen(1)
+                    .iter()
+                    .map(ToString::to_string)
+                    .collect::<String>()
+            )
         } else {
             " ".repeat(self.size.width as usize)
         };
@@ -68,19 +79,20 @@ impl Pane for CommandBar {
 }
 
 impl CursorPos for CommandBar {
-    fn get_cursor_pos(&self) -> Option<&Cursor> {
-        Some(&self.cursor)
+    fn get_cursor_pos(&self) -> Option<Ref<'_, Cursor>> {
+        Some(Ref::map(self.buffer.borrow(), |b| &b.cursor))
     }
 
-    fn get_cursor_pos_mut(&mut self) -> Option<&mut Cursor> {
-        Some(&mut self.cursor)
+    fn get_cursor_pos_mut(&mut self) -> Option<RefMut<'_, Cursor>> {
+        Some(RefMut::map(self.buffer.borrow_mut(), |b| &mut b.cursor))
     }
 }
 
 impl PaneBounds for CommandBar {
     fn get_pane_bounds(&self) -> Option<Rect> {
+        let buffer = self.buffer.borrow();
         let size = Size {
-            width: self.content.len() as u16,
+            width: buffer.get_rope().len_chars() as u16,
             height: 1,
         };
         Some(Rect::new(size))
@@ -89,8 +101,9 @@ impl PaneBounds for CommandBar {
 
 impl BufferBounds for CommandBar {
     fn get_buffer_bounds(&self) -> Option<Size> {
+        let buffer = self.buffer.borrow();
         Some(Size {
-            width: self.content.len() as u16,
+            width: buffer.get_rope().len_chars() as u16,
             height: 1,
         })
     }
@@ -101,26 +114,33 @@ impl BufferMut for CommandBar {
         todo!("set buffer for command bar")
     }
     fn insert_char(&mut self, c: char) {
-        let idx = self.cursor.pos.x as usize;
-        if idx < self.content.len() {
-            self.content.insert(idx, c);
-            return;
-        }
-        self.content.push(c);
+        let cursor = self.buffer.borrow().cursor;
+        let col = cursor.pos.x as usize;
+        let row = cursor.pos.y as usize;
+        let mut buffer = self.buffer.borrow_mut();
+        let rope = buffer.get_rope_mut();
+        let idx = rope.line_to_char(row);
+        rope.insert_char(idx + col, c);
     }
+
     fn clear_buffer(&mut self) {
-        self.content.clear();
+        self.buffer.borrow_mut().clear();
     }
+
     fn get_buffer_contents(&self) -> String {
-        self.content.clone()
+        self.buffer.borrow().get_rope().chars().collect::<String>()
     }
+
     fn backspace(&mut self) {
-        let idx = self.cursor.pos.x as usize;
-        if idx == self.content.len() {
-            self.content.pop();
-            return;
-        }
-        self.content.remove(idx.saturating_sub(1));
+        let cursor = self.buffer.borrow().cursor;
+        let col = cursor.pos.x as usize;
+        let row = cursor.pos.y as usize;
+        let mut buffer = self.buffer.borrow_mut();
+        let rope = buffer.get_rope_mut();
+        let idx = rope.line_to_char(row);
+        let start = (idx + col).saturating_sub(1);
+        let end = idx + col;
+        rope.remove(start..end);
     }
 }
 

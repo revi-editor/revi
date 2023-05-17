@@ -1,4 +1,7 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::{Ref, RefCell, RefMut},
+    rc::Rc,
+};
 
 use revi_ui::{
     tui::{
@@ -17,7 +20,6 @@ use crate::{Buffer, Mode};
 #[derive(Debug)]
 pub struct MessageBox {
     pos: Pos,
-    cursor: Cursor,
     size: Size,
     buffer: Rc<RefCell<Buffer>>,
     footer: String,
@@ -30,7 +32,6 @@ impl MessageBox {
         size.height += 1;
         Self {
             pos,
-            cursor: Cursor::default(),
             size,
             buffer,
             footer: String::new(),
@@ -67,11 +68,9 @@ impl MessageBox {
 impl Pane for MessageBox {
     fn view(&self) -> revi_ui::tui::widget::BoxWidget {
         let Size { height, width } = self.size;
-        let top = self.cursor.scroll.y as usize;
-        let bottom = (self.cursor.scroll.y + height) as usize;
         let buffer = self.buffer.borrow();
         let contents = buffer
-            .on_screen(top, bottom)
+            .on_screen(height)
             .iter()
             .map(ToString::to_string)
             .collect::<String>();
@@ -116,16 +115,17 @@ impl Pane for MessageBox {
 }
 
 impl CursorPos for MessageBox {
-    fn get_cursor_pos(&self) -> Option<&Cursor> {
-        Some(&self.cursor)
+    fn get_cursor_pos(&self) -> Option<Ref<'_, Cursor>> {
+        Some(Ref::map(self.buffer.borrow(), |b| &b.cursor))
     }
 
-    fn get_cursor_pos_mut(&mut self) -> Option<&mut Cursor> {
-        Some(&mut self.cursor)
+    fn get_cursor_pos_mut(&mut self) -> Option<RefMut<'_, Cursor>> {
+        Some(RefMut::map(self.buffer.borrow_mut(), |b| &mut b.cursor))
     }
 
     fn get_line_above_bounds(&self) -> Option<Rect> {
-        let pos = self.cursor.pos.y + self.cursor.scroll.y;
+        let cursor = self.buffer.borrow().cursor;
+        let pos = cursor.pos.y + cursor.scroll.y;
         if pos == 0 {
             return None;
         }
@@ -140,7 +140,8 @@ impl CursorPos for MessageBox {
             .len_lines()
             .saturating_sub(2) as u16;
         let height = self.size.height.min(buffer_height);
-        let pos = self.cursor.pos.y + self.cursor.scroll.y;
+        let cursor = self.buffer.borrow().cursor;
+        let pos = cursor.pos.y + cursor.scroll.y;
         if pos >= height {
             return None;
         }
@@ -150,16 +151,15 @@ impl CursorPos for MessageBox {
 
 impl PaneBounds for MessageBox {
     fn get_pane_bounds(&self) -> Option<Rect> {
-        Some(self.create_cursor_bounds(self.cursor.pos.y + self.cursor.scroll.y))
+        let cursor = self.buffer.borrow().cursor;
+        Some(self.create_cursor_bounds(cursor.pos.y + cursor.scroll.y))
     }
 }
 
 impl BufferBounds for MessageBox {
     fn get_buffer_bounds(&self) -> Option<Size> {
-        let top = self.cursor.scroll.y as usize;
-        let bottom = (self.cursor.scroll.y + self.size.height) as usize;
         let buffer = self.buffer.borrow();
-        let text = buffer.on_screen(top, bottom);
+        let text = buffer.on_screen(self.size.height);
         let width = text
             .iter()
             .map(|i| i.len_chars() as u16)
