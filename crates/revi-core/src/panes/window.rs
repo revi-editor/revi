@@ -175,10 +175,12 @@ impl Pane for Window {
     }
 
     fn cursor(&self) -> Option<Pos> {
+        let Some(bounds) = self.get_pane_bounds() else {
+            return None;
+        };
         let cursor = self.buffer.borrow().cursor;
-        let x =
-            (cursor.pos.x + self.pos.x) + (self.has_line_numbers as u16 * Self::NUMBER_LINE_WIDTH);
-        let y = cursor.pos.y + self.pos.y;
+        let x = (cursor.pos.x + self.pos.x).clamp(bounds.x, bounds.width);
+        let y = (cursor.pos.y + self.pos.y).clamp(bounds.y, bounds.height);
         let pos = Pos { x, y };
         Some(pos)
     }
