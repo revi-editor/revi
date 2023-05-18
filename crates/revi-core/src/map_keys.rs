@@ -284,18 +284,12 @@ impl Mapper {
     fn build_insert(self) -> Self {
         self.with_mapping(Mode::Insert, "<esc>", ChangeMode(Mode::Normal))
             .with_mapping(Mode::Insert, "<backspace>", BackSpace)
-        //     .with_mapping(Mode::Insert, "<backspace>", Backspace)
-        //     .with_mapping(
-        //         Mode::Insert,
-        //         "<enter>",
-        //         NewLine, ExecuteCommandLine, ExitCommandMode],
-        //     )
+            .with_mapping(Mode::Insert, "<up>", CursorUp)
+            .with_mapping(Mode::Insert, "<down>", CursorDown)
+            .with_mapping(Mode::Insert, "<left>", CursorLeft)
+            .with_mapping(Mode::Insert, "<right>", CursorRight)
         //     .with_mapping(Mode::Insert, "<home>", Home)
         //     .with_mapping(Mode::Insert, "<end>", End)
-        //     .with_mapping(Mode::Insert, "<down>", CursorDown)
-        //     .with_mapping(Mode::Insert, "<up>", CursorUp)
-        //     .with_mapping(Mode::Insert, "<left>", CursorLeft)
-        //     .with_mapping(Mode::Insert, "<right>", CursorRight)
         //     .with_mapping(Mode::Insert, "<tab>", InsertTab)
     }
 
