@@ -1,6 +1,6 @@
-use crate::commands::UserCommand;
-use crate::Context;
-use crate::Mode;
+use crate::{commands::UserCommand, panes::MessageBox, Buffer, Context, Event, Mode};
+use revi_ui::tui::layout::Pos;
+use std::{cell::RefCell, rc::Rc};
 
 use rhai::{CustomType, TypeBuilder};
 
@@ -82,6 +82,18 @@ impl ContextRhaiApi {
             c
         });
     }
+    fn message(&mut self, msg: rhai::ImmutableString) {
+        let Self(ctx) = self;
+        let text = msg.to_string();
+        let size = ctx.window_size();
+        let buffer = Buffer::new_str("Message", &text);
+        let msg_box = MessageBox::new(Pos::default(), size, Rc::new(RefCell::new(buffer)));
+        let msg_box = Rc::new(RefCell::new(msg_box));
+        let id = ctx.panes.borrow().len();
+        ctx.panes.borrow_mut().push(msg_box);
+        *ctx.focused_pane.borrow_mut() = id;
+        *ctx.event.borrow_mut() = Event::Message;
+    }
 }
 
 impl CustomType for ContextRhaiApi {
@@ -93,6 +105,7 @@ impl CustomType for ContextRhaiApi {
             .with_fn("set_cursor_row", Self::set_cursor_row)
             .with_fn("set_cursor_col", Self::set_cursor_col)
             .with_fn("set_scroll_row", Self::set_scroll_row)
+            .with_fn("message", Self::message)
             .with_get_set("mode", Self::get_mode, Self::set_mode);
     }
 }

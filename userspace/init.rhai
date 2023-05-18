@@ -10,6 +10,7 @@ let go_to_home = || {
 };
 revi.nmap("0", go_to_home);
 revi.nmap("tt", "jjjj");
+revi.message("init file loaded");
 
 
 // let UserCommand = || {
