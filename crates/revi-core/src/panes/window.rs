@@ -279,10 +279,8 @@ impl BufferMut for Window {
             }
             rope.remove(start..end);
             if cursor.pos.x == 0 {
-                eprintln!("< {:?}", buffer.cursor.pos);
                 buffer.cursor.pos.y = buffer.cursor.pos.y.saturating_sub(1);
                 buffer.cursor.pos.x = above.width;
-                eprintln!("> {:?}", buffer.cursor.pos);
                 return;
             }
         }
