@@ -85,7 +85,7 @@ impl Default for Buffer {
     fn default() -> Self {
         Self {
             name: "N/A".into(),
-            rope: Rope::default(),
+            rope: Rope::from_str("\n"),
             cursor: Cursor::default(),
         }
     }

@@ -103,13 +103,10 @@ pub trait CursorMovement: CursorPos + PaneBounds + Scrollable {
         self.scroll_down();
     }
     fn move_cursor_left(&mut self) {
-        let Some(bounds) = self.get_pane_bounds() else {
-            return;
-        };
         let Some(mut cursor) = self.get_cursor_pos_mut() else {
             return;
         };
-        cursor.pos.x = cursor.pos.x.saturating_sub(1).max(bounds.x);
+        cursor.pos.x = cursor.pos.x.saturating_sub(1);
         cursor.max.x = cursor.pos.x.min(cursor.max.x);
     }
     fn move_cursor_right(&mut self) {

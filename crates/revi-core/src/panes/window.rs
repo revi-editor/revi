@@ -133,11 +133,11 @@ impl Window {
         let cursor = self.buffer.borrow().cursor;
         let start = cursor.scroll.y;
         let end = height + cursor.scroll.y;
-        let content_rows = (self.buffer.borrow().len_lines() - 2) as u16;
-        let text = &(start..=end.min(content_rows))
+        let content_rows = (self.buffer.borrow().len_lines().saturating_sub(1)) as u16;
+        let text = &(start..end.min(content_rows))
             .map(|n| format!(" {} \n", n))
             .chain(std::iter::repeat("~\n".into()))
-            .take(end as usize)
+            .take(height as usize)
             .collect::<String>();
         Text::new(text)
             .max_width(Self::NUMBER_LINE_WIDTH)
@@ -175,21 +175,22 @@ impl Pane for Window {
     }
 
     fn cursor(&self) -> Option<Pos> {
-        let Some(bounds) = self.get_pane_bounds() else {
-            return None;
-        };
         let cursor = self.buffer.borrow().cursor;
-        let x = (cursor.pos.x + self.pos.x).clamp(bounds.x, bounds.width);
-        let y = (cursor.pos.y + self.pos.y).clamp(bounds.y, bounds.height);
+        let x =
+            cursor.pos.x + self.pos.x + (self.has_line_numbers as u16 * Self::NUMBER_LINE_WIDTH);
+        let y = cursor.pos.y + self.pos.y;
         let pos = Pos { x, y };
         Some(pos)
     }
+
     fn is_active(&self) -> bool {
         self.active
     }
+
     fn set_focused(&mut self, flag: bool) {
         self.active = flag;
     }
+
     fn close(&self) -> bool {
         self.closing
     }
@@ -250,8 +251,7 @@ impl BufferMut for Window {
     }
     fn insert_char(&mut self, ch: char) {
         let cursor = self.buffer.borrow().cursor;
-        let col = (cursor.pos.x as usize)
-            - (self.has_line_numbers as u16 * Self::NUMBER_LINE_WIDTH) as usize;
+        let col = cursor.pos.x as usize;
         let row = cursor.pos.y as usize;
         let mut buffer = self.buffer.borrow_mut();
         let rope = buffer.get_rope_mut();
@@ -265,22 +265,23 @@ impl BufferMut for Window {
         unimplemented!("get buffer contents")
     }
     fn backspace(&mut self) {
-        let cursor = self.buffer.borrow().cursor;
-        let col = (cursor.pos.x as usize)
-            - (self.has_line_numbers as u16 * Self::NUMBER_LINE_WIDTH) as usize;
-        let row = cursor.pos.y as usize;
         let mut buffer = self.buffer.borrow_mut();
+        let cursor = buffer.cursor;
+        let col = cursor.pos.x as usize;
+        let row = cursor.pos.y as usize;
         let rope = buffer.get_rope_mut();
         let idx = rope.line_to_char(row);
         let start = (idx + col).saturating_sub(1);
         let end = idx + col;
+        if start >= end {
+            return;
+        }
         rope.remove(start..end);
     }
 
     fn delete(&mut self) {
         let cursor = self.buffer.borrow().cursor;
-        let mut col = (cursor.pos.x as usize)
-            - (self.has_line_numbers as u16 * Self::NUMBER_LINE_WIDTH) as usize;
+        let mut col = cursor.pos.x as usize;
         col += 1;
         let row = cursor.pos.y as usize;
         let mut buffer = self.buffer.borrow_mut();

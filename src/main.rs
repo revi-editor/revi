@@ -49,7 +49,7 @@ impl App for Revi {
                     width,
                     height: height - 1,
                 },
-                buffers[0].clone(),
+                buffers.first().cloned().unwrap_or_default(),
             )
             .with_status_bar(true)
             .with_line_numbers(settings.line_numbers),

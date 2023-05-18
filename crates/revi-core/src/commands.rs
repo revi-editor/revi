@@ -209,7 +209,7 @@ build_command!(
             c.pos.x = 0;
             c
         });
-        let command = bar.get_buffer_contents();
+        let command = bar.get_buffer_contents().trim().to_string();
         bar.clear_buffer();
 
         let (cmd, _) = command.split_once(' ').unwrap_or((command.as_str(), ""));
