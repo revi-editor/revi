@@ -1,4 +1,13 @@
 #!/bin/bash
-cargo build --release && RUST_BACKTRACE=full revi $1 2> error_revi ||
+function run {
+  RUST_BACKTRACE=full revi $1
+
+  if [[ $? == 127 ]];
+  then
+    RUST_BACKTRACE=full ./target/release/revi $1
+  fi
+}
+
+cargo build --release && run $1 2> error_revi ||
   (reset && bat error_revi) &&
   (reset && bat error_revi)
