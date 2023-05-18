@@ -141,6 +141,7 @@ impl BufferMut for CommandBar {
         let start = (idx + col).saturating_sub(1);
         let end = idx + col;
         rope.remove(start..end);
+        buffer.cursor.pos.x = buffer.cursor.pos.x.saturating_sub(1);
     }
 }
 
