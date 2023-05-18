@@ -107,6 +107,7 @@ build_command!(
         }
     }
 );
+
 build_command!(
     CursorRight;
     |_: &CursorRight, ctx: Context| {
@@ -157,7 +158,6 @@ build_command!(
                 ctx.focused_pane().borrow_mut().backspace();
             }
         }
-        CursorLeft.call(ctx)
     }
 );
 

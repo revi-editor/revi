@@ -65,10 +65,9 @@ impl Window {
     fn create_cursor_bounds(&self, y: u16) -> Rect {
         let buffer = self.buffer.borrow();
         let has_status_bar = self.has_status_bar as u16;
-        let has_line_numbers = self.has_line_numbers as u16;
         let line_text_width = buffer.line_len(y as usize) as u16;
         let pos = Pos {
-            x: self.pos.x + (has_line_numbers * Self::NUMBER_LINE_WIDTH),
+            x: self.pos.x,
             y: self.pos.y,
         };
         let pane_height = self.size.height - has_status_bar - 1;
@@ -265,18 +264,29 @@ impl BufferMut for Window {
         unimplemented!("get buffer contents")
     }
     fn backspace(&mut self) {
-        let mut buffer = self.buffer.borrow_mut();
-        let cursor = buffer.cursor;
-        let col = cursor.pos.x as usize;
-        let row = cursor.pos.y as usize;
-        let rope = buffer.get_rope_mut();
-        let idx = rope.line_to_char(row);
-        let start = (idx + col).saturating_sub(1);
-        let end = idx + col;
-        if start >= end {
-            return;
+        {
+            let above = self.get_line_above_bounds().unwrap_or_default();
+            let mut buffer = self.buffer.borrow_mut();
+            let cursor = buffer.cursor;
+            let col = cursor.pos.x as usize;
+            let row = cursor.pos.y as usize;
+            let rope = buffer.get_rope_mut();
+            let idx = rope.line_to_char(row);
+            let start = (idx + col).saturating_sub(1);
+            let end = idx + col;
+            if start >= end {
+                return;
+            }
+            rope.remove(start..end);
+            if cursor.pos.x == 0 {
+                eprintln!("< {:?}", buffer.cursor.pos);
+                buffer.cursor.pos.y = buffer.cursor.pos.y.saturating_sub(1);
+                buffer.cursor.pos.x = above.width;
+                eprintln!("> {:?}", buffer.cursor.pos);
+                return;
+            }
         }
-        rope.remove(start..end);
+        self.move_cursor_left();
     }
 
     fn delete(&mut self) {
