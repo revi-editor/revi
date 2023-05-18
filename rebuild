@@ -1,0 +1,4 @@
+#!/bin/bash
+cargo build --release && RUST_BACKTRACE=full revi $1 2> error_revi ||
+  (reset && bat error_revi) &&
+  (reset && bat error_revi)

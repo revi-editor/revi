@@ -207,11 +207,13 @@ pub mod container {
 pub mod text {
     use super::layout::Rect;
     use super::widget::{BoxWidget, Widget};
+    use crossterm::style::{Attribute, Color, ContentStyle, ResetColor, SetAttribute, SetStyle};
     use crossterm::{cursor, queue, style};
     use std::io::Stdout;
     #[derive(Debug, Default, Clone)]
     pub struct Text {
         content: String,
+        style: ContentStyle,
         width: u16,
         height: u16,
         comment: Option<String>,
@@ -221,10 +223,26 @@ pub mod text {
         pub fn new(content: &str) -> Self {
             Self {
                 content: content.into(),
-                width: content.lines().map(|x| x.len()).max().unwrap_or(0) as u16,
+                style: ContentStyle::new(),
+                width: content.lines().map(|x| x.len()).max().unwrap_or_default() as u16,
                 height: content.lines().count() as u16,
                 comment: None,
             }
+        }
+
+        pub fn with_fg(mut self, fg: Color) -> Self {
+            self.style.foreground_color = Some(fg);
+            self
+        }
+
+        pub fn with_bg(mut self, bg: Color) -> Self {
+            self.style.background_color = Some(bg);
+            self
+        }
+
+        pub fn with_atter(mut self, atter: impl Into<style::Attributes>) -> Self {
+            self.style.attributes = atter.into();
+            self
         }
 
         pub fn with_comment(mut self, comment: impl Into<String>) -> Self {
@@ -257,6 +275,7 @@ pub mod text {
             self.height
         }
         fn draw(&self, stdout: &mut Stdout, bounds: Rect) {
+            queue!(stdout, SetStyle(self.style)).expect("failed to set style");
             for (i, line) in self
                 .content
                 .lines()
@@ -270,6 +289,8 @@ pub mod text {
                 )
                 .expect("Failed to queue Text");
             }
+            queue!(stdout, ResetColor, SetAttribute(Attribute::Reset))
+                .expect("failed to queue reset color and  attribute");
         }
         fn debug_name(&self) -> String {
             self.comment.clone().unwrap_or_default()
@@ -422,6 +443,7 @@ mod runtime {
     where
         A: App,
     {
+        w.queue(Hide)?;
         let (cursor_pos, cursor_style) = app.cursor();
         if let Some(Pos { x, y }) = cursor_pos {
             w.queue(MoveTo(x, y))?;
@@ -435,10 +457,11 @@ mod runtime {
         let app_size = Size { width, height };
         let app_pos = Pos { x: 0, y: 0 };
         w.queue(SavePosition)?;
-        w.queue(Hide)?;
         widgets.draw(w, Rect::with_position(app_pos, app_size));
         w.queue(RestorePosition)?;
-        w.queue(Show)?;
+        if cursor_style.is_some() {
+            w.queue(Show)?;
+        }
         w.flush()?;
         Ok(())
     }

@@ -1,7 +1,12 @@
+use revi_ui::tui::layout::{Pos, Size};
+
 use crate::context::Context;
 use crate::mode::Mode;
+use crate::{panes::MessageBox, Buffer, Event};
 use std::any::Any;
+use std::cell::RefCell;
 use std::fmt;
+use std::process;
 use std::rc::Rc;
 
 pub trait Command: fmt::Debug {
@@ -11,9 +16,10 @@ pub trait Command: fmt::Debug {
 }
 
 macro_rules! build_command {
-    ($name:ident $(, $ty:ty)?; $caller:expr) => {
+    ($([doc:  $doc:expr])? $name:ident$(($($ty:ty $(,)?)*))?; $caller:expr) => {
+        $(#[doc=$doc])?
         #[derive(Debug, PartialEq)]
-        pub struct $name $((pub $ty))?;
+        pub struct $name $(($(pub $ty, )*))?;
         impl Command for $name {
             fn call(&self, ctx: Context) {
                 $caller(&self, ctx);
@@ -61,30 +67,30 @@ impl PartialEq for CmdRc {
 }
 
 build_command!(
-    UserCommand,
-    usize;
+    UserCommand(usize);
     |Self(id): &UserCommand, ctx: Context| {
         let fnptr = &ctx.rhai_commands.borrow_mut()[*id];
         let rhai = ctx.rhai.borrow_mut();
         let engine = &rhai.engine;
         let ast = &rhai.ast;
-        let name = fnptr.fn_name();
-        fnptr.call::<()>(engine, ast, ())
-            .expect(&format!("failed to execute user command '{name}'"));
-        eprintln!("Run user command {name}");
+        // let name = fnptr.fn_name();
+        if let Err(err_message) = fnptr.call::<()>(engine, ast, ()) {
+            Message(err_message.to_string(), "".into()).call(ctx.clone());
+        }
+            // .expect(&format!("failed to execute user command '{name}'"));
     }
 );
 
 build_command!(
     CursorUp;
     |_: &CursorUp, ctx: Context| {
-        ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_up();
+        ctx.focused_pane().borrow_mut().move_cursor_up();
     }
 );
 build_command!(
     CursorDown;
     |_: &CursorDown, ctx: Context| {
-        ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_down();
+        ctx.focused_pane().borrow_mut().move_cursor_down();
     }
 );
 build_command!(
@@ -96,11 +102,12 @@ build_command!(
                 ctx.command_bar.borrow_mut().move_cursor_left();
             }
             _ => {
-                ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_left();
+                ctx.focused_pane().borrow_mut().move_cursor_left();
             }
         }
     }
 );
+
 build_command!(
     CursorRight;
     |_: &CursorRight, ctx: Context| {
@@ -110,15 +117,14 @@ build_command!(
                 ctx.command_bar.borrow_mut().move_cursor_right();
             }
             _ => {
-                ctx.panes[ctx.focused_pane].borrow_mut().move_cursor_right();
+                ctx.focused_pane().borrow_mut().move_cursor_right();
             }
         }
     }
 );
 
 build_command!(
-    ExeCommandList,
-    Vec<CmdRc>;
+    ExeCommandList(Vec<CmdRc>);
     |ecl: &ExeCommandList, ctx: Context| {
         for cmd in ecl.0.iter() {
             cmd.call(ctx.clone());
@@ -129,14 +135,14 @@ build_command!(
 build_command!(
     ScrollUp;
     |_: &ScrollUp, ctx: Context| {
-        ctx.panes[ctx.focused_pane].borrow_mut().scroll_up();
+        ctx.focused_pane().borrow_mut().scroll_up();
     }
 );
 
 build_command!(
     ScrollDown;
     |_: &ScrollDown, ctx: Context| {
-        ctx.panes[ctx.focused_pane].borrow_mut().scroll_down();
+        ctx.focused_pane().borrow_mut().scroll_down();
     }
 );
 
@@ -149,12 +155,304 @@ build_command!(
                 ctx.command_bar.borrow_mut().backspace();
             }
             _ => {
-                ctx.panes[ctx.focused_pane].borrow_mut().backspace();
+                ctx.focused_pane().borrow_mut().backspace();
             }
         }
-        CursorLeft.call(ctx)
     }
 );
+
+build_command!(
+    InsertChar(char);
+    |InsertChar(c): &InsertChar, ctx: Context| {
+        let mode = *ctx.mode.borrow();
+        match mode {
+            Mode::Insert => {
+                let pane = ctx.focused_pane();
+                let mut pane = pane.borrow_mut();
+                pane.insert_char(*c);
+                pane.move_cursor_right();
+            }
+            Mode::Command => {
+                let mut bar = ctx.command_bar.borrow_mut();
+                bar.insert_char(*c);
+                bar.move_cursor_right();
+            }
+            _ => {},
+        }
+    }
+);
+
+build_command!(
+    ChangeMode(Mode);
+    |Self(mode): &ChangeMode, ctx: Context| {
+        let (cmd_focused, pane_focused) = match &mode {
+            Mode::Command => (true, false),
+            Mode::Normal => (false, true),
+            Mode::Insert => (false, true),
+        };
+        let mut bar = ctx.command_bar.borrow_mut();
+        bar.set_focused(cmd_focused);
+        let pane = ctx.focused_pane();
+        let mut pane = pane.borrow_mut();
+        pane.set_focused(pane_focused);
+        *ctx.mode.borrow_mut() = *mode;
+
+    }
+);
+
+build_command!(
+    ExecuteCommandLine;
+    |_: &ExecuteCommandLine, ctx: Context| {
+        ChangeMode(crate::mode::Mode::Normal).call(ctx.clone());
+        let mut bar = ctx.command_bar.borrow_mut();
+        bar.get_cursor_pos_mut().map(|mut c| {
+            c.pos.x = 0;
+            c
+        });
+        let command = bar.get_buffer_contents().trim().to_string();
+        bar.clear_buffer();
+
+        let (cmd, _) = command.split_once(' ').unwrap_or((command.as_str(), ""));
+        match cmd {
+            c if c.starts_with('!')=> ExecuteTerminalCommand(command[1..].trim().into()).call(ctx.clone()),
+            "exit" | "quit" | "q" => Quit.call(ctx.clone()),
+            "write" | "w" => SaveFile.call(ctx.clone()),
+            "edit" | "e" => EditFile(command).call(ctx.clone()),
+            "buffer" | "b" => JumpToBuffer(command).call(ctx.clone()),
+            "ls" => ListBuffers.call(ctx.clone()),
+            _ => {},
+        }
+    }
+);
+
+build_command!(
+    ExecuteTerminalCommand(String);
+    |Self(command): &ExecuteTerminalCommand, ctx: Context| {
+        let Some((head, args)) = command.split_once(' ').or(Some((command, ""))) else {
+            return;
+        };
+        let args = args.split(' ').collect::<Vec<_>>();
+        let mut cmd =  process::Command::new(head);
+        if !args.first().cloned().unwrap_or_default().is_empty() {
+            cmd.args(&args);
+        }
+
+        let message = cmd.output().map(|output| {
+            let stderr = String::from_utf8(output.stderr).ok().unwrap_or_default();
+            let stdout = String::from_utf8(output.stdout).ok().unwrap_or_default();
+            format!("{stderr}\n{stdout}")
+        }).unwrap_or_default();
+        Message(message.trim().to_string(), command.into()).call(ctx);
+    }
+);
+
+build_command!(
+    Quit;
+    |_: &Quit, ctx: Context| {
+        *ctx.is_running.borrow_mut() = false;
+    }
+);
+
+build_command!(
+    Delete;
+    |_: &Delete, ctx: Context| {
+        let mode = *ctx.mode.borrow();
+        match mode {
+            Mode::Command => {
+                ctx.command_bar.borrow_mut().delete();
+            }
+            _ => {
+                ctx.focused_pane().borrow_mut().delete();
+            }
+        }
+    }
+);
+
+build_command!(
+    DeleteLine;
+    |_: &DeleteLine, ctx: Context| {
+        let mode = *ctx.mode.borrow();
+        match mode {
+            Mode::Command => {
+                ctx.command_bar.borrow_mut().delete_line();
+            }
+            _ => {
+                ctx.focused_pane().borrow_mut().delete_line();
+            }
+        }
+    }
+);
+
+build_command!(
+    Message(String, String);
+    |Self(message, footer): &Message, ctx: Context| {
+        let id = ctx.panes.borrow().len();
+        *ctx.focused_pane.borrow_mut() = id;
+        // let Size { width, height } = ctx.window_size();
+        // let pos = Pos { x: (width/2)/2, y: (height/2)/2};
+        let width = ctx.window_size().width;
+        let height = message.lines().count() as u16;
+        let pos = Pos { x: 0, y: 0 };
+        let size = Size { width, height };
+        let buffer = Rc::new(RefCell::new(Buffer::new_str("", message)));
+
+
+        let message_box = Rc::new(RefCell::new(MessageBox::new(pos, size, buffer).with_footer(footer)));
+        let id = ctx.panes.borrow().len();
+        *ctx.focused_pane.borrow_mut() = id;
+        ctx.panes.borrow_mut().push(message_box);
+        *ctx.event.borrow_mut() = Event::Message;
+    }
+);
+
+// build_command!(
+//     NextWindow,
+//     25;
+//     |_: &NextWindow, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
+//         let mut revi = revi_rc.borrow_mut();
+//         revi.next_window();
+//         let focused_window = revi.focused;
+//         revi.queue.push(focused_window);
+//     }
+// );
+//
+build_command!(
+    SaveFile;
+    |_: &SaveFile, ctx: Context| {
+        use std::fs::File;
+        use std::io::BufWriter;
+        let id = *ctx.focused_pane.borrow();
+        let buf = ctx.buffers.borrow();
+        let buf = buf[id].borrow();
+        let name = &buf.name;
+        File::create(name)
+            .map(BufWriter::new)
+            .and_then(|b|buf.get_rope().write_to(b))
+            .map_err(|err|Message(
+                        err.to_string(),
+                        String::new()
+                    ).call(ctx.clone()))
+            .ok();
+    }
+);
+
+build_command!(
+    [doc: "loads a file from disk if it exsists and if not just create a empty file
+    and place it in buffer list and put the current file buffer into the current window."]
+    EditFile(String);
+    |Self(command): &EditFile, ctx: Context| {
+        let Some((_, name)) = command.split_once(' ') else {
+            let msg = "edit command requires a file path";
+            Message(msg.into(), command.into()).call(ctx);
+            return;
+        };
+        let text = std::fs::read_to_string(name).unwrap_or("\n".into());
+        let rope = ropey::Rope::from_str(&text);
+        let new_buf = Rc::new(RefCell::new(Buffer::new(name, rope)));
+        let mut buf_list = ctx.buffers.borrow_mut();
+        buf_list.push(new_buf.clone());
+        let pane = ctx.focused_pane();
+        let mut pane = pane.borrow_mut();
+        pane.set_buffer(new_buf);
+    }
+);
+
+build_command!(
+    [doc: "command `buffer | b` `JumpToBuffer` swaps Pane's buffer with selected buffer
+    which could be a file path or a index of buffer in list of buffers open."]
+    JumpToBuffer(String);
+    |Self(command): &JumpToBuffer, ctx: Context| {
+        let Some((_, name)) = command.split_once(' ') else {
+            Message(
+                "expected a arguement".into(),
+                command.into())
+                .call(ctx);
+            return;
+        };
+        if let Ok(idx) = name.parse::<usize>() {
+            let bufs = ctx.buffers.borrow();
+            let Some(buf) =  bufs.get(idx) else {
+                Message(
+                    "buffer id does not exsist".into(),
+                    command.into())
+                    .call(ctx.clone());
+                return;
+            };
+            let pane = ctx.focused_pane();
+            let mut pane = pane.borrow_mut();
+            pane.set_buffer(buf.clone());
+            return;
+        }
+        let buffers = ctx.buffers.borrow();
+        let Some(buf) = buffers.iter().find(|b| b.borrow().name == name) else {
+            Message(
+                "name buffer open with that name or path".into(),
+                command.into())
+                .call(ctx.clone());
+            return;
+        };
+        let pane = ctx.focused_pane();
+        let mut pane = pane.borrow_mut();
+        pane.set_buffer(buf.clone());
+    }
+);
+
+// build_command!(
+//     CloseWindow,
+//     28;
+//     |_: &CloseWindow, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
+//         let mut revi = revi_rc.borrow_mut();
+//         revi.close_current_window();
+//     }
+// );
+
+build_command!(
+    ListBuffers;
+    |_: &ListBuffers, ctx: Context| {
+        let buf = ctx.buffers.borrow().clone();
+        let paths = buf.iter()
+             .enumerate()
+             .map(|(i, b)|format!("{} {}", i, b.borrow().name))
+             .collect::<Vec<String>>();
+        let msg = paths.join("\n");
+        Message(msg, "ls List Buffers".into()).call(ctx);
+    }
+);
+//
+// build_command!(
+//     InsertTab,
+//     30;
+//     |_: &InsertTab, revi_rc: Rc<RefCell<ReVi>>, count: usize| {
+//         let mut revi = revi_rc.borrow_mut();
+//         for _ in 0..revi.settings.tab_width+count {
+//             revi.focused_window_mut().insert_char(' ');
+//         }
+//     }
+// );
+//
+// build_command!(
+//     JumpListBack,
+//     31;
+//     |_: &JumpListBack, _revi_rc: Rc<RefCell<ReVi>>, _: usize| {
+//         unimplemented!("JumpListBack");
+//     }
+// );
+//
+// build_command!(
+//     JumpListForward,
+//     32;
+//     |_: &JumpListForward, _revi_rc: Rc<RefCell<ReVi>>, _: usize| {
+//         unimplemented!("JumpListForward");
+//     }
+// );
+//
+// build_command!(
+//     Undo,
+//     33;
+//     |_: &Undo, _revi_rc: Rc<RefCell<ReVi>>, _: usize| {
+//         unimplemented!("Undo");
+//     }
+// );
 
 // build_command!(
 //     Home,
@@ -219,17 +517,6 @@ build_command!(
 // );
 //
 // build_command!(
-//     Backspace,
-//     12;
-//     |_: &Backspace, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.focused_window_mut().backspace();
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
-//     }
-// );
-//
-// build_command!(
 //     NewLine,
 //     13;
 //     |_: &NewLine, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
@@ -251,29 +538,6 @@ build_command!(
 //     }
 // );
 //
-// build_command!(
-//     DeleteChar,
-//     15;
-//     |_: &DeleteChar, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.focused_window_mut().delete();
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
-//     }
-// );
-//
-// build_command!(
-//     DeleteLine,
-//     16;
-//     |_: &DeleteLine, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         let line = revi.focused_window_mut().delete_line();
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
-//         revi.clipboard.clear();
-//         revi.clipboard.push_str(line.as_str());
-//     }
-// );
 //
 // build_command!(
 //     YankLine,
@@ -328,177 +592,6 @@ build_command!(
 //             let mut buffer = window.buffer_mut();
 //             buffer.insert_line(line_idx + 1, &clipboard);
 //         }
-//     }
-// );
-//
-build_command!(
-    InsertChar,
-    char;
-    |InsertChar(c): &InsertChar, ctx: Context| {
-        let mode = *ctx.mode.borrow();
-        match mode {
-            Mode::Insert => {
-                let id = ctx.focused_pane;
-                let mut pane = ctx.panes[id].borrow_mut();
-                pane.insert_char(*c);
-                pane.move_cursor_right();
-            }
-            Mode::Command => {
-                let mut bar = ctx.command_bar.borrow_mut();
-                bar.insert_char(*c);
-                bar.move_cursor_right();
-            }
-            _ => {},
-        }
-    }
-);
-
-build_command!(
-    ChangeMode,
-    Mode;
-    |Self(mode): &ChangeMode, ctx: Context| {
-        let (cmd_focused, pane_focused) = match &mode {
-            Mode::Command => (true, false),
-            Mode::Normal => (false, true),
-            Mode::Insert => (false, true),
-        };
-        let mut bar = ctx.command_bar.borrow_mut();
-        bar.set_focused(cmd_focused);
-        let id = ctx.focused_pane;
-        let mut pane = ctx.panes[id].borrow_mut();
-        pane.set_focused(pane_focused);
-        *ctx.mode.borrow_mut() = *mode;
-
-    }
-);
-
-// build_command!(
-//     FocusedPane,
-//     22,
-//     PaneId;
-//     |fpane: &FocusedPane, ctx: Context| {
-//         match fpane.0 {
-//             PaneId::CommandBar => {
-//                 let id = ctx.focused_pane;
-//             }
-//             PaneId::Number(id) =>
-//         }
-//     }
-// );
-// build_command!(
-//     EnterCommandMode,
-//     22;
-//     |_: &EnterCommandMode, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.enter_command_mode();
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
-//     }
-// );
-
-// build_command!(
-//     ExitCommandMode,
-//     23;
-//     |_: &ExitCommandMode, ctx: Context| {
-//     }
-// );
-
-build_command!(
-    ExecuteCommandLine;
-    |_: &ExecuteCommandLine, ctx: Context| {
-        ChangeMode(crate::mode::Mode::Normal).call(ctx.clone());
-        let mut bar = ctx.command_bar.borrow_mut();
-        if let Some(cursor) = bar.get_cursor_pos_mut() {
-            cursor.pos.x = 0;
-        }
-        let command = bar.get_buffer_contents();
-        bar.clear_buffer();
-        match command.as_str() {
-            "exit" | "quit" | "q" => Quit.call(ctx.clone()),
-            _ => {},
-        }
-    }
-);
-
-// build_command!(
-//     NextWindow,
-//     25;
-//     |_: &NextWindow, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.next_window();
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
-//     }
-// );
-//
-// build_command!(
-//     Save,
-//     26;
-//     |_: &Save, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.focused_window().save();
-//         let focused_window = revi.focused;
-//         revi.queue.push(focused_window);
-//     }
-// );
-
-build_command!(
-    Quit;
-    |_: &Quit, ctx: Context| {
-        *ctx.is_running.borrow_mut() = false;
-    }
-);
-
-// build_command!(
-//     CloseWindow,
-//     28;
-//     |_: &CloseWindow, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.close_current_window();
-//     }
-// );
-//
-// build_command!(
-//     ListBuffers,
-//     29;
-//     |_: &ListBuffers, revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         revi.list_buffers();
-//     }
-// );
-//
-// build_command!(
-//     InsertTab,
-//     30;
-//     |_: &InsertTab, revi_rc: Rc<RefCell<ReVi>>, count: usize| {
-//         let mut revi = revi_rc.borrow_mut();
-//         for _ in 0..revi.settings.tab_width+count {
-//             revi.focused_window_mut().insert_char(' ');
-//         }
-//     }
-// );
-//
-// build_command!(
-//     JumpListBack,
-//     31;
-//     |_: &JumpListBack, _revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         unimplemented!("JumpListBack");
-//     }
-// );
-//
-// build_command!(
-//     JumpListForward,
-//     32;
-//     |_: &JumpListForward, _revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         unimplemented!("JumpListForward");
-//     }
-// );
-//
-// build_command!(
-//     Undo,
-//     33;
-//     |_: &Undo, _revi_rc: Rc<RefCell<ReVi>>, _: usize| {
-//         unimplemented!("Undo");
 //     }
 // );
 
