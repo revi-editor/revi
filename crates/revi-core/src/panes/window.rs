@@ -294,6 +294,9 @@ impl BufferMut for Window {
         let row = cursor.pos.y as usize;
         let mut buffer = self.buffer.borrow_mut();
         let rope = buffer.get_rope_mut();
+        if rope.len_chars() <= 1 {
+            return;
+        }
         let idx = rope.line_to_char(row);
         let start = (idx + col).saturating_sub(1);
         let end = idx + col;
