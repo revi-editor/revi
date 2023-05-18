@@ -1,4 +1,4 @@
-use crate::{commands::UserCommand, panes::MessageBox, Buffer, Context, Event, Mode};
+use crate::{commands::UserCommand, context::Id, panes::MessageBox, Buffer, Context, Event, Mode};
 use revi_ui::tui::layout::Pos;
 use std::{cell::RefCell, rc::Rc};
 
@@ -30,8 +30,8 @@ impl ContextRhaiApi {
 
     fn nmap_function(&mut self, combo: rhai::ImmutableString, func: rhai::FnPtr) {
         let mut rhai_commands = self.0.rhai_commands.borrow_mut();
-        let id = rhai_commands.len();
-        rhai_commands.push(func);
+        let id = Id::Idx(rhai_commands.len());
+        rhai_commands.insert(id.clone(), func);
         self.0
             .map_keys
             .borrow_mut()
@@ -94,6 +94,12 @@ impl ContextRhaiApi {
         *ctx.focused_pane.borrow_mut() = id;
         *ctx.event.borrow_mut() = Event::Message;
     }
+
+    fn export_command(&mut self, func: rhai::FnPtr) {
+        let mut rhai_commands = self.0.rhai_commands.borrow_mut();
+        let id = Id::Name(func.fn_name().to_string());
+        rhai_commands.insert(id, func);
+    }
 }
 
 impl CustomType for ContextRhaiApi {
@@ -106,6 +112,7 @@ impl CustomType for ContextRhaiApi {
             .with_fn("set_cursor_col", Self::set_cursor_col)
             .with_fn("set_scroll_row", Self::set_scroll_row)
             .with_fn("message", Self::message)
+            .with_fn("export_command", Self::export_command)
             .with_get_set("mode", Self::get_mode, Self::set_mode);
     }
 }

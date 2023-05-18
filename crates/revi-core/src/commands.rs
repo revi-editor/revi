@@ -1,6 +1,6 @@
 use revi_ui::tui::layout::{Pos, Size};
 
-use crate::context::Context;
+use crate::context::{Context, Id};
 use crate::mode::Mode;
 use crate::{panes::MessageBox, Buffer, Event};
 use std::any::Any;
@@ -67,14 +67,18 @@ impl PartialEq for CmdRc {
 }
 
 build_command!(
-    UserCommand(usize);
+    UserCommand(Id);
     |Self(id): &UserCommand, ctx: Context| {
-        let fnptr = &ctx.rhai_commands.borrow_mut()[*id];
+        let command_list = ctx.rhai_commands.borrow();
+        let Some(fnptr) = &command_list.get(id) else {
+            Message("no command with this name is found".into(), format!("{id:?}")).call(ctx.clone());
+            return;
+        };
         let rhai = ctx.rhai.borrow_mut();
         let engine = &rhai.engine;
         let ast = &rhai.ast;
-        // let name = fnptr.fn_name();
-        if let Err(err_message) = fnptr.call::<()>(engine, ast, ()) {
+            // let name = fnptr.fn_name();
+            if let Err(err_message) = fnptr.call::<()>(engine, ast, ()) {
             Message(err_message.to_string(), "".into()).call(ctx.clone());
         }
             // .expect(&format!("failed to execute user command '{name}'"));
@@ -220,7 +224,21 @@ build_command!(
             "edit" | "e" => EditFile(command).call(ctx.clone()),
             "buffer" | "b" => JumpToBuffer(command).call(ctx.clone()),
             "ls" => ListBuffers.call(ctx.clone()),
-            _ => {},
+            name => {
+                let user_command_list = ctx.rhai_commands.borrow();
+                let Some(fnptr) = user_command_list.get(&Id::Name(name.into())) else {
+                    Message("no command with this name".into(), name.to_string()).call(ctx.clone());
+                    return;
+                };
+                let rhai = ctx.rhai.borrow_mut();
+                let engine = &rhai.engine;
+                let ast = &rhai.ast;
+                    // let name = fnptr.fn_name();
+                    if let Err(err_message) = fnptr.call::<()>(engine, ast, ()) {
+                    Message(err_message.to_string(), "".into()).call(ctx.clone());
+                }
+
+            },
         }
     }
 );

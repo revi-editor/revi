@@ -13,11 +13,11 @@ revi.nmap("tt", "jjjj");
 revi.message("init file loaded");
 
 
-// let UserCommand = || {
-//   revi.message("hello");
-// };
+let UserCommand = || {
+  revi.message("hello");
+};
 
-// revi.export_command(UserCommand);
+revi.export_command(UserCommand);
 
 // revi.nmap("er", ":UserCommand<CR>");
 

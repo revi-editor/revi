@@ -8,7 +8,7 @@ use super::{
 
 use revi_ui::tui::layout::Size;
 
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 type Panes = Vec<Rc<RefCell<dyn Pane>>>;
 type Buffers = Vec<Rc<RefCell<Buffer>>>;
 
@@ -71,7 +71,7 @@ impl ContextBuilder {
             command_bar: Rc::new(RefCell::new(self.command_bar)),
             map_keys: Rc::new(RefCell::new(Mapper::default())),
             mode: Rc::new(RefCell::new(self.mode)),
-            rhai_commands: Rc::new(RefCell::new(Vec::new())),
+            rhai_commands: Rc::new(RefCell::new(HashMap::new())),
             rhai: Rc::new(RefCell::new(Rhai::default())),
             focused_pane: Rc::new(RefCell::new(self.focused_pane)),
             on_screen: self.on_screen,
@@ -87,6 +87,12 @@ impl ContextBuilder {
     }
 }
 
+#[derive(Debug, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Id {
+    Idx(usize),
+    Name(String),
+}
+
 #[derive(Debug, Clone)]
 pub struct Context {
     pub buffers: Rc<RefCell<Buffers>>,
@@ -94,7 +100,7 @@ pub struct Context {
     pub command_bar: Rc<RefCell<dyn Pane>>,
     pub map_keys: Rc<RefCell<Mapper>>,
     pub mode: Rc<RefCell<Mode>>,
-    pub rhai_commands: Rc<RefCell<Vec<FnPtr>>>,
+    pub rhai_commands: Rc<RefCell<HashMap<Id, FnPtr>>>,
     pub rhai: Rc<RefCell<Rhai>>,
     pub focused_pane: Rc<RefCell<usize>>,
     pub on_screen: Vec<usize>,
