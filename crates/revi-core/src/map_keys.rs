@@ -3,8 +3,11 @@ use crate::commands::{
     ChangeMode,
     CmdRc,
     CursorDown,
+    CursorHome,
     CursorLeft,
     CursorRight,
+    CursorToBottomOfBuffer,
+    CursorTopOfBuffer,
     CursorUp,
     Delete,
     DeleteLine,
@@ -219,9 +222,6 @@ impl Mapper {
 
     fn build_normal(self) -> Self {
         self.with_mapping(Mode::Normal, "<esc>", ChangeMode(Mode::Normal))
-            // .with_mapping(Mode::Normal, "<C-s>", Save])
-            // .with_mapping(Mode::Normal, "zz", Save, Quit)
-            // .with_mapping(Mode::Normal, "zq", Quit)
             .with_mapping(Mode::Normal, "j", CursorDown)
             .with_mapping(Mode::Normal, "<down>", CursorDown)
             .with_mapping(Mode::Normal, "k", CursorUp)
@@ -235,9 +235,11 @@ impl Mapper {
             .with_mapping(Mode::Normal, "x", Delete)
             .with_mapping(Mode::Normal, "<delete>", Delete)
             .with_mapping(Mode::Normal, "dd", DeleteLine)
-        //     .with_mapping(Mode::Normal, "home", Home])
+            .with_mapping(Mode::Normal, "<home>", CursorHome)
+            .with_mapping(Mode::Normal, "0", CursorHome)
+            .with_mapping(Mode::Normal, "gg", CursorTopOfBuffer)
+            .with_mapping(Mode::Normal, "G", CursorToBottomOfBuffer)
         //     .with_mapping(Mode::Normal, "end", End)
-        //     .with_mapping(Mode::Normal, "0", Home)
         //     .with_mapping(Mode::Normal, "$", End)
         //     .with_mapping(
         //         Mode::Normal,
@@ -256,7 +258,7 @@ impl Mapper {
         //     .with_mapping(
         //         Mode::Normal,
         //         "O",
-        //         Home, NewLine, ChangeMode(Mode::Insert), CursorUp,
+        //         CursorHome, NewLine, ChangeMode(Mode::Insert), CursorUp,
         //     )
         //     .with_mapping(Mode::Normal, "^", FirstCharInLine)
         //     .with_mapping(
@@ -266,8 +268,6 @@ impl Mapper {
         //     )
         //     .with_mapping(Mode::Normal, "w", MoveForwardByWord)
         //     .with_mapping(Mode::Normal, "b", MoveBackwardByWord)
-        //     .with_mapping(Mode::Normal, "gg", JumpToFirstLineBuffer)
-        //     .with_mapping(Mode::Normal, "G", JumpToLastLineBuffer)
         //     .with_mapping(Mode::Normal, "<C-w><C-w>", NextWindow)
         //     .with_mapping(
         //         Mode::Normal,
@@ -288,7 +288,7 @@ impl Mapper {
             .with_mapping(Mode::Insert, "<down>", CursorDown)
             .with_mapping(Mode::Insert, "<left>", CursorLeft)
             .with_mapping(Mode::Insert, "<right>", CursorRight)
-        //     .with_mapping(Mode::Insert, "<home>", Home)
+            .with_mapping(Mode::Insert, "<home>", CursorHome)
         //     .with_mapping(Mode::Insert, "<end>", End)
         //     .with_mapping(Mode::Insert, "<tab>", InsertTab)
     }
@@ -321,7 +321,7 @@ mod tests {
     #[test]
     fn test_command_insert_char() {
         let km = Mapper::default();
-        assert!(!km.is_mapping(&Mode::Command, &string_to_keys("<esc>")));
+        assert!(km.is_mapping(&Mode::Command, &string_to_keys("<esc>")));
     }
 
     #[test]
@@ -329,13 +329,7 @@ mod tests {
         let km = Mapper::default();
         let keys = string_to_keys("gg");
         let left = km.get_mapping(&Mode::Normal, &keys).unwrap();
-        let right = ExeCommandList(vec![
-            CursorRight.into(),
-            CursorRight.into(),
-            CursorRight.into(),
-            CursorRight.into(),
-        ])
-        .into();
+        let right = CursorTopOfBuffer.into();
         assert_eq!(left, right);
     }
 }

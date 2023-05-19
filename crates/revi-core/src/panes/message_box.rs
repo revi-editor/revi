@@ -46,15 +46,15 @@ impl MessageBox {
     }
 
     fn create_cursor_bounds(&self, y: u16) -> Rect {
-        let line_text_width = self.buffer.borrow().line_len(y as usize) as u16;
+        let buffer = self.buffer.borrow();
+        let line_text_width = if buffer.len_lines() <= 1 {
+            0u16
+        } else {
+            buffer.line_len(y as usize) as u16
+        };
         let pos = self.pos;
         let pane_height = self.size.height;
-        let buffer_height = self
-            .buffer
-            .borrow()
-            .get_rope()
-            .len_lines()
-            .saturating_sub(2) as u16;
+        let buffer_height = self.buffer.borrow().len_lines() as u16;
         let height = pane_height.min(buffer_height);
         let size = Size {
             //NOTE: we subtracte 2 from width for offseting the new line
@@ -133,12 +133,7 @@ impl CursorPos for MessageBox {
     }
 
     fn get_line_below_bounds(&self) -> Option<Rect> {
-        let buffer_height = self
-            .buffer
-            .borrow()
-            .get_rope()
-            .len_lines()
-            .saturating_sub(2) as u16;
+        let buffer_height = self.buffer.borrow().len_lines() as u16;
         let height = self.size.height.min(buffer_height);
         let cursor = self.buffer.borrow().cursor;
         let pos = cursor.pos.y + cursor.scroll.y;

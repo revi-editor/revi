@@ -174,6 +174,11 @@ build_command!(
                 let pane = ctx.focused_pane();
                 let mut pane = pane.borrow_mut();
                 pane.insert_char(*c);
+                if c == &'\n' {
+                    pane.move_cursor_down();
+                    pane.move_cursor_home();
+                    return;
+                }
                 pane.move_cursor_right();
             }
             Mode::Command => {
@@ -472,12 +477,14 @@ build_command!(
 //     }
 // );
 
-// build_command!(
-//     Home,
-//     6;
-//     |_: &Home, _ctx: Context| {
-//     }
-// );
+build_command!(
+    CursorHome;
+    |_: &CursorHome, ctx: Context| {
+        let pane = ctx.focused_pane();
+        let mut pane = pane.borrow_mut();
+        pane.move_cursor_home();
+    }
+);
 
 // build_command!(
 //     End,
@@ -489,6 +496,25 @@ build_command!(
 //         revi.queue.push(focused_window);
 //     }
 // );
+
+build_command!(
+    CursorTopOfBuffer;
+    |_: &CursorTopOfBuffer, ctx: Context| {
+        let pane = ctx.focused_pane();
+        let mut pane = pane.borrow_mut();
+        pane.move_cursor_top_of_buffer();
+    }
+);
+
+build_command!(
+    CursorToBottomOfBuffer;
+    |_: &CursorToBottomOfBuffer, ctx: Context| {
+        let pane = ctx.focused_pane();
+        let mut pane = pane.borrow_mut();
+        pane.move_cursor_bottom_of_buffer();
+
+    }
+);
 
 // build_command!(
 //     MoveForwardByWord,

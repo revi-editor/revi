@@ -15,4 +15,5 @@ pub use event::Event;
 pub use map_keys::Mapper;
 pub use mode::Mode;
 pub use parse_keys::KeyParser;
+pub use revi_ui::tui::layout::{Pos, Size};
 pub use settings::Settings;

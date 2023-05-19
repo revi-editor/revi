@@ -53,7 +53,14 @@ impl Buffer {
     }
 
     pub fn len_lines(&self) -> usize {
-        self.rope.len_lines()
+        let len_lines = self.rope.len_lines();
+        let row = self.cursor.pos.y as usize;
+        let line_len = self.line_len(row);
+        // eprintln!("{}", line_len);
+        // if len_lines <= 1 {
+        //     return (line_len > 1) as usize;
+        // }
+        len_lines.saturating_sub(1)
     }
 
     pub fn line_len(&self, line_idx: usize) -> usize {
@@ -85,7 +92,7 @@ impl Default for Buffer {
     fn default() -> Self {
         Self {
             name: "N/A".into(),
-            rope: Rope::from_str("\n"),
+            rope: Rope::default(), //Rope::from_str("\n"),
             cursor: Cursor::default(),
         }
     }

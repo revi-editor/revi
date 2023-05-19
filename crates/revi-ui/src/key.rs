@@ -439,6 +439,7 @@ impl Key {
             Self::N9 => '9',
             Self::Colon => ':',
             Self::SimiColon => ';',
+            Self::Enter => '\n',
             Self::Char(c) => c,
             _ => '\0',
         }

@@ -15,7 +15,7 @@ use revi_ui::{
 use crate::Buffer;
 use crate::Mode;
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Cursor {
     pub pos: Pos,
     pub max: Pos,
@@ -118,6 +118,30 @@ pub trait CursorMovement: CursorPos + PaneBounds + Scrollable {
         };
         cursor.pos.x = cursor.pos.x.saturating_add(1).min(bounds.width);
         cursor.max.x = cursor.pos.x.max(cursor.max.x);
+    }
+    fn move_cursor_home(&mut self) {
+        let Some(mut cursor) = self.get_cursor_pos_mut() else {
+            return;
+        };
+        cursor.pos.x = 0;
+        cursor.max.x = 0;
+    }
+    fn move_cursor_top_of_buffer(&mut self) {
+        let Some(mut cursor) = self.get_cursor_pos_mut() else {
+            return;
+        };
+        cursor.pos.y = 0;
+        cursor.max.y = 0;
+    }
+    fn move_cursor_bottom_of_buffer(&mut self) {
+        let Some(b) = self.get_buffer_bounds() else {
+            return;
+        };
+        let Some(mut cursor) = self.get_cursor_pos_mut() else {
+            return;
+        };
+        cursor.pos.y = b.height;
+        cursor.max.y = b.height;
     }
 }
 

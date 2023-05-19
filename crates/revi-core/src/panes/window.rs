@@ -64,18 +64,18 @@ impl Window {
 
     fn create_cursor_bounds(&self, y: u16) -> Rect {
         let buffer = self.buffer.borrow();
-        let has_status_bar = self.has_status_bar as u16;
         let line_text_width = buffer.line_len(y as usize) as u16;
         let pos = Pos {
             x: self.pos.x,
             y: self.pos.y,
         };
+        let has_status_bar = self.has_status_bar as u16;
         let pane_height = self.size.height - has_status_bar - 1;
-        let buffer_height = buffer.get_rope().len_lines().saturating_sub(2) as u16;
+        let buffer_height = buffer.get_rope().len_lines() as u16;
         let height = pane_height.min(buffer_height);
         let size = Size {
             //NOTE: we subtracte 2 from width for offseting the new line
-            width: (line_text_width + pos.x).saturating_sub(2).max(pos.x),
+            width: line_text_width + 1, // (line_text_width + pos.x).max(pos.x),
             height,
         };
         Rect::with_position(pos, size)
@@ -132,7 +132,7 @@ impl Window {
         let cursor = self.buffer.borrow().cursor;
         let start = cursor.scroll.y;
         let end = height + cursor.scroll.y;
-        let content_rows = (self.buffer.borrow().len_lines().saturating_sub(1)) as u16;
+        let content_rows = (self.buffer.borrow().len_lines()) as u16;
         let text = &(start..end.min(content_rows))
             .map(|n| format!(" {} \n", n))
             .chain(std::iter::repeat("~\n".into()))
@@ -140,6 +140,7 @@ impl Window {
             .collect::<String>();
         Text::new(text)
             .max_width(Self::NUMBER_LINE_WIDTH)
+            .with_fg(Color::Grey)
             .with_comment("numbers")
     }
 }
