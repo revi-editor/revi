@@ -8,6 +8,15 @@ function run {
   fi
 }
 
+function display {
+  bat $1
+
+  if [[ $? == 127 ]];
+  then
+    cat $1
+  fi
+}
+
 cargo build --release && run $1 2> error_revi ||
-  (reset && bat error_revi) &&
-  (reset && bat error_revi)
+  (reset && display error_revi) &&
+  (reset && display error_revi)

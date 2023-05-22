@@ -240,7 +240,7 @@ impl From<&str> for Key {
             "f10" => Self::from(10),
             "f11" => Self::from(11),
             "f12" => Self::from(12),
-            c => {
+            _ => {
                 if c.len() == 1 {
                     return Self::from(c.chars().collect::<Vec<_>>()[0]);
                 }
@@ -368,11 +368,6 @@ impl Key {
     }
 
     #[must_use]
-    pub fn from_event(key: crossterm::event::KeyEvent) -> (Self, Self) {
-        (Self::from(key.code), Self::from(key.modifiers))
-    }
-
-    #[must_use]
     pub fn as_char(self) -> char {
         match self {
             Self::LA => 'a',
@@ -476,6 +471,12 @@ fn test_from_crossterm_key_to_revi_key_upper_a() {
     let (k1, k2) = (KeyCode::Char('A'), KeyModifiers::SHIFT);
     let left = (Key::from(k1), Key::from(k2));
     assert_eq!(left, (Key::UA, Key::Null));
+}
+
+#[test]
+fn string_to_keys_parse() {
+    assert_ne!(string_to_keys("A"), string_to_keys("a"));
+    assert_ne!(string_to_keys("B"), string_to_keys("b"));
 }
 
 #[macro_export]
