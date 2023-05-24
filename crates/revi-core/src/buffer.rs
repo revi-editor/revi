@@ -24,15 +24,15 @@ impl Buffer {
         }
     }
 
-    pub fn from_path(name: impl Into<String>) -> Self {
+    pub fn from_path(name: impl Into<String>) -> std::io::Result<Self> {
         let name = name.into();
-        let contents = std::fs::read_to_string(&name).expect("failed to read in file to buffer");
+        let contents = std::fs::read_to_string(&name)?;
         let rope = Rope::from_str(contents.as_str());
-        Self {
+        Ok(Self {
             name,
             rope,
             cursor: Cursor::default(),
-        }
+        })
     }
 
     #[must_use]

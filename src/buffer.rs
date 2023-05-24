@@ -9,20 +9,28 @@ pub struct Cursor {
 }
 
 impl Cursor {
-    pub fn up(&mut self) {
+    pub fn up(&mut self, line_len: usize) {
+        let max = self.max.x as usize;
+        let col = self.col();
+        let col = col.max(max).min(line_len);
+        self.set_col(col);
         self.sub_row(1);
     }
 
-    pub fn down(&mut self) {
+    pub fn down(&mut self, line_len: usize) {
+        let max = self.max.x as usize;
+        let col = self.col();
+        let col = col.max(max).min(line_len);
+        self.set_col(col);
         self.add_row(1);
     }
 
     pub fn left(&mut self) {
-        self.sub_col(1);
+        self.sub_col_effect_max(1);
     }
 
     pub fn right(&mut self) {
-        self.add_col(1);
+        self.add_col_effect_max(1);
     }
 
     pub fn pos(&self) -> Pos {
@@ -40,35 +48,64 @@ impl Cursor {
         (self.pos.y + self.scroll.y) as usize
     }
 
+    // pub fn add_row_effect_max(&mut self, row: usize) {
+    //     let row = row as u16;
+    //     self.pos.y = self.pos.y.saturating_add(row);
+    //     self.max.y = self.pos.y.max(self.max.y);
+    // }
+
     pub fn add_row(&mut self, row: usize) {
         let row = row as u16;
         self.pos.y = self.pos.y.saturating_add(row);
-        self.max.y = self.pos.y.max(self.max.y);
     }
+
     pub fn sub_row(&mut self, row: usize) {
         let row = row as u16;
         self.pos.y = self.pos.y.saturating_sub(row);
-        self.max.y = self.pos.y.min(self.max.y);
     }
+
+    // pub fn sub_row_effect_max(&mut self, row: usize) {
+    //     let row = row as u16;
+    //     self.pos.y = self.pos.y.saturating_sub(row);
+    //     self.max.y = self.pos.y.min(self.max.y);
+    // }
 
     pub fn col(&self) -> usize {
         (self.pos.x + self.scroll.x) as usize
     }
 
-    pub fn add_col(&mut self, col: usize) {
+    pub fn add_col_effect_max(&mut self, col: usize) {
         let col = col as u16;
         self.pos.x = self.pos.x.saturating_add(col);
         self.max.x = self.pos.x.max(self.max.x);
     }
+
+    pub fn add_col(&mut self, col: usize) {
+        let col = col as u16;
+        self.pos.x = self.pos.x.saturating_add(col);
+    }
+
+    pub fn sub_col_effect_max(&mut self, col: usize) {
+        let col = col as u16;
+        self.pos.x = self.pos.x.saturating_sub(col);
+        self.max.x = self.pos.x;
+    }
+
     pub fn sub_col(&mut self, col: usize) {
         let col = col as u16;
         self.pos.x = self.pos.x.saturating_sub(col);
-        self.max.x = self.pos.x.min(self.max.x);
+        self.max.x = self.pos.x;
     }
-    pub fn set_col(&mut self, col: usize) {
+
+    pub fn set_col_effect(&mut self, col: usize) {
         let col = col as u16;
         self.pos.x = col;
         self.max.x = self.pos.x.min(self.max.x);
+    }
+
+    pub fn set_col(&mut self, col: usize) {
+        let col = col as u16;
+        self.pos.x = col;
     }
 }
 
@@ -106,7 +143,11 @@ impl Buffer {
 
     pub fn current_line_len(&self) -> usize {
         let row = self.cursor.row();
-        self.rope.line(row).len_chars().saturating_sub(1)
+        self.rope.line(row).len_chars().saturating_sub(2)
+    }
+
+    pub fn line_len(&self, row: usize) -> usize {
+        self.rope.line(row).len_chars().saturating_sub(2)
     }
 
     pub fn get_cursor(&self) -> &Cursor {
@@ -151,7 +192,7 @@ impl Buffer {
         let end = char_idx + col;
         self.rope.remove(start..end);
         if col == 0 {
-            self.cursor.up();
+            self.cursor_up();
             self.cursor_end();
             return;
         }
@@ -159,13 +200,17 @@ impl Buffer {
     }
 
     pub fn cursor_up(&mut self) {
-        self.cursor.up();
+        let row = self.cursor.row().saturating_sub(1);
+        let len = self.line_len(row);
+        self.cursor.up(len);
     }
 
-    pub fn cursor_down(&mut self) {
+    pub fn cursor_down(&mut self, max: usize) {
         let len_lines = self.rope.len_lines().saturating_sub(1);
-        if self.cursor.row() < len_lines {
-            self.cursor.down();
+        if self.cursor.row() < len_lines.min(max) {
+            let row = self.cursor.row().saturating_add(1);
+            let len = self.line_len(row);
+            self.cursor.down(len);
         }
     }
 
@@ -182,7 +227,7 @@ impl Buffer {
 
     pub fn cursor_end(&mut self) {
         let row = self.cursor.row();
-        let len = self.rope.line(row).len_chars();
+        let len = self.line_len(row);
         self.cursor.set_col(len);
     }
 

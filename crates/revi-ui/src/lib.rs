@@ -7,7 +7,7 @@ pub mod subscription;
 pub mod text;
 pub mod widget;
 
-pub use crossterm::{cursor::SetCursorStyle, event, style::Attribute, style::Color, Result};
+pub use crossterm::{cursor::SetCursorStyle, event, style, style::Attribute, style::Color, Result};
 
 pub use key::string_to_keys;
 pub use key::Key;

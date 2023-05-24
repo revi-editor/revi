@@ -57,8 +57,7 @@ where
     writer.queue(Hide)?;
     enable_raw_mode()?;
     writer.flush()?;
-    let subscriptions = app.subscription();
-
+    let mut subscriptions = app.subscription();
     render_app(&mut writer, app)?;
     while app.quit() {
         if event::poll(Duration::from_millis(50)).unwrap_or(false) {
@@ -70,6 +69,7 @@ where
                 update(app, message);
             }
             render_app(&mut writer, app)?;
+            subscriptions = app.subscription();
         }
     }
 
