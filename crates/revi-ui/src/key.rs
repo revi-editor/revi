@@ -1,3 +1,5 @@
+use crossterm::event::KeyEventKind;
+
 fn strip_it(key: &str) -> Option<&str> {
     key.strip_prefix('<').and_then(|n| n.strip_suffix('>'))
 }
@@ -81,6 +83,12 @@ impl From<crossterm::event::KeyEvent> for Keys {
     fn from(event: crossterm::event::KeyEvent) -> Self {
         let key = Key::from(event.code);
         let modk = Key::from(event.modifiers);
+
+        let kind = event.kind;
+        if !matches!(kind, KeyEventKind::Press) {
+            return Self::Key(Key::Null);
+        }
+
         if let (_, Key::Null) = (key, modk) {
             return Self::Key(key);
         }
