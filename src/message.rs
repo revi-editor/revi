@@ -17,6 +17,8 @@ pub enum Message {
     CursorRight,
     CursorHome,
     CursorEnd,
+    ScrollUp,
+    ScrollDown,
     InsertAtEnd,
     BackSpace,
     KeyPress(Keys),

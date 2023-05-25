@@ -49,16 +49,20 @@ impl State {
 
     pub fn cursor_up(&mut self) -> Option<Message> {
         let buf = self.get_focused_buffer_mut();
-        buf.cursor_up();
-        None
+        if buf.cursor_up() {
+            return None;
+        }
+        Some(Message::ScrollUp)
     }
 
     pub fn cursor_down(&mut self) -> Option<Message> {
         let Size { height, .. } = self.size;
         let height = (height - 3) as usize;
         let buf = self.get_focused_buffer_mut();
-        buf.cursor_down(height);
-        None
+        if buf.cursor_down(height) {
+            return None;
+        }
+        Some(Message::ScrollDown)
     }
 
     pub fn cursor_left(&mut self) -> Option<Message> {
@@ -82,6 +86,18 @@ impl State {
     pub fn cursor_end(&mut self) -> Option<Message> {
         let buf = self.get_focused_buffer_mut();
         buf.cursor_end();
+        None
+    }
+
+    pub fn scroll_up(&mut self) -> Option<Message> {
+        let buf = self.get_focused_buffer_mut();
+        buf.scroll_up();
+        None
+    }
+
+    pub fn scroll_down(&mut self) -> Option<Message> {
+        let buf = self.get_focused_buffer_mut();
+        buf.scroll_down();
         None
     }
 
@@ -327,7 +343,10 @@ impl App for State {
         let cursor = buf.get_cursor();
         let cursor_pos_status_width =
             width - (mode_status.char_len() + filename_status.char_len()) as u16;
-        let cursor_pos_status = Text::new(&format!("{}/{}", cursor.col(), cursor.row()))
+        let pos = cursor.pos();
+        let row = pos.x;
+        let col = pos.y;
+        let cursor_pos_status = Text::new(&format!("{col}/{row}"))
             .max_width(cursor_pos_status_width)
             .with_alignment(Alignment::Right)
             .with_fg(Color::Black)
@@ -361,6 +380,8 @@ impl App for State {
             Message::CursorRight => self.cursor_right(),
             Message::CursorHome => self.cursor_home(),
             Message::CursorEnd => self.cursor_end(),
+            Message::ScrollUp => self.scroll_up(),
+            Message::ScrollDown => self.scroll_down(),
             Message::InsertAtEnd => self.insert_at_end(),
             Message::BackSpace => self.backspace(),
             Message::UserMessage(builder) => self.user_message(builder),
@@ -389,14 +410,14 @@ impl App for State {
         match self.mode {
             Mode::Command => {
                 let cursor = self.command.get_cursor();
-                let x = (cursor.col() + 1) as u16;
-                let y = (cursor.row() as u16) + self.size.height;
+                let x = cursor.pos.x + 1;
+                let y = cursor.pos.y + self.size.height;
                 Some(Pos { x, y })
             }
             _ => {
                 let buf = self.get_focused_buffer();
                 let cursor = buf.get_cursor();
-                Some(cursor.pos())
+                Some(cursor.pos)
             }
         }
     }
