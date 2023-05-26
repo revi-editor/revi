@@ -67,14 +67,19 @@ impl State {
 
     pub fn cursor_left(&mut self) -> Option<Message> {
         let buf = self.get_focused_buffer_mut();
-        buf.cursor_left();
-        None
+        if buf.cursor_left() {
+            return None;
+        }
+        Some(Message::ScrollLeft)
     }
 
     pub fn cursor_right(&mut self) -> Option<Message> {
+        let width = self.size.width.saturating_sub(1) as usize;
         let buf = self.get_focused_buffer_mut();
-        buf.cursor_right();
-        None
+        if buf.cursor_right(width) {
+            return None;
+        }
+        Some(Message::ScrollRight)
     }
 
     pub fn cursor_home(&mut self) -> Option<Message> {
@@ -96,8 +101,23 @@ impl State {
     }
 
     pub fn scroll_down(&mut self) -> Option<Message> {
+        let height = self.size.height as usize;
         let buf = self.get_focused_buffer_mut();
-        buf.scroll_down();
+        // HACK: the - 2 is for the command line and status bar
+        buf.scroll_down(height - 1);
+        None
+    }
+
+    pub fn scroll_left(&mut self) -> Option<Message> {
+        let buf = self.get_focused_buffer_mut();
+        buf.scroll_left();
+        None
+    }
+
+    pub fn scroll_right(&mut self) -> Option<Message> {
+        let width = self.size.width as usize;
+        let buf = self.get_focused_buffer_mut();
+        buf.scroll_right(width);
         None
     }
 
@@ -135,9 +155,13 @@ impl State {
     }
 
     pub fn execute_command(&mut self) -> Option<Message> {
+        let size = Size {
+            height: 2,
+            width: self.size.width,
+        };
         let command = self
             .command
-            .on_screen(2)
+            .on_screen(&size)
             .iter()
             .map(ToString::to_string)
             .collect::<String>()
@@ -297,14 +321,15 @@ impl App for State {
 
         let buf = &self.buffers[self.focused];
         // ------ TEXT AREA --------
-        let rect_text = Rect::new(Size {
+        let text_size = Size {
             width,
             height: height - 2,
-        });
+        };
+        let rect_text = Rect::new(text_size);
         let text = buf
-            .on_screen(height)
+            .on_screen(&text_size)
             .iter()
-            .map(|line| Text::new(line.to_string().as_str()).max_width(width))
+            .map(|line| Text::new(line.as_str()).max_width(width))
             .chain(std::iter::repeat(Text::new(" ").max_width(width)))
             .take(height as usize)
             .fold(Container::new(rect_text, Stack::Vertically), |acc, item| {
@@ -312,10 +337,11 @@ impl App for State {
             });
 
         // ------ CMD AREA --------
-        let rect_cmd = Rect::new(Size { width, height: 1 });
+        let size_cmd = Size { width, height: 1 };
+        let rect_cmd = Rect::new(size_cmd);
         let src_cmd = self
             .command
-            .on_screen(height)
+            .on_screen(&size_cmd)
             .iter()
             .map(ToString::to_string)
             .collect::<String>();
@@ -344,9 +370,12 @@ impl App for State {
         let cursor_pos_status_width =
             width - (mode_status.char_len() + filename_status.char_len()) as u16;
         let pos = cursor.pos();
-        let row = pos.x;
-        let col = pos.y;
-        let cursor_pos_status = Text::new(&format!("{col}/{row}"))
+        let col = pos.x;
+        let row = pos.y;
+        let scroll = cursor.scroll;
+        let scol = scroll.x;
+        let srow = scroll.y;
+        let cursor_pos_status = Text::new(&format!("{scol}/{srow} {col}/{row}"))
             .max_width(cursor_pos_status_width)
             .with_alignment(Alignment::Right)
             .with_fg(Color::Black)
@@ -382,6 +411,8 @@ impl App for State {
             Message::CursorEnd => self.cursor_end(),
             Message::ScrollUp => self.scroll_up(),
             Message::ScrollDown => self.scroll_down(),
+            Message::ScrollLeft => self.scroll_left(),
+            Message::ScrollRight => self.scroll_right(),
             Message::InsertAtEnd => self.insert_at_end(),
             Message::BackSpace => self.backspace(),
             Message::UserMessage(builder) => self.user_message(builder),

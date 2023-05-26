@@ -1,5 +1,5 @@
-use revi_ui::layout::Pos;
-use ropey::{Rope, RopeSlice};
+use revi_ui::layout::{Pos, Size};
+use ropey::Rope;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Cursor {
@@ -17,10 +17,10 @@ impl Cursor {
         self.sub_row(1);
     }
 
-    pub fn down(&mut self, height: usize) {
+    pub fn down(&mut self, line_len: usize) {
         let max = self.max.x as usize;
         let col = self.pos.x as usize;
-        let col = col.max(max).min(height);
+        let col = col.max(max).min(line_len);
         self.set_col(col);
         self.add_row(1);
     }
@@ -40,6 +40,15 @@ impl Cursor {
     pub fn scroll_down(&mut self, max: usize) {
         let max = max as u16;
         self.scroll.y = self.scroll.y.saturating_add(1).min(max);
+    }
+
+    pub fn scroll_left(&mut self) {
+        self.scroll.x = self.scroll.x.saturating_sub(1);
+    }
+
+    pub fn scroll_right(&mut self, max: usize) {
+        let max = max as u16;
+        self.scroll.x = self.scroll.x.saturating_add(1).min(max);
     }
 
     pub fn pos(&self) -> Pos {
@@ -155,7 +164,7 @@ impl Buffer {
     }
 
     pub fn current_line_len(&self) -> usize {
-        let row = self.cursor.pos.y as usize;
+        let row = (self.cursor.pos.y + self.cursor.scroll.y) as usize;
         self.rope.line(row).len_chars().saturating_sub(2)
     }
 
@@ -171,18 +180,34 @@ impl Buffer {
         &mut self.cursor
     }
 
-    pub fn on_screen(&self, height: u16) -> Vec<RopeSlice> {
+    pub fn on_screen(&self, size: &Size) -> Vec<String> {
+        let Size { width, height } = size;
+        let width = *width as usize;
+        let height = *height as usize;
         let top = self.cursor.scroll.y as usize;
-        let bottom = ((self.cursor.scroll.y + height) as usize).saturating_sub(top);
-        self.rope.lines().skip(top).take(bottom).collect()
-        // let mut result = vec![];
-        // for idx in top..=bottom {
-        //     let Some(line) = self.rope.get_line(idx) else {
-        //         break;
-        //     };
-        //     result.push(line);
-        // }
-        // result
+        let bottom = top + height;
+        let start = self.cursor.scroll.x as usize;
+        let end = start + width;
+        self.rope
+            .lines()
+            .skip(top)
+            .take(bottom)
+            // -----------------------------
+            // CLEANUP: this works but its not pretty.
+            .map(|line| {
+                line.get_slice(start..end).map(|l| l.to_string()).unwrap_or(
+                    line.get_slice(start..)
+                        .map(|l| {
+                            if l.len_chars() == 0 {
+                                return " ".to_string();
+                            }
+                            l.to_string()
+                        })
+                        .unwrap_or(" ".to_string()),
+                )
+            })
+            // ----------------------------
+            .collect()
     }
 
     pub fn insert(&mut self, text: impl Into<String>) {
@@ -229,22 +254,29 @@ impl Buffer {
         if row >= max {
             return false;
         }
-        let row = row.saturating_sub(1);
+        let row = row.saturating_add(1);
         let len = self.line_len(row);
         self.cursor.down(len);
         true
     }
 
-    pub fn cursor_left(&mut self) {
+    pub fn cursor_left(&mut self) -> bool {
+        let col = self.cursor.pos.x;
+        if col == 0 {
+            return false;
+        }
         self.cursor.left();
+        true
     }
 
-    pub fn cursor_right(&mut self) {
+    pub fn cursor_right(&mut self, width: usize) -> bool {
         let len_col = self.current_line_len();
-        let row = self.cursor.pos.y as usize;
-        if row < len_col {
+        let col = self.cursor.pos.x as usize;
+        if col < len_col && col < width {
             self.cursor.right();
+            return true;
         }
+        false
     }
 
     pub fn cursor_end(&mut self) {
@@ -261,9 +293,18 @@ impl Buffer {
         self.cursor.scroll_up();
     }
 
-    pub fn scroll_down(&mut self) {
+    pub fn scroll_down(&mut self, height: usize) {
         let max = self.rope.lines().count();
-        self.cursor.scroll_down(max);
+        self.cursor.scroll_down(max.saturating_sub(height));
+    }
+
+    pub fn scroll_left(&mut self) {
+        self.cursor.scroll_left();
+    }
+
+    pub fn scroll_right(&mut self, width: usize) {
+        let max = self.current_line_len();
+        self.cursor.scroll_right(max.saturating_sub(width));
     }
 }
 
