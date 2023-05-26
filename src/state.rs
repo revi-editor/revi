@@ -134,6 +134,12 @@ impl State {
         None
     }
 
+    pub fn delete_char(&mut self) -> Option<Message> {
+        let buf = self.get_focused_buffer_mut();
+        buf.delete_char();
+        None
+    }
+
     pub fn user_message(&mut self, builder: UserMessageBuilder) -> Option<Message> {
         self.messages.push(builder);
         None
@@ -415,6 +421,7 @@ impl App for State {
             Message::ScrollRight => self.scroll_right(),
             Message::InsertAtEnd => self.insert_at_end(),
             Message::BackSpace => self.backspace(),
+            Message::Delete => self.delete_char(),
             Message::UserMessage(builder) => self.user_message(builder),
             Message::KeyPress(keys) => self.key_press(keys),
             Message::CheckForMapping => self.check_for_mapping(),

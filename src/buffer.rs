@@ -238,6 +238,15 @@ impl Buffer {
         self.cursor.left();
     }
 
+    pub fn delete_char(&mut self) {
+        let col = self.cursor.pos.x as usize;
+        let row = self.cursor.pos.y as usize;
+        let char_idx = self.rope.line_to_char(row);
+        let start = char_idx + col;
+        let end = (char_idx + col).saturating_add(1);
+        self.rope.remove(start..end);
+    }
+
     pub fn cursor_up(&mut self) -> bool {
         let row = self.cursor.pos.y as usize;
         if row == 0 {

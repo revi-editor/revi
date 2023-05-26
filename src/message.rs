@@ -23,6 +23,7 @@ pub enum Message {
     ScrollRight,
     InsertAtEnd,
     BackSpace,
+    Delete,
     KeyPress(Keys),
     CheckForMapping,
     ModeCommandInsertStr(String),
