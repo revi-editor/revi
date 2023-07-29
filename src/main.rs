@@ -12,10 +12,12 @@ mod map_keys;
 mod message;
 mod parse_keys;
 mod state;
+// mod api;
 
+// use api::Rhai;
 use buffer::Buffer;
 use message::Message;
-use revi_ui::{application::App, layout::Pos, Result, SetCursorStyle, Subscription};
+use revi_ui::{application::App, layout::Pos, SetCursorStyle, Subscription};
 use state::State;
 
 #[derive(Debug, Clone, Copy)]
@@ -79,12 +81,13 @@ impl App for Revi {
     }
 }
 
-fn main() -> Result<()> {
+fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     let files = commandline::args();
     let buffers = files
         .iter()
         .map(|name| Buffer::from_path(name))
         .collect::<Vec<_>>();
     let settings = Settings { buffers };
-    Revi::new(settings).run()
+    Revi::new(settings).run()?;
+    Ok(())
 }

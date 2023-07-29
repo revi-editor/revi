@@ -59,7 +59,8 @@ impl State {
         let Size { height, .. } = self.size;
         let height = (height - 3) as usize;
         let buf = self.get_focused_buffer_mut();
-        if buf.cursor_down(height) {
+        let h = height.min(buf.len_lines());
+        if buf.cursor_down(h) {
             return None;
         }
         Some(Message::ScrollDown)
@@ -177,6 +178,13 @@ impl State {
         let (cmd, tail) = command.split_once(' ').unwrap_or((command.as_str(), ""));
         self.change_mode(Mode::Normal);
         match cmd {
+            "write" | "w" => Some(Message::Save({
+                if tail.is_empty() {
+                    None
+                } else {
+                    Some(tail.to_string())
+                }
+            })),
             "quit" | "exit" | "q" => Some(Message::Quit),
             "ls" => Some(Message::BufferList),
             "edit" | "e" => Some(Message::EditFile(tail.to_string())),
@@ -249,6 +257,19 @@ impl State {
 
     pub fn close_message(&mut self) -> Option<Message> {
         self.messages.pop();
+        None
+    }
+
+    pub fn save(&mut self, filename: Option<String>) -> Option<Message> {
+        if let Err(err) = self.get_focused_buffer().save(filename) {
+            return Some(
+                UserMessageBuilder::default()
+                    .message(err.to_string())
+                    .fg(Color::Red)
+                    .footer("error")
+                    .build(),
+            );
+        }
         None
     }
 
@@ -437,6 +458,7 @@ impl App for State {
                 self.size = size;
                 None
             }
+            Message::Save(filename) => self.save(filename),
             Message::Quit => {
                 self.is_running = false;
                 None

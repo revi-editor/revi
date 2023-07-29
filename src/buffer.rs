@@ -1,3 +1,5 @@
+use std::{fs::OpenOptions, io::BufWriter};
+
 use revi_ui::layout::{Pos, Size};
 use ropey::Rope;
 
@@ -148,6 +150,20 @@ impl Buffer {
         }
     }
 
+    pub fn save(&self, filename: Option<String>) -> std::io::Result<()> {
+        let name = match filename {
+            Some(ref n) => n,
+            None => &self.name,
+        };
+        let file = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .truncate(true)
+            .open(name)?;
+        self.rope.write_to(BufWriter::new(file))?;
+        Ok(())
+    }
+
     pub fn align_cursor(&mut self) {
         let col = self.cursor.pos.x as usize;
         let max = self.current_line_len();
@@ -170,6 +186,10 @@ impl Buffer {
 
     pub fn line_len(&self, row: usize) -> usize {
         self.rope.line(row).len_chars().saturating_sub(2)
+    }
+
+    pub fn len_lines(&self) -> usize {
+        self.rope.len_lines().saturating_sub(2)
     }
 
     pub fn get_cursor(&self) -> &Cursor {
@@ -252,8 +272,9 @@ impl Buffer {
         if row == 0 {
             return false;
         }
+        let offset = self.cursor.scroll.y as usize;
         let row = row.saturating_sub(1);
-        let len = self.line_len(row);
+        let len = self.line_len(row + offset);
         self.cursor.up(len);
         true
     }
@@ -263,8 +284,9 @@ impl Buffer {
         if row >= max {
             return false;
         }
+        let offset = self.cursor.scroll.y as usize;
         let row = row.saturating_add(1);
-        let len = self.line_len(row);
+        let len = self.line_len(row + offset);
         self.cursor.down(len);
         true
     }

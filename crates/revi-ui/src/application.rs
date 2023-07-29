@@ -1,8 +1,8 @@
 use crate::{layout::Pos, subscription::Subscription, widget::BoxWidget};
 use crossterm::{cursor::SetCursorStyle, Result};
 pub trait App: Sized {
-    type Settings: std::fmt::Debug + Send;
-    type Message: std::fmt::Debug + Send;
+    type Settings: std::fmt::Debug;
+    type Message: std::fmt::Debug;
     fn new(settings: Self::Settings) -> Self;
     fn update(&mut self, message: Self::Message) -> Option<Self::Message>;
     fn view(&self) -> BoxWidget;

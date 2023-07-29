@@ -1,5 +1,5 @@
 use crate::{commands::UserCommand, context::Id, panes::MessageBox, Buffer, Context, Event, Mode};
-use revi_ui::tui::layout::Pos;
+use revi_ui::layout::Pos;
 use std::{cell::RefCell, rc::Rc};
 
 use rhai::{CustomType, TypeBuilder};

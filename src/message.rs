@@ -36,6 +36,7 @@ pub enum Message {
     UserMessage(UserMessageBuilder),
     CloseCurrentPaneOnKeyPress,
     Resize(Size),
+    Save(Option<String>),
     Quit,
 }
 

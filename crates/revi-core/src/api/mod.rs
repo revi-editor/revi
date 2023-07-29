@@ -34,12 +34,12 @@ impl Rhai {
     }
 }
 
-pub fn init(ctx: Context) -> Result<(), Box<EvalAltResult>> {
-    let c = ctx.clone();
-    let mut rhai = c.rhai.borrow_mut();
-    rhai.engine.build_type::<ContextRhaiApi>();
-    rhai.scope.push("revi", ContextRhaiApi(ctx));
-    rhai.compile("./userspace/init.rhai");
-    rhai.run_ast_with_scope()?;
+pub fn init(/* ctx: Context */) -> Result<(), Box<EvalAltResult>> {
+    // let c = ctx.clone();
+    // let mut rhai = c.rhai.borrow_mut();
+    // rhai.engine.build_type::<ContextRhaiApi>();
+    // rhai.scope.push("revi", ContextRhaiApi(ctx));
+    // rhai.compile("./userspace/init.rhai");
+    // rhai.run_ast_with_scope()?;
     Ok(())
 }

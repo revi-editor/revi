@@ -201,8 +201,7 @@ impl Mapper {
     // }
 
     fn build_normal(self) -> Self {
-        self.with_mapping(Mode::Normal, "<esc>", Message::Quit)
-            .with_mapping(Mode::Normal, "j", Message::CursorDown)
+        self.with_mapping(Mode::Normal, "j", Message::CursorDown)
             .with_mapping(Mode::Normal, "<down>", Message::CursorDown)
             .with_mapping(Mode::Normal, "k", Message::CursorUp)
             .with_mapping(Mode::Normal, "up", Message::CursorUp)

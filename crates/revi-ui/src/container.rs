@@ -6,6 +6,7 @@ pub struct Container {
     pub bounds: Rect,
     stack: Stack,
     children: Vec<BoxWidget>,
+    vert_center: bool,
     comment: Option<String>,
 }
 
@@ -15,21 +16,23 @@ impl Container {
             bounds,
             stack,
             children: Vec::new(),
+            vert_center: false,
             comment: None,
         }
     }
 
-    pub fn _with_bounds(bounds: Rect) -> Self {
-        Self {
-            bounds,
-            stack: Stack::default(),
-            children: Vec::new(),
-            comment: None,
-        }
+    pub fn with_bounds(mut self, rect: Rect) -> Self {
+        self.bounds = rect;
+        self
     }
 
     pub fn with_comment(mut self, comment: impl Into<String>) -> Self {
         self.comment = Some(comment.into());
+        self
+    }
+
+    pub fn vcenter(mut self) -> Self {
+        self.vert_center = true;
         self
     }
 
@@ -38,27 +41,10 @@ impl Container {
         self
     }
 
-    // pub fn push<W>(mut self, widget: W) -> Self
-    // where
-    //     W: Widget + 'static,
-    // {
-    //     self.children.push(BoxWidget::new(widget));
-    //     self
-    // }
-
-    // pub fn with_child_box(mut self, boxed_widget: BoxWidget) -> Self {
-    //     self.children.push(boxed_widget);
-    //     self
-    // }
-    //
     pub fn push(mut self, widget: impl Into<BoxWidget>) -> Self {
         self.children.push(widget.into());
         self
     }
-
-    // pub fn push_box(&mut self, boxed_widget: BoxWidget) {
-    //     self.children.push(boxed_widget);
-    // }
 }
 
 impl Widget for Container {
@@ -79,12 +65,19 @@ impl Widget for Container {
     }
 
     fn draw(&self, stdout: &mut Stdout, bounds: Rect) {
-        for (widget, wbounds) in self.children.iter().zip(generate_layout(
+        for (widget, mut wbounds) in self.children.iter().zip(generate_layout(
             bounds,
             self.bounds,
             &self.children,
             self.stack,
         )) {
+            if let Stack::Vertically = self.stack {
+                let height = self.height() / 2;
+                let children_len = self.children.len() as u16;
+                let content_height = children_len / 2;
+                let y_offset = height.saturating_sub(content_height); // + (idx as u16);
+                wbounds.y += y_offset * self.vert_center as u16;
+            }
             widget.draw(stdout, wbounds);
         }
     }
@@ -105,7 +98,8 @@ fn generate_layout(root: Rect, current: Rect, children: &[BoxWidget], stack: Sta
             Stack::Horizontally => current.y() + child.y() + root.y(),
         };
         let width = match stack {
-            Stack::Vertically => child.width().min(current.width()).min(root.width()),
+            // NOTE: child should be priority if Shrinking is in effect
+            Stack::Vertically => child.width().max(current.width()).min(root.width()),
             Stack::Horizontally => child
                 .width()
                 .min(current.width() - last.width())
@@ -129,5 +123,17 @@ fn generate_layout(root: Rect, current: Rect, children: &[BoxWidget], stack: Sta
 impl From<Container> for BoxWidget {
     fn from(container: Container) -> Self {
         BoxWidget::new(container)
+    }
+}
+
+impl From<Rect> for Container {
+    fn from(rect: Rect) -> Self {
+        Self::new(rect, Stack::Vertically)
+    }
+}
+
+impl From<(Rect, Stack)> for Container {
+    fn from((rect, stack): (Rect, Stack)) -> Self {
+        Self::new(rect, stack)
     }
 }

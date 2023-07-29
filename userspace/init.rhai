@@ -1,3 +1,6 @@
+revi.move_cursor_down();
+
+
 // let go_to_top_of_file = || {
 //   revi.set_cursor_row(0);
 //   revi.set_scroll_row(0);
@@ -5,51 +8,18 @@
 
 // revi.nmap("gg", go_to_top_of_file);
 
-let UserCommand = || {
-  revi.message("hello");
-};
+// let UserCommand = || {
+//   revi.message("hello");
+// };
 
-revi.export_command(UserCommand);
+// revi.export_command(UserCommand);
 
 // revi.nmap("er", ":UserCommand<CR>");
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // revi.nmap("<up>", "k");
 // revi.nmap("<down>", "j");
 // revi.nmap("<right>", "l");
 // revi.nmap("<left>", "h");
 // revi.mode = "command";
-
-
-
-
-
 
 // if revi.buffer_count() > 0 {
 //   return;

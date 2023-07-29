@@ -100,9 +100,11 @@ impl Widget for Text {
     fn draw(&self, stdout: &mut Stdout, bounds: Rect) {
         queue!(stdout, SetStyle(self.style)).expect("failed to set style");
         let width = bounds.width() as usize;
+        let x = bounds.x() + self.x();
+        let y = bounds.y() + self.y();
         queue!(
             stdout,
-            cursor::MoveTo(bounds.x(), bounds.y()),
+            cursor::MoveTo(x, y),
             style::Print(format_line(&self.content, width, &self.align)),
         )
         .expect("Failed to queue Text");
