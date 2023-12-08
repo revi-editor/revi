@@ -35,6 +35,7 @@ pub enum Message {
     SwapBuffer(String),
     UserMessage(UserMessageBuilder),
     CloseCurrentPaneOnKeyPress,
+    NextAvailableCommand,
     Resize(Size),
     Save(Option<String>),
     Quit,

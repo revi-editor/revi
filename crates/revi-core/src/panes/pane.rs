@@ -89,8 +89,8 @@ pub trait CursorMovement: CursorPos + PaneBounds + Scrollable {
         let below = self.get_line_below_bounds();
         {
             let Some(mut cursor) = self.get_cursor_pos_mut() else {
-            return;
-        };
+                return;
+            };
             cursor.max.x = cursor.pos.x.max(cursor.max.x);
             if let Some(below) = below {
                 cursor.pos.x = cursor.max.x.min(below.width.min(cursor.max.x));

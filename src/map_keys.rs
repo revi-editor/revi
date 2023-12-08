@@ -272,6 +272,7 @@ impl Mapper {
         self.with_mapping(Mode::Command, "<esc>", Message::ChangeMode(Mode::Normal))
             .with_mapping(Mode::Command, "<enter>", Message::ExecuteCommand)
             .with_mapping(Mode::Command, "<backspace>", Message::BackSpace)
+            .with_mapping(Mode::Command, "<tab>", Message::NextAvailableCommand)
         // .with_mapping(Mode::Command, "<c-h>", CursorLeft)
         // .with_mapping(Mode::Command, "<c-l>", CursorRight)
     }

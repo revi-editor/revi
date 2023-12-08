@@ -12,12 +12,15 @@ use crate::map_keys::Mapper;
 use crate::message::Message;
 use crate::message::UserMessageBuilder;
 use crate::parse_keys::KeyParser;
+use crate::trie;
 
 #[derive(Debug)]
 pub struct State {
     pub focused: usize,
     pub buffers: Vec<Buffer>,
     pub messages: Vec<UserMessageBuilder>,
+    pub command_list: trie::Trie,
+    pub tab_index: usize,
     pub command: Buffer,
     pub map_keys: Mapper,
     pub key_parse: KeyParser,
@@ -156,6 +159,9 @@ impl State {
         None
     }
     pub fn change_mode(&mut self, mode: Mode) -> Option<Message> {
+        if let Mode::Command = self.mode {
+            self.get_focused_buffer_mut().clear();
+        }
         self.get_focused_buffer_mut().align_cursor();
         self.mode = mode;
         None
@@ -238,11 +244,12 @@ impl State {
             self.focused = idx;
             return None;
         }
-        let Some(idx) = self.buffers
+        let Some(idx) = self
+            .buffers
             .iter()
             .enumerate()
             .find(|(_, b)| b.name == arg)
-            .map(|(i, _)|i)
+            .map(|(i, _)| i)
         else {
             unimplemented!("Message to user");
             // Message(
@@ -257,6 +264,27 @@ impl State {
 
     pub fn close_message(&mut self) -> Option<Message> {
         self.messages.pop();
+        None
+    }
+
+    pub fn next_available_command(&mut self) -> Option<Message> {
+        let current_cmd = self.get_focused_buffer().get_all_text();
+        let list = if current_cmd.is_empty() {
+            self.command_list.get_all_words()
+        } else {
+            self.command_list
+                .lookup(&current_cmd)
+                .into_iter()
+                .filter(|word| word != &current_cmd)
+                .collect::<Vec<_>>()
+        };
+        let Some(cmd) = list.get(self.tab_index) else {
+            return None;
+        };
+        self.tab_index = (self.tab_index + 1) % list.len();
+        let buf = self.get_focused_buffer_mut();
+        buf.clear();
+        buf.insert(cmd);
         None
     }
 
@@ -330,6 +358,10 @@ impl App for State {
             buffers,
             messages: Vec::new(),
             command: Buffer::default(),
+            command_list: trie::Trie::from(&vec![
+                "b", "buffer", "ls", "e", "edit", "q", "quit", "w", "write",
+            ]),
+            tab_index: 0,
             map_keys: Mapper::default(),
             key_parse: KeyParser::default(),
             mode: Mode::Normal,
@@ -353,11 +385,37 @@ impl App for State {
             height: height - 2,
         };
         let rect_text = Rect::new(text_size);
+        // let mut p = tree_sitter::Parser::new();
+        // p.set_language(tree_sitter_md::language())
+        //     .expect("Error loading Rust grammar");
+
+        // let mut last_context_parser: Option<tree_sitter::Tree> = None;
         let text = buf
             .on_screen(&text_size)
             .iter()
-            .map(|line| Text::new(line.as_str()).max_width(width))
+            .map(|line| {
+                Text::new(line.as_str()).max_width(width)
+                // last_context_parser = p.parse(line, last_context_parser.as_ref());
+                // let mut text_line =
+                //     Container::new(Rect::new(Size::new(width, 1)), Stack::Horizontally);
+                // if let Some(tree) = &last_context_parser {
+                //     let mut cursor = tree.walk();
+                //     let mut node = cursor.node();
+                //     for n in node.children(&mut cursor) {
+                //         let t = Text::new(n.kind()).max_width(width);
+                //         text_line = text_line.push(t);
+                //     }
+                // } else {
+                //     let t = Text::new(line.as_str()).max_width(width);
+                //     text_line = text_line.push(t);
+                // }
+                // text_line
+            })
             .chain(std::iter::repeat(Text::new(" ").max_width(width)))
+            // .chain(std::iter::repeat(
+            //     Container::new(Rect::new(Size::new(width, 1)), Stack::Horizontally)
+            //         .push(Text::new(" ").max_width(width)),
+            // ))
             .take(height as usize)
             .fold(Container::new(rect_text, Stack::Vertically), |acc, item| {
                 acc.push(item)
@@ -454,6 +512,7 @@ impl App for State {
             Message::EditFile(ref filename) => self.edit_file_command(filename),
             Message::SwapBuffer(ref arg) => self.swap_buffer_command(arg),
             Message::CloseCurrentPaneOnKeyPress => self.close_message(),
+            Message::NextAvailableCommand => self.next_available_command(),
             Message::Resize(size) => {
                 self.size = size;
                 None

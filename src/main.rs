@@ -12,6 +12,7 @@ mod map_keys;
 mod message;
 mod parse_keys;
 mod state;
+mod trie;
 // mod api;
 
 // use api::Rhai;

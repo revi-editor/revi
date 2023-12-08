@@ -17,6 +17,11 @@ ropey = "1.6.0"
 clap = "2.33.3"
 rhai = { version = "1.13.0", features = ["metadata"] }
 
+tree-sitter = "0.20.10"
+tree-sitter-javascript = "0.20.1"
+tree-sitter-rust = "0.20.4"
+tree-sitter-md = "0.1.7"
+
 [workspace]
 
 members = ["./crates/*"]

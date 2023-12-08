@@ -1,6 +1,6 @@
 use crate::{layout::Rect, text::Text};
 use std::io::Stdout;
-pub trait Widget: std::fmt::Debug {
+pub trait Widget: std::fmt::Debug + dyn_clone::DynClone {
     fn x(&self) -> u16;
     fn y(&self) -> u16;
     fn width(&self) -> u16;
@@ -11,7 +11,9 @@ pub trait Widget: std::fmt::Debug {
     }
 }
 
-#[derive(Debug)]
+dyn_clone::clone_trait_object!(Widget);
+
+#[derive(Debug, Clone)]
 pub struct BoxWidget {
     widget: Box<dyn Widget>,
 }

@@ -1,7 +1,7 @@
 use crate::layout::{Pos, Rect, Size, Stack};
 use crate::widget::{BoxWidget, Widget};
 use std::io::Stdout;
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Container {
     pub bounds: Rect,
     stack: Stack,

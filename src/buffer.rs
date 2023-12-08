@@ -165,12 +165,9 @@ impl Buffer {
     }
 
     pub fn align_cursor(&mut self) {
-        let col = self.cursor.pos.x as usize;
-        let max = self.current_line_len();
-        if col < max {
-            return;
-        }
-        self.cursor.set_col(max);
+        let max = self.cursor.max.x as usize;
+        let line_max = self.current_line_len();
+        self.cursor.set_col(line_max.min(max));
     }
 
     pub fn _get_line_len(&self, row: usize) -> Option<usize> {
@@ -228,6 +225,15 @@ impl Buffer {
             })
             // ----------------------------
             .collect()
+    }
+
+    pub fn get_all_text(&self) -> String {
+        self.rope.to_string()
+    }
+
+    pub fn clear(&mut self) {
+        self.rope = Rope::from_str("");
+        self.cursor = Cursor::default();
     }
 
     pub fn insert(&mut self, text: impl Into<String>) {
@@ -322,11 +328,13 @@ impl Buffer {
 
     pub fn scroll_up(&mut self) {
         self.cursor.scroll_up();
+        self.align_cursor()
     }
 
     pub fn scroll_down(&mut self, height: usize) {
         let max = self.rope.lines().count();
         self.cursor.scroll_down(max.saturating_sub(height));
+        self.align_cursor();
     }
 
     pub fn scroll_left(&mut self) {
