@@ -235,7 +235,7 @@ impl State {
         if let Ok(idx) = arg.parse::<usize>() {
             if self.buffers.get(idx).is_none() {
                 unimplemented!("Message to user");
-                // Message(
+                // Message
                 //     "buffer id does not exsist".into(),
                 //     command.into())
                 //     .call(ctx.clone());
