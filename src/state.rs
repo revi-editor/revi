@@ -98,6 +98,12 @@ impl State {
         None
     }
 
+    pub fn set_cursor_row(&mut self, row: usize) -> Option<Message> {
+        let buf = self.get_focused_buffer_mut();
+        buf.set_row(row);
+        None
+    }
+
     pub fn scroll_up(&mut self) -> Option<Message> {
         let buf = self.get_focused_buffer_mut();
         buf.scroll_up();
@@ -158,6 +164,7 @@ impl State {
         self.buffers[self.focused].insert(c);
         None
     }
+
     pub fn change_mode(&mut self, mode: Mode) -> Option<Message> {
         if let Mode::Command = self.mode {
             self.get_focused_buffer_mut().clear();

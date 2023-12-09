@@ -78,6 +78,11 @@ impl Cursor {
     //     self.max.y = self.pos.y.max(self.max.y);
     // }
 
+    pub fn set_row(&mut self, row: usize) {
+        let row = row as u16;
+        self.pos.y = row;
+    }
+
     pub fn add_row(&mut self, row: usize) {
         let row = row as u16;
         self.pos.y = self.pos.y.saturating_add(row);

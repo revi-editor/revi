@@ -1,12 +1,12 @@
 revi.move_cursor_down();
 
 
-// let go_to_top_of_file = || {
-//   revi.set_cursor_row(0);
-//   revi.set_scroll_row(0);
-// };
+let go_to_top_of_file = || {
+  revi.set_cursor_row(0);
+  revi.set_scroll_row(0);
+};
 
-// revi.nmap("gg", go_to_top_of_file);
+revi.nmap("gg", go_to_top_of_file);
 
 // let UserCommand = || {
 //   revi.message("hello");
