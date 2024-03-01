@@ -20,9 +20,6 @@
 <p align="center">
 </p>
 
-#  make state pointer to editor to pass to moding api
-
-
 # Table Of Contents:
 
   - [**About**](#about)
