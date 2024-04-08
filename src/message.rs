@@ -43,9 +43,9 @@ pub enum Message {
 
 #[derive(Debug, Clone, Default)]
 pub struct UserMessageBuilder {
-    message: String,
-    footer: String,
-    style: ContentStyle,
+    pub message: String,
+    pub footer: String,
+    pub style: ContentStyle,
 }
 
 impl UserMessageBuilder {
@@ -73,10 +73,13 @@ impl UserMessageBuilder {
         Message::UserMessage(self)
     }
 
-    pub fn as_view(&self, rect: Rect) -> Container {
+    pub fn build_container(&self, width: u16) -> Container {
+        use revi_ui::widget::Widget;
         let stack = Stack::Vertically;
         let msg = Text::new(&self.message);
         let ft = Text::new(&self.footer).with_bg(Color::Grey);
+        let height = msg.height() + ft.height();
+        let rect = Rect::new(Size { width, height });
         Container::new(rect, stack).push(msg).push(ft)
     }
 }

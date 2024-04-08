@@ -348,6 +348,102 @@ impl State {
         }
         msg
     }
+
+    fn text_area_view(&self, buf: &Buffer, width: u16, height: u16) -> Container {
+        let text_size = Size {
+            width,
+            height: height - 2,
+        };
+        let rect_text = Rect::new(text_size);
+        // let mut p = tree_sitter::Parser::new();
+        // p.set_language(tree_sitter_md::language())
+        //     .expect("Error loading Rust grammar");
+
+        // let mut last_context_parser: Option<tree_sitter::Tree> = None;
+        buf.on_screen(&text_size)
+            .iter()
+            .map(|line| {
+                Text::new(line.as_str()).max_width(width)
+                // last_context_parser = p.parse(line, last_context_parser.as_ref());
+                // let mut text_line =
+                //     Container::new(Rect::new(Size::new(width, 1)), Stack::Horizontally);
+                // if let Some(tree) = &last_context_parser {
+                //     let mut cursor = tree.walk();
+                //     let mut node = cursor.node();
+                //     for n in node.children(&mut cursor) {
+                //         let t = Text::new(n.kind()).max_width(width);
+                //         text_line = text_line.push(t);
+                //     }
+                // } else {
+                //     let t = Text::new(line.as_str()).max_width(width);
+                //     text_line = text_line.push(t);
+                // }
+                // text_line
+            })
+            .chain(std::iter::repeat(Text::new(" ").max_width(width)))
+            // .chain(std::iter::repeat(
+            //     Container::new(Rect::new(Size::new(width, 1)), Stack::Horizontally)
+            //         .push(Text::new(" ").max_width(width)),
+            // ))
+            .take(height as usize)
+            .fold(Container::new(rect_text, Stack::Vertically), |acc, item| {
+                acc.push(item)
+            })
+    }
+
+    fn command_bar_view(&self, width: u16) -> Container {
+        let size_cmd = Size { width, height: 1 };
+        let rect_cmd = Rect::new(size_cmd);
+        let src_cmd = self
+            .command
+            .on_screen(&size_cmd)
+            .iter()
+            .map(ToString::to_string)
+            .collect::<String>();
+        let visable_colon = match self.mode {
+            Mode::Command => ":",
+            _ => " ",
+        };
+        Container::new(rect_cmd, Stack::Horizontally)
+            .push(Text::new(visable_colon).max_width(1))
+            .push(Text::new(&src_cmd).max_width(width.saturating_sub(1)))
+    }
+
+    fn status_bar_view(&self, buf: &Buffer, width: u16) -> Container {
+        let mode_status = Text::new(&format!("{:?}", self.mode))
+            .max_width(8)
+            .with_fg(Color::Black)
+            .with_bg(Color::White)
+            .with_atter(vec![Attribute::Bold, Attribute::Italic].as_slice());
+
+        let filename_status = Text::new(&buf.name)
+            .max_width(buf.name.len() as u16)
+            .with_fg(Color::Black)
+            .with_bg(Color::White)
+            .with_atter(vec![Attribute::Bold, Attribute::Italic].as_slice());
+
+        let cursor = buf.get_cursor();
+        let cursor_pos_status_width =
+            width - (mode_status.char_len() + filename_status.char_len()) as u16;
+        let pos = cursor.pos();
+        let col = pos.x;
+        let row = pos.y;
+        let scroll = cursor.scroll;
+        let scol = scroll.x;
+        let srow = scroll.y;
+        let cursor_pos_status = Text::new(&format!("{scol}/{srow} {col}/{row}"))
+            .max_width(cursor_pos_status_width)
+            .with_alignment(Alignment::Right)
+            .with_fg(Color::Black)
+            .with_bg(Color::White)
+            .with_atter(vec![Attribute::Bold, Attribute::Italic].as_slice());
+
+        let rect_status = Rect::new(Size { width, height: 1 });
+        Container::new(rect_status, Stack::Horizontally)
+            .push(mode_status)
+            .push(filename_status)
+            .push(cursor_pos_status)
+    }
 }
 
 impl App for State {
@@ -382,103 +478,29 @@ impl App for State {
         let rect = Rect::new(self.size);
 
         if let Some(builder) = self.messages.last() {
-            return builder.as_view(rect).into();
+            use revi_ui::widget::Widget;
+            let stack = Stack::Vertically;
+
+            let message = builder.build_container(width);
+            let status = self.status_bar_view(&self.buffers[self.focused], width);
+            let h = message.height() + status.height();
+            let y = height - h - 10;
+            let rect = Rect::with_position(Pos::new(0, y), Size { width, height: h });
+            return Container::new(rect, stack)
+                .push(status)
+                .push(message)
+                .into();
         }
 
         let buf = &self.buffers[self.focused];
         // ------ TEXT AREA --------
-        let text_size = Size {
-            width,
-            height: height - 2,
-        };
-        let rect_text = Rect::new(text_size);
-        // let mut p = tree_sitter::Parser::new();
-        // p.set_language(tree_sitter_md::language())
-        //     .expect("Error loading Rust grammar");
-
-        // let mut last_context_parser: Option<tree_sitter::Tree> = None;
-        let text = buf
-            .on_screen(&text_size)
-            .iter()
-            .map(|line| {
-                Text::new(line.as_str()).max_width(width)
-                // last_context_parser = p.parse(line, last_context_parser.as_ref());
-                // let mut text_line =
-                //     Container::new(Rect::new(Size::new(width, 1)), Stack::Horizontally);
-                // if let Some(tree) = &last_context_parser {
-                //     let mut cursor = tree.walk();
-                //     let mut node = cursor.node();
-                //     for n in node.children(&mut cursor) {
-                //         let t = Text::new(n.kind()).max_width(width);
-                //         text_line = text_line.push(t);
-                //     }
-                // } else {
-                //     let t = Text::new(line.as_str()).max_width(width);
-                //     text_line = text_line.push(t);
-                // }
-                // text_line
-            })
-            .chain(std::iter::repeat(Text::new(" ").max_width(width)))
-            // .chain(std::iter::repeat(
-            //     Container::new(Rect::new(Size::new(width, 1)), Stack::Horizontally)
-            //         .push(Text::new(" ").max_width(width)),
-            // ))
-            .take(height as usize)
-            .fold(Container::new(rect_text, Stack::Vertically), |acc, item| {
-                acc.push(item)
-            });
+        let text_area = self.text_area_view(buf, width, height);
 
         // ------ CMD AREA --------
-        let size_cmd = Size { width, height: 1 };
-        let rect_cmd = Rect::new(size_cmd);
-        let src_cmd = self
-            .command
-            .on_screen(&size_cmd)
-            .iter()
-            .map(ToString::to_string)
-            .collect::<String>();
-        let visable_colon = match self.mode {
-            Mode::Command => ":",
-            _ => " ",
-        };
-        let cmd = Container::new(rect_cmd, Stack::Horizontally)
-            .push(Text::new(visable_colon).max_width(1))
-            .push(Text::new(&src_cmd).max_width(width.saturating_sub(1)));
+        let cmd = self.command_bar_view(width);
 
         // ------ Status Bar AREA --------
-        let mode_status = Text::new(&format!("{:?}", self.mode))
-            .max_width(8)
-            .with_fg(Color::Black)
-            .with_bg(Color::White)
-            .with_atter(vec![Attribute::Bold, Attribute::Italic].as_slice());
-
-        let filename_status = Text::new(&buf.name)
-            .max_width(buf.name.len() as u16)
-            .with_fg(Color::Black)
-            .with_bg(Color::White)
-            .with_atter(vec![Attribute::Bold, Attribute::Italic].as_slice());
-
-        let cursor = buf.get_cursor();
-        let cursor_pos_status_width =
-            width - (mode_status.char_len() + filename_status.char_len()) as u16;
-        let pos = cursor.pos();
-        let col = pos.x;
-        let row = pos.y;
-        let scroll = cursor.scroll;
-        let scol = scroll.x;
-        let srow = scroll.y;
-        let cursor_pos_status = Text::new(&format!("{scol}/{srow} {col}/{row}"))
-            .max_width(cursor_pos_status_width)
-            .with_alignment(Alignment::Right)
-            .with_fg(Color::Black)
-            .with_bg(Color::White)
-            .with_atter(vec![Attribute::Bold, Attribute::Italic].as_slice());
-
-        let rect_status = Rect::new(Size { width, height: 1 });
-        let status = Container::new(rect_status, Stack::Horizontally)
-            .push(mode_status)
-            .push(filename_status)
-            .push(cursor_pos_status);
+        let status = self.status_bar_view(buf, width);
 
         // ------ Status Bar && CMD combinding AREA --------
         let rect_info = Rect::new(Size { width, height: 2 });
@@ -488,7 +510,7 @@ impl App for State {
 
         // ------ All widgets AREA --------
         Container::new(rect, Stack::Vertically)
-            .push(text)
+            .push(text_area)
             .push(info)
             .into()
     }
