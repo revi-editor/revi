@@ -1,15 +1,15 @@
-// TODO: Move this file into main.
-use crate::AUTHOR;
-use clap::{crate_description, crate_name, crate_version, values_t, App, Arg};
+use super::AUTHOR;
+use clap::{crate_description, crate_name, crate_version, Parser};
 
-pub fn args() -> Vec<String> {
-    let matches = App::new(crate_name!())
-        .version(crate_version!())
-        .author(AUTHOR)
-        .about(crate_description!())
-        .arg(Arg::with_name("files").multiple(true))
-        .after_help("Pass in any number of files to ReVi to be placed in the Buffer list.")
-        .get_matches();
-
-    values_t!(matches, "files", String).unwrap_or_default()
+#[derive(Debug, Parser)]
+#[command(
+    about = "A fictional versioning CLI",
+    name = crate_name!(),
+    author = AUTHOR,
+    long_about = Some(crate_description!()),
+    color = clap::ColorChoice::Always,
+    version=crate_version!(),
+)]
+pub struct Cli {
+    pub files: Vec<String>,
 }
