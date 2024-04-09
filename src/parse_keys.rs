@@ -1,4 +1,4 @@
-use revi_ui::Keys;
+use crate::key::Keys;
 #[derive(Debug)]
 pub struct KeyParser {
     pub multiplier: usize,

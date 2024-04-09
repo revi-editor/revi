@@ -1,13 +1,13 @@
+use ratatui::layout::Position;
 use std::{fs::OpenOptions, io::BufWriter};
 
-use revi_ui::layout::{Pos, Size};
 use ropey::Rope;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Cursor {
-    pub pos: Pos,
-    pub scroll: Pos,
-    max: Pos,
+    pub pos: Position,
+    pub scroll: Position,
+    max: Position,
 }
 
 impl Cursor {
@@ -53,10 +53,10 @@ impl Cursor {
         self.scroll.x = self.scroll.x.saturating_add(1).min(max);
     }
 
-    pub fn pos(&self) -> Pos {
+    pub fn pos(&self) -> Position {
         let x = self.pos.x + self.scroll.x;
         let y = self.pos.y + self.scroll.y;
-        Pos { x, y }
+        Position { x, y }
     }
 
     pub fn new_line(&mut self) {
@@ -146,8 +146,8 @@ pub struct Buffer {
 }
 
 impl Buffer {
-    pub fn from_path(path: &str) -> Self {
-        let src = std::fs::read_to_string(path).unwrap_or_default();
+    pub fn from_path(path: impl Into<String> + Clone) -> Self {
+        let src = std::fs::read_to_string(&path.clone().into()).unwrap_or_default();
         Self {
             name: path.into(),
             rope: Rope::from_str(&src),
@@ -202,35 +202,35 @@ impl Buffer {
         &mut self.cursor
     }
 
-    pub fn on_screen(&self, size: &Size) -> Vec<String> {
-        let Size { width, height } = size;
-        let width = *width as usize;
-        let height = *height as usize;
-        let top = self.cursor.scroll.y as usize;
-        let bottom = top + height;
-        let start = self.cursor.scroll.x as usize;
-        let end = start + width;
-        self.rope
-            .lines()
-            .skip(top)
-            .take(bottom)
-            // -----------------------------
-            // CLEANUP: this works but its not pretty.
-            .map(|line| {
-                line.get_slice(start..end).map(|l| l.to_string()).unwrap_or(
-                    line.get_slice(start..)
-                        .map(|l| {
-                            if l.len_chars() == 0 {
-                                return " ".to_string();
-                            }
-                            l.to_string()
-                        })
-                        .unwrap_or(" ".to_string()),
-                )
-            })
-            // ----------------------------
-            .collect()
-    }
+    // pub fn on_screen(&self, size: &Size) -> Vec<String> {
+    //     let Size { width, height } = size;
+    //     let width = *width as usize;
+    //     let height = *height as usize;
+    //     let top = self.cursor.scroll.y as usize;
+    //     let bottom = top + height;
+    //     let start = self.cursor.scroll.x as usize;
+    //     let end = start + width;
+    //     self.rope
+    //         .lines()
+    //         .skip(top)
+    //         .take(bottom)
+    //         // -----------------------------
+    //         // CLEANUP: this works but its not pretty.
+    //         .map(|line| {
+    //             line.get_slice(start..end).map(|l| l.to_string()).unwrap_or(
+    //                 line.get_slice(start..)
+    //                     .map(|l| {
+    //                         if l.len_chars() == 0 {
+    //                             return " ".to_string();
+    //                         }
+    //                         l.to_string()
+    //                     })
+    //                     .unwrap_or(" ".to_string()),
+    //             )
+    //         })
+    //         // ----------------------------
+    //         .collect()
+    // }
 
     pub fn get_all_text(&self) -> String {
         self.rope.to_string()

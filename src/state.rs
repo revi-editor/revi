@@ -30,6 +30,28 @@ pub struct State {
 }
 
 impl State {
+    pub fn new(settings: Settings) -> Self {
+        let buffers = if settings.buffers.is_empty() {
+            vec![Buffer::default()]
+        } else {
+            settings.buffers
+        };
+        Self {
+            focused: 0,
+            buffers,
+            messages: Vec::new(),
+            command: Buffer::default(),
+            command_list: trie::Trie::from(&vec![
+                "b", "buffer", "ls", "e", "edit", "q", "quit", "w", "write",
+            ]),
+            tab_index: 0,
+            map_keys: Mapper::default(),
+            key_parse: KeyParser::default(),
+            mode: Mode::Normal,
+            size: size(),
+            is_running: true,
+        }
+    }
     pub fn set_new_buffer_as_focused(&mut self, buf: Buffer) {
         let idx = self.buffers.len();
         self.buffers.push(buf);

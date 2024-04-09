@@ -1,11 +1,14 @@
-use super::{Message, Mode};
-use revi_ui::{string_to_keys, Keys};
+use super::{
+    command::{ChangeMode, CmdRc, Quit},
+    Mode,
+};
+use crate::key::{string_to_keys, Keys};
 
 #[derive(Debug)]
 enum MapNode {
     Map(Keys, KeyMap),
-    Middle(Keys, KeyMap, Message),
-    End(Keys, Message),
+    Middle(Keys, KeyMap, CmdRc),
+    End(Keys, CmdRc),
 }
 
 #[derive(Debug)]
@@ -57,7 +60,7 @@ impl KeyMap {
     //     todo!()
     // }
 
-    fn get(&self, key: &[Keys]) -> Option<Message> {
+    fn get(&self, key: &[Keys]) -> Option<CmdRc> {
         if key.is_empty() {
             return None;
         }
@@ -75,7 +78,7 @@ impl KeyMap {
         None
     }
 
-    fn insert(&mut self, keys: &[Keys], command: Message) {
+    fn insert(&mut self, keys: &[Keys], command: impl Into<CmdRc>) {
         let Some(key) = keys.first() else {
             return;
         };
@@ -84,7 +87,7 @@ impl KeyMap {
                 MapNode::Map(k, map) if k == key => return map.insert(&keys[1..], command),
                 MapNode::Middle(k, map, _) if k == key => return map.insert(&keys[1..], command),
                 MapNode::End(k, cmd) if k == key && keys.len() == 1 => {
-                    *cmd = command;
+                    *cmd = command.into();
                     return;
                 }
                 MapNode::End(k, cmd) if k == key && keys.len() > 1 => {
@@ -100,12 +103,12 @@ impl KeyMap {
     }
 
     // Blindly inserts new mapping
-    fn insert_new(&mut self, keys: &[Keys], command: Message) {
+    fn insert_new(&mut self, keys: &[Keys], command: impl Into<CmdRc>) {
         let mut key_iter = keys.iter().rev();
         let Some(key) = key_iter.next() else {
             return;
         };
-        let start_node = MapNode::End(*key, command);
+        let start_node = MapNode::End(*key, command.into());
         let mapnode = key_iter.fold(start_node, |acc, key| {
             MapNode::Map(*key, KeyMap::new_mapping(acc))
         });
@@ -162,18 +165,18 @@ impl Mapper {
     }
 
     #[must_use]
-    pub fn get_mapping(&self, mode: &Mode, keys: &[Keys]) -> Option<Message> {
+    pub fn get_mapping(&self, mode: &Mode, keys: &[Keys]) -> Option<CmdRc> {
         self.get_map(mode).get(keys)
     }
 
     #[must_use]
-    pub fn with_mapping(mut self, mode: Mode, keys: &str, message: Message) -> Self {
+    pub fn with_mapping(mut self, mode: Mode, keys: &str, message: impl Into<CmdRc>) -> Self {
         self.get_map_mut(mode)
             .insert(&string_to_keys(keys), message);
         self
     }
 
-    pub fn _nmap(&mut self, keys: &str, message: Message) {
+    pub fn _nmap(&mut self, keys: &str, message: impl Into<CmdRc>) {
         self.nmaps.insert(&string_to_keys(keys), message);
     }
 
@@ -201,26 +204,27 @@ impl Mapper {
     // }
 
     fn build_normal(self) -> Self {
-        self.with_mapping(Mode::Normal, "j", Message::CursorDown)
-            .with_mapping(Mode::Normal, "<down>", Message::CursorDown)
-            .with_mapping(Mode::Normal, "k", Message::CursorUp)
-            .with_mapping(Mode::Normal, "up", Message::CursorUp)
-            .with_mapping(Mode::Normal, "h", Message::CursorLeft)
-            .with_mapping(Mode::Normal, "<left>", Message::CursorLeft)
-            .with_mapping(Mode::Normal, "l", Message::CursorRight)
-            .with_mapping(Mode::Normal, "<right>", Message::CursorRight)
-            .with_mapping(Mode::Normal, ":", Message::ChangeMode(Mode::Command))
-            .with_mapping(Mode::Normal, "i", Message::ChangeMode(Mode::Insert))
-            .with_mapping(Mode::Normal, "x", Message::Delete)
-            .with_mapping(Mode::Normal, "<delete>", Message::Delete)
-            // .with_mapping(Mode::Normal, "dd", DeleteLine)
-            .with_mapping(Mode::Normal, "<home>", Message::CursorHome)
-            .with_mapping(Mode::Normal, "0", Message::CursorHome)
-            // .with_mapping(Mode::Normal, "gg", CursorTopOfBuffer)
-            // .with_mapping(Mode::Normal, "G", CursorToBottomOfBuffer)
-            .with_mapping(Mode::Normal, "<end>", Message::CursorEnd)
-            .with_mapping(Mode::Normal, "$", Message::CursorEnd)
-            .with_mapping(Mode::Normal, "A", Message::InsertAtEnd)
+        self.with_mapping(Mode::Normal, "ZQ", Quit)
+            // .with_mapping(Mode::Normal, "j", CursorDown)
+            // .with_mapping(Mode::Normal, "<down>", CursorDown)
+            // .with_mapping(Mode::Normal, "k", CursorUp)
+            // .with_mapping(Mode::Normal, "up", CursorUp)
+            // .with_mapping(Mode::Normal, "h", CursorLeft)
+            // .with_mapping(Mode::Normal, "<left>", CursorLeft)
+            // .with_mapping(Mode::Normal, "l", CursorRight)
+            // .with_mapping(Mode::Normal, "<right>", CursorRight)
+            .with_mapping(Mode::Normal, ":", ChangeMode(Mode::Command))
+            .with_mapping(Mode::Normal, "i", ChangeMode(Mode::Insert))
+        // .with_mapping(Mode::Normal, "x", Delete)
+        // .with_mapping(Mode::Normal, "<delete>", Delete)
+        // .with_mapping(Mode::Normal, "dd", DeleteLine)
+        // .with_mapping(Mode::Normal, "<home>", CursorHome)
+        // .with_mapping(Mode::Normal, "0", CursorHome)
+        // .with_mapping(Mode::Normal, "gg", CursorTopOfBuffer)
+        // .with_mapping(Mode::Normal, "G", CursorToBottomOfBuffer)
+        // .with_mapping(Mode::Normal, "<end>", CursorEnd)
+        // .with_mapping(Mode::Normal, "$", CursorEnd)
+        // .with_mapping(Mode::Normal, "A", InsertAtEnd)
         // .with_mapping(Mode::Normal, "<C-y>", ScrollUp, CursorDown)
         // .with_mapping(Mode::Normal, "<C-e>", ScrollDown, CursorUp)
         // .with_mapping(Mode::Normal, "<C-u>", ScrollUp)
@@ -257,22 +261,22 @@ impl Mapper {
     }
 
     fn build_insert(self) -> Self {
-        self.with_mapping(Mode::Insert, "<esc>", Message::ChangeMode(Mode::Normal))
-            .with_mapping(Mode::Insert, "<backspace>", Message::BackSpace)
-            .with_mapping(Mode::Insert, "<up>", Message::CursorUp)
-            .with_mapping(Mode::Insert, "<down>", Message::CursorDown)
-            .with_mapping(Mode::Insert, "<left>", Message::CursorLeft)
-            .with_mapping(Mode::Insert, "<right>", Message::CursorRight)
-            .with_mapping(Mode::Insert, "<home>", Message::CursorHome)
-            .with_mapping(Mode::Insert, "<end>", Message::CursorEnd)
+        self.with_mapping(Mode::Insert, "<esc>", ChangeMode(Mode::Normal))
+        // .with_mapping(Mode::Insert, "<backspace>", Message::BackSpace)
+        // .with_mapping(Mode::Insert, "<up>", Message::CursorUp)
+        // .with_mapping(Mode::Insert, "<down>", Message::CursorDown)
+        // .with_mapping(Mode::Insert, "<left>", Message::CursorLeft)
+        // .with_mapping(Mode::Insert, "<right>", Message::CursorRight)
+        // .with_mapping(Mode::Insert, "<home>", Message::CursorHome)
+        // .with_mapping(Mode::Insert, "<end>", Message::CursorEnd)
         //     .with_mapping(Mode::Insert, "<tab>", InsertTab)
     }
 
     fn build_command(self) -> Self {
-        self.with_mapping(Mode::Command, "<esc>", Message::ChangeMode(Mode::Normal))
-            .with_mapping(Mode::Command, "<enter>", Message::ExecuteCommand)
-            .with_mapping(Mode::Command, "<backspace>", Message::BackSpace)
-            .with_mapping(Mode::Command, "<tab>", Message::NextAvailableCommand)
+        self.with_mapping(Mode::Command, "<esc>", ChangeMode(Mode::Normal))
+        // .with_mapping(Mode::Command, "<enter>", Message::ExecuteCommand)
+        // .with_mapping(Mode::Command, "<backspace>", Message::BackSpace)
+        // .with_mapping(Mode::Command, "<tab>", Message::NextAvailableCommand)
         // .with_mapping(Mode::Command, "<c-h>", CursorLeft)
         // .with_mapping(Mode::Command, "<c-l>", CursorRight)
     }
