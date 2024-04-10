@@ -142,7 +142,7 @@ impl Cursor {
 pub struct Buffer {
     pub name: String,
     rope: Rope,
-    cursor: Cursor,
+    pub cursor: Cursor,
 }
 
 impl Buffer {
@@ -202,35 +202,31 @@ impl Buffer {
         &mut self.cursor
     }
 
-    // pub fn on_screen(&self, size: &Size) -> Vec<String> {
-    //     let Size { width, height } = size;
-    //     let width = *width as usize;
-    //     let height = *height as usize;
-    //     let top = self.cursor.scroll.y as usize;
-    //     let bottom = top + height;
-    //     let start = self.cursor.scroll.x as usize;
-    //     let end = start + width;
-    //     self.rope
-    //         .lines()
-    //         .skip(top)
-    //         .take(bottom)
-    //         // -----------------------------
-    //         // CLEANUP: this works but its not pretty.
-    //         .map(|line| {
-    //             line.get_slice(start..end).map(|l| l.to_string()).unwrap_or(
-    //                 line.get_slice(start..)
-    //                     .map(|l| {
-    //                         if l.len_chars() == 0 {
-    //                             return " ".to_string();
-    //                         }
-    //                         l.to_string()
-    //                     })
-    //                     .unwrap_or(" ".to_string()),
-    //             )
-    //         })
-    //         // ----------------------------
-    //         .collect()
-    // }
+    pub fn on_screen(&self, width: u16, height: u16) -> Vec<String> {
+        let width = width as usize;
+        let height = height as usize;
+        let top = self.cursor.scroll.y as usize;
+        let bottom = top + height;
+        let start = self.cursor.scroll.x as usize;
+        let end = start + width;
+        self.rope
+            .lines()
+            .skip(top)
+            .take(bottom)
+            .map(|line| {
+                line.get_slice(start..end).map(|l| l.to_string()).unwrap_or(
+                    line.get_slice(start..)
+                        .map(|l| {
+                            if l.len_chars() == 0 {
+                                return " ".to_string();
+                            }
+                            l.to_string()
+                        })
+                        .unwrap_or(" ".to_string()),
+                )
+            })
+            .collect()
+    }
 
     pub fn get_all_text(&self) -> String {
         self.rope.to_string()

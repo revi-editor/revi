@@ -16,4 +16,5 @@ clap_derive = "4.5.4"
 clap = { version = "4.5.4", features = ["derive", "cargo"] }
 crossterm = "0.27.0"
 ratatui = "0.26.1"
+anyhow = "1.0.81"
 
