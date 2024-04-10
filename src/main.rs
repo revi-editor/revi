@@ -10,12 +10,13 @@ mod cli;
 mod command;
 mod key;
 mod map_keys;
-// mod message;
 mod parse_keys;
-// mod state;
 mod trie;
+mod tui;
 use anyhow::Result;
 use clap::Parser;
+use tui::{App, LineNumbers, Pane, StatusBar, Theme};
+
 use crossterm::{
     event::{self, Event},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -25,12 +26,7 @@ use std::io::{stdout, Stdout};
 
 use map_keys::Mapper;
 use parse_keys::KeyParser;
-use ratatui::{
-    layout::Position,
-    prelude::*,
-    style::Styled,
-    widgets::{Block, Borders, Paragraph},
-};
+use ratatui::prelude::*;
 
 fn main() -> Result<()> {
     enable_raw_mode()?;
@@ -158,142 +154,4 @@ pub enum Mode {
     Insert,
     Command,
     Normal,
-}
-
-#[derive(Debug, Clone)]
-pub struct Theme {
-    fg: Color,
-    bg: Color,
-    highlight: Color,
-}
-
-impl Default for Theme {
-    fn default() -> Self {
-        Theme {
-            fg: Color::White,
-            bg: Color::Rgb(40, 40, 40),
-            highlight: Color::Gray,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct App {
-    status_bar: StatusBar,
-    line_number: LineNumbers,
-    panes: Vec<Pane>,
-}
-
-impl Widget for App {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let constraints = self
-            .panes
-            .iter()
-            .map(|_| Constraint::Min(1))
-            .collect::<Vec<_>>();
-        let main_layout = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints([Constraint::Min(1), Constraint::Length(1)].as_ref())
-            .split(area);
-        let layout = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Max(3), Constraint::Min(1)].as_ref())
-            .split(main_layout[0]);
-        let text_layout = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(constraints)
-            .split(layout[1]);
-
-        for (idx, pane) in self.panes.into_iter().enumerate() {
-            pane.render(text_layout[idx], buf);
-        }
-        self.line_number.render(layout[0], buf);
-        self.status_bar.render(main_layout[1], buf);
-    }
-}
-
-#[derive(Debug, Clone)]
-struct Pane {
-    buffer: buffer::Buffer,
-    theme: Theme,
-}
-
-impl Widget for Pane {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let text_on_screen = self
-            .buffer
-            .on_screen(area.width, area.height)
-            .into_iter()
-            .map(Line::from)
-            .collect::<Vec<Line>>();
-        let block = Block::default().borders(Borders::LEFT);
-        Paragraph::new(text_on_screen)
-            .block(block)
-            .style(Style::default().bg(self.theme.bg).fg(self.theme.fg))
-            .render(area, buf);
-    }
-}
-
-#[derive(Debug, Clone, Default)]
-struct LineNumbers {
-    theme: Theme,
-}
-
-impl Widget for LineNumbers {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let text = (0..area.height).fold(Vec::new(), |mut acc, num| {
-            acc.push(Line {
-                spans: vec![format!("{num}").into()],
-                style: Style::default().bg(self.theme.bg).fg(self.theme.fg).dim(),
-                alignment: Some(Alignment::Right),
-            });
-            acc
-        });
-
-        Paragraph::new(text)
-            .style(Style::default().bg(self.theme.bg).fg(self.theme.fg))
-            .render(area, buf);
-    }
-}
-
-#[derive(Debug, Clone)]
-struct StatusBar {
-    mode: Mode,
-    cursor: Position,
-    filename: String,
-    file_saved: bool,
-    theme: Theme,
-}
-
-impl Widget for StatusBar {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let file_saved = if self.file_saved { "✔ " } else { "✘ " };
-        let file_saved_style = if self.file_saved {
-            // TODO: make colors configurable
-            Style::default().green().on_dark_gray().bold()
-        } else {
-            Style::default().red().on_dark_gray().bold()
-        };
-        Line::from(vec![
-            Span::styled(
-                format!("{:?} ", self.mode),
-                Style::default().bg(self.theme.bg).fg(self.theme.fg).bold(),
-            ),
-            Span::styled(
-                format!("{} ", self.filename),
-                Style::default().bg(self.theme.bg).fg(self.theme.fg).bold(),
-            ),
-            Span::styled(file_saved, file_saved_style),
-        ])
-        .render(area, buf);
-        Line {
-            spans: vec![Span::raw(format!("{}/{}", self.cursor.x, self.cursor.y))],
-            style: Style::default()
-                .bg(self.theme.highlight)
-                .fg(self.theme.fg)
-                .bold(),
-            alignment: Some(Alignment::Right),
-        }
-        .render(area, buf);
-    }
 }
