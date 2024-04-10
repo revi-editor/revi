@@ -1,10 +1,11 @@
 use super::Mode;
 use crate::buffer;
 use ratatui::{
-    layout::Position,
+    layout::{Position, Rect, Size},
     prelude::*,
     widgets::{Block, Borders, Paragraph},
 };
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub struct Theme {
@@ -28,10 +29,16 @@ pub struct App {
     pub status_bar: StatusBar,
     pub line_number: LineNumbers,
     pub panes: Vec<Pane>,
+    pub current_pane: usize,
 }
 
-impl Widget for App {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+impl App {
+    pub fn get_cursor_position(&self, area: Rect) -> Rect {
+        let (_, _, text_layout) = self.setup_layout(area);
+        text_layout[self.current_pane]
+    }
+
+    pub fn setup_layout(&self, area: Rect) -> (Rc<[Rect]>, Rc<[Rect]>, Rc<[Rect]>) {
         let constraints = self
             .panes
             .iter()
@@ -49,6 +56,13 @@ impl Widget for App {
             .direction(Direction::Horizontal)
             .constraints(constraints)
             .split(layout[1]);
+        (main_layout, layout, text_layout)
+    }
+}
+
+impl Widget for App {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        let (main_layout, layout, text_layout) = self.setup_layout(area);
 
         for (idx, pane) in self.panes.into_iter().enumerate() {
             pane.render(text_layout[idx], buf);
@@ -87,7 +101,7 @@ pub struct LineNumbers {
 
 impl Widget for LineNumbers {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let text = (0..area.height).fold(Vec::new(), |mut acc, num| {
+        let text = (1..area.height + 1).fold(Vec::new(), |mut acc, num| {
             acc.push(Line {
                 spans: vec![format!("{num}").into()],
                 style: Style::default().bg(self.theme.bg).fg(self.theme.fg).dim(),

@@ -5,6 +5,7 @@ const AUTHOR: &str = "
 ▝▀ ▝▀  ▘▘ ▀▀ ▝▀ ▗▄▘▝▀ ▝▀ ▀▀▘▝▀
 Email: cowboy8625@protonmail.com
 ";
+
 mod buffer;
 mod cli;
 mod command;
@@ -26,12 +27,22 @@ use std::io::{stdout, Stdout};
 
 use map_keys::Mapper;
 use parse_keys::KeyParser;
-use ratatui::prelude::*;
+use ratatui::{
+    layout::{Position, Size},
+    prelude::*,
+};
 
 fn main() -> Result<()> {
     enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
     Editor::new()?.run()
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Mode {
+    Insert,
+    Command,
+    Normal,
 }
 
 type Tui = Terminal<CrosstermBackend<Stdout>>;
@@ -43,6 +54,7 @@ struct Editor {
     is_running: bool,
     map_keys: Mapper,
     key_parse: KeyParser,
+    current_pane_size: Size,
 }
 
 impl Editor {
@@ -53,15 +65,35 @@ impl Editor {
             .iter()
             .map(buffer::Buffer::from_path)
             .collect::<Vec<_>>();
+        // Add welcome message if no file is provided
+        if buffers.is_empty() {
+            // This should be a welcome message not an empty buffer
+            buffers.push(buffer::Buffer::default());
+        }
+        // First buffer is always command buffer
         buffers.insert(0, buffer::Buffer::default());
         Ok(Self {
             mode: Mode::Normal,
             buffers,
-            buffer_index: 0,
+            buffer_index: 1,
             is_running: true,
             map_keys: Mapper::default(),
             key_parse: KeyParser::default(),
+            current_pane_size: Size::default(),
         })
+    }
+
+    fn get_current_buffer(&self) -> &buffer::Buffer {
+        &self.buffers[self.buffer_index]
+    }
+
+    fn get_current_buffer_mut(&mut self) -> &mut buffer::Buffer {
+        &mut self.buffers[self.buffer_index]
+    }
+
+    fn get_cursor(&self) -> Position {
+        let cursor = self.get_current_buffer().cursor.pos;
+        Position::new(cursor.x + 1, cursor.y + 0)
     }
 
     fn run(&mut self) -> Result<()> {
@@ -93,8 +125,13 @@ impl Editor {
                 buffer: self.buffers[self.buffer_index].clone(),
                 theme: Theme::default(),
             }],
+            current_pane: self.buffer_index.saturating_sub(1),
         };
-        frame.set_cursor(10, 10);
+        let rect = app.get_cursor_position(frame.size());
+        let pos = rect.as_position();
+        self.current_pane_size = rect.as_size();
+        let cursor = self.get_cursor();
+        frame.set_cursor(cursor.x + pos.x, cursor.y + pos.y);
         frame.render_widget(app, frame.size());
     }
 
@@ -147,11 +184,4 @@ impl Drop for Editor {
             .execute(LeaveAlternateScreen)
             .expect("Could not leave alternate screen");
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Mode {
-    Insert,
-    Command,
-    Normal,
 }

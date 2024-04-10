@@ -1,7 +1,4 @@
-use super::{
-    command::{ChangeMode, CmdRc, Quit},
-    Mode,
-};
+use super::{command::*, Mode};
 use crate::key::{string_to_keys, Keys};
 
 #[derive(Debug)]
@@ -205,14 +202,14 @@ impl Mapper {
 
     fn build_normal(self) -> Self {
         self.with_mapping(Mode::Normal, "ZQ", Quit)
-            // .with_mapping(Mode::Normal, "j", CursorDown)
-            // .with_mapping(Mode::Normal, "<down>", CursorDown)
-            // .with_mapping(Mode::Normal, "k", CursorUp)
-            // .with_mapping(Mode::Normal, "up", CursorUp)
-            // .with_mapping(Mode::Normal, "h", CursorLeft)
-            // .with_mapping(Mode::Normal, "<left>", CursorLeft)
-            // .with_mapping(Mode::Normal, "l", CursorRight)
-            // .with_mapping(Mode::Normal, "<right>", CursorRight)
+            .with_mapping(Mode::Normal, "j", CursorDown)
+            .with_mapping(Mode::Normal, "<down>", CursorDown)
+            .with_mapping(Mode::Normal, "k", CursorUp)
+            .with_mapping(Mode::Normal, "up", CursorUp)
+            .with_mapping(Mode::Normal, "h", CursorLeft)
+            .with_mapping(Mode::Normal, "<left>", CursorLeft)
+            .with_mapping(Mode::Normal, "l", CursorRight)
+            .with_mapping(Mode::Normal, "<right>", CursorRight)
             .with_mapping(Mode::Normal, ":", ChangeMode(Mode::Command))
             .with_mapping(Mode::Normal, "i", ChangeMode(Mode::Insert))
         // .with_mapping(Mode::Normal, "x", Delete)

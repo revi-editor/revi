@@ -62,3 +62,37 @@ command!(ChangeMode(Mode), |s: &ChangeMode, editor: &mut Editor| {
 command!(Quit, |_: &Quit, editor: &mut Editor| {
     editor.is_running = false;
 });
+
+command!(CursorUp, |_: &CursorUp, editor: &mut Editor| {
+    let buf = editor.get_current_buffer_mut();
+    if buf.cursor_up() {
+        return;
+    }
+    buf.scroll_up();
+});
+
+command!(CursorDown, |_: &CursorDown, editor: &mut Editor| {
+    let height: usize = editor.current_pane_size.height.saturating_sub(1).into();
+    let buf = editor.get_current_buffer_mut();
+    if buf.cursor_down(height) {
+        return;
+    }
+    buf.scroll_down(height);
+});
+
+command!(CursorRight, |_: &CursorRight, editor: &mut Editor| {
+    let width: usize = editor.current_pane_size.width.saturating_sub(1).into();
+    let buf = editor.get_current_buffer_mut();
+    if buf.cursor_right(width) {
+        return;
+    }
+    buf.scroll_right(width);
+});
+
+command!(CursorLeft, |_: &CursorLeft, editor: &mut Editor| {
+    let buf = editor.get_current_buffer_mut();
+    if buf.cursor_left() {
+        return;
+    }
+    buf.scroll_left();
+});
