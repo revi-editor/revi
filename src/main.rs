@@ -28,7 +28,7 @@ use std::io::{stdout, Stdout};
 use map_keys::Mapper;
 use parse_keys::KeyParser;
 use ratatui::{
-    layout::{Position, Size},
+    layout::{Position, Rect, Size},
     prelude::*,
 };
 
@@ -54,7 +54,7 @@ struct Editor {
     is_running: bool,
     map_keys: Mapper,
     key_parse: KeyParser,
-    current_pane_size: Size,
+    current_pane_rect: Rect,
 }
 
 impl Editor {
@@ -79,8 +79,15 @@ impl Editor {
             is_running: true,
             map_keys: Mapper::default(),
             key_parse: KeyParser::default(),
-            current_pane_size: Size::default(),
+            current_pane_rect: Rect::default(),
         })
+    }
+
+    fn get_current_pane_size(&self) -> Size {
+        let size = self.current_pane_rect.as_size();
+        let h = size.height.saturating_sub(1);
+        let w = size.width.saturating_sub(1);
+        Size::new(w, h)
     }
 
     fn get_current_buffer(&self) -> &buffer::Buffer {
@@ -92,8 +99,9 @@ impl Editor {
     }
 
     fn get_cursor(&self) -> Position {
+        let offset = self.current_pane_rect;
         let cursor = self.get_current_buffer().cursor.pos;
-        Position::new(cursor.x + 1, cursor.y + 0)
+        Position::new(offset.x + cursor.x + 1, offset.y + cursor.y + 0)
     }
 
     fn run(&mut self) -> Result<()> {
@@ -129,9 +137,9 @@ impl Editor {
         };
         let rect = app.get_cursor_position(frame.size());
         let pos = rect.as_position();
-        self.current_pane_size = rect.as_size();
+        self.current_pane_rect = rect;
         let cursor = self.get_cursor();
-        frame.set_cursor(cursor.x + pos.x, cursor.y + pos.y);
+        frame.set_cursor(cursor.x, cursor.y);
         frame.render_widget(app, frame.size());
     }
 

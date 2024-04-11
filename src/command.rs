@@ -72,7 +72,7 @@ command!(CursorUp, |_: &CursorUp, editor: &mut Editor| {
 });
 
 command!(CursorDown, |_: &CursorDown, editor: &mut Editor| {
-    let height: usize = editor.current_pane_size.height.saturating_sub(1).into();
+    let height: usize = editor.get_current_pane_size().height.into();
     let buf = editor.get_current_buffer_mut();
     if buf.cursor_down(height) {
         return;
@@ -81,7 +81,7 @@ command!(CursorDown, |_: &CursorDown, editor: &mut Editor| {
 });
 
 command!(CursorRight, |_: &CursorRight, editor: &mut Editor| {
-    let width: usize = editor.current_pane_size.width.saturating_sub(1).into();
+    let width: usize = editor.get_current_pane_size().width.into();
     let buf = editor.get_current_buffer_mut();
     if buf.cursor_right(width) {
         return;
@@ -96,3 +96,37 @@ command!(CursorLeft, |_: &CursorLeft, editor: &mut Editor| {
     }
     buf.scroll_left();
 });
+
+command!(CursorHome, |_: &CursorHome, editor: &mut Editor| {
+    let buf = editor.get_current_buffer_mut();
+    buf.cursor_home();
+});
+
+command!(CursorEnd, |_: &CursorEnd, editor: &mut Editor| {
+    let buf = editor.get_current_buffer_mut();
+    buf.cursor_end();
+});
+
+command!(
+    CursorTopOfBuffer,
+    |_: &CursorTopOfBuffer, editor: &mut Editor| {
+        let buf = editor.get_current_buffer_mut();
+        // let last_line = buf.len_lines();
+        let cursor = buf.get_cursor_mut();
+        cursor.pos.y = 0;
+        cursor.scroll.y = 0;
+    }
+);
+
+command!(
+    CursorToBottomOfBuffer,
+    |_: &CursorToBottomOfBuffer, editor: &mut Editor| {
+        let height = editor.get_current_pane_size().height;
+        let buf = editor.get_current_buffer_mut();
+        let last_line = buf.len_lines() as u16;
+        let cursor = buf.get_cursor_mut();
+        cursor.pos.y = height;
+        cursor.scroll.y = last_line.saturating_sub(height).min(last_line);
+        buf.align_cursor();
+    }
+);

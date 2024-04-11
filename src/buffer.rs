@@ -136,6 +136,11 @@ impl Cursor {
         let col = col as u16;
         self.pos.x = col;
     }
+
+    pub fn set_max_col(&mut self, col: usize) {
+        let col = col as u16;
+        self.max.x = col;
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -198,7 +203,7 @@ impl Buffer {
         &self.cursor
     }
 
-    pub fn _get_cursor_mut(&mut self) -> &mut Cursor {
+    pub fn get_cursor_mut(&mut self) -> &mut Cursor {
         &mut self.cursor
     }
 
@@ -321,10 +326,12 @@ impl Buffer {
         let row = self.cursor.pos.y as usize;
         let len = self.line_len(row);
         self.cursor.set_col(len);
+        self.cursor.set_max_col(len);
     }
 
     pub fn cursor_home(&mut self) {
         self.cursor.set_col(0);
+        self.cursor.set_max_col(0);
     }
 
     pub fn scroll_up(&mut self) {
