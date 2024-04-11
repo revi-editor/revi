@@ -136,11 +136,23 @@ impl Editor {
             current_pane: self.buffer_index.saturating_sub(1),
         };
         let rect = app.get_cursor_position(frame.size());
-        let pos = rect.as_position();
         self.current_pane_rect = rect;
         let cursor = self.get_cursor();
+        self.set_cursor_shape();
         frame.set_cursor(cursor.x, cursor.y);
         frame.render_widget(app, frame.size());
+    }
+
+    fn set_cursor_shape(&self) {
+        use crossterm::{cursor::SetCursorStyle, execute};
+        let result = match self.mode {
+            Mode::Insert => execute!(stdout(), SetCursorStyle::SteadyBar),
+            Mode::Normal => execute!(stdout(), SetCursorStyle::SteadyBlock),
+            _ => return,
+        };
+        if let Err(e) = result {
+            eprintln!("{}", e);
+        }
     }
 
     fn handle_event(&mut self, event: Event) -> Result<Option<command::CmdRc>> {
@@ -157,7 +169,7 @@ impl Editor {
             .is_possible_mapping(&self.mode, self.key_parse.get_keys());
         if !is_possible_mapping {
             let key_list = self.key_parse.get_keys();
-            let _input = key_list
+            let input = key_list
                 .iter()
                 .filter_map(|k| {
                     k.as_char().and_then(|c| match c {
@@ -171,12 +183,7 @@ impl Editor {
                 .collect::<Vec<String>>()
                 .join("");
             self.key_parse.clear();
-            let _message = match self.mode {
-                Mode::Command => {}
-                Mode::Insert => {}
-                _ => {}
-            };
-            // return Some(message);
+            return Ok(Some(command::CmdRc::from(command::InsertChar(input))));
         }
         if cmd.is_some() {
             self.key_parse.clear();

@@ -130,3 +130,11 @@ command!(
         buf.align_cursor();
     }
 );
+
+command!(
+    InsertChar(String),
+    |text: &InsertChar, editor: &mut Editor| {
+        let buf = editor.get_current_buffer_mut();
+        buf.insert(&text.0);
+    }
+);

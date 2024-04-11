@@ -266,7 +266,7 @@ impl Mapper {
         // .with_mapping(Mode::Insert, "<right>", Message::CursorRight)
         // .with_mapping(Mode::Insert, "<home>", Message::CursorHome)
         // .with_mapping(Mode::Insert, "<end>", Message::CursorEnd)
-        //     .with_mapping(Mode::Insert, "<tab>", InsertTab)
+        // .with_mapping(Mode::Insert, "<tab>", InsertTab)
     }
 
     fn build_command(self) -> Self {
