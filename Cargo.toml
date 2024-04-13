@@ -17,4 +17,9 @@ clap = { version = "4.5.4", features = ["derive", "cargo"] }
 crossterm = "0.27.0"
 ratatui = "0.26.1"
 anyhow = "1.0.81"
+tree-sitter = "0.22.0"
+tree-sitter-rust = "0.21.0"
+
+[build-dependencies]
+cc="*"
 

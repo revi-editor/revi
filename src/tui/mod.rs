@@ -12,6 +12,7 @@ pub struct Theme {
     fg: Color,
     bg: Color,
     highlight: Color,
+    // SyntaxTheme: SyntaxTheme,
 }
 
 impl Default for Theme {
@@ -101,7 +102,7 @@ pub struct LineNumbers {
 
 impl Widget for LineNumbers {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let text = (1..area.height + 1).fold(Vec::new(), |mut acc, num| {
+        let text = (0..area.height + 1).fold(Vec::new(), |mut acc, num| {
             acc.push(Line {
                 spans: vec![format!("{num}").into()],
                 style: Style::default().bg(self.theme.bg).fg(self.theme.fg).dim(),
