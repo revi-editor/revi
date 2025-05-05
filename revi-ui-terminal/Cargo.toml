@@ -1,0 +1,24 @@
+[package]
+name = "revi-ui-terminal"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+crossterm = "0.29.0"
+ratatui = "0.29.0"
+tokio = { version = "1.42.1", features = ["full"] }
+tokio-tungstenite = "0.26.2"
+futures-util = "0.3.31"
+tungstenite = "0.26.2"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+revi-protocol = { path = "../revi-protocol" }
+
+[lib]
+name = "revi_ui_terminal"
+path = "src/lib.rs"
+
+[[bin]]
+name = "revi_ui_terminal"
+path = "src/main.rs"
+
